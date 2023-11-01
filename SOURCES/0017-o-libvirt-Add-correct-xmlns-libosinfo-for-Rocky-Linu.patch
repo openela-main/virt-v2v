@@ -1,0 +1,48 @@
+From a9630d3981cbf7f6083e82f4e22cff981d11a8b3 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 2 Feb 2023 12:29:00 +0000
+Subject: [PATCH] -o libvirt: Add correct xmlns:libosinfo for Rocky Linux
+
+Also a small whitespace fix and improve the warning message.
+
+Updates: commit db831c167b7bf757aa79dbe3db5fa8c5fd8cfc99
+Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=2166618
+Reported-by: Ming Xie
+(cherry picked from commit ebfdca56bca69284f289e3db8a6e6baf6bc617f0)
+---
+ output/create_libvirt_xml.ml | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/output/create_libvirt_xml.ml b/output/create_libvirt_xml.ml
+index e1c1f616..388fae5b 100644
+--- a/output/create_libvirt_xml.ml
++++ b/output/create_libvirt_xml.ml
+@@ -47,6 +47,10 @@ let get_osinfo_id = function
+     when major >= 8 ->
+     Some (sprintf "http://centos.org/centos/%d" major)
+ 
++  | { i_type = "linux"; i_distro = "rocky";
++      i_major_version = major; i_minor_version = minor } ->
++    Some (sprintf "http://rockylinux.org/rocky/%d.%d" major minor)
++
+   | { i_type = "linux"; i_distro = "sles";
+       i_major_version = major; i_minor_version = 0;
+       i_product_name = product } when String.find product "Desktop" >= 0 ->
+@@ -140,7 +144,8 @@ let get_osinfo_id = function
+   | { i_type = typ; i_distro = distro;
+       i_major_version = major; i_minor_version = minor; i_arch = arch;
+       i_product_name = product } ->
+-    warning (f_"unknown guest operating system: %s %s %d.%d %s (%s)")
++    warning (f_"get_osinfo_id: unknown guest operating system: \
++                %s %s %d.%d %s (%s)")
+       typ distro major minor arch product;
+     None
+ 
+@@ -160,7 +165,6 @@ let create_libvirt_xml ?pool source inspect
+    | Some genid -> List.push_back body (e "genid" [] [PCData genid])
+   );
+ 
+-
+   (match get_osinfo_id inspect with
+    | None -> ()
+    | Some osinfo_id ->

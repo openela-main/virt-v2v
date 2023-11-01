@@ -1,0 +1,51 @@
+From 8009825c396358137576af522acc0b6b20243bac Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 20 Jan 2023 09:49:04 +0000
+Subject: [PATCH] -o kubevirt: Error on invalid output guest names
+
+Kubevirt supports something like RFC 1123 names (without the length
+restriction).  Helpfully it prints the regexp that it uses the
+validate the names, so just use the same regexp.
+
+Note that virt-v2v never renames guests (since that would add
+unpredictability for automation).  You must use the -on option to
+rename the guest if the name is wrong.  Hence this is an error, not a
+warning or an attempt to rename the guest.
+
+Reported-by: Ming Xie
+Fixes: commit bfa62b4683d312fc2fa9bb3c08963fc4846831b9
+Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=2162332
+(cherry picked from commit 8a9c914544a49bed13eb5baf42290f835bdee7b5)
+---
+ output/output_kubevirt.ml | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/output/output_kubevirt.ml b/output/output_kubevirt.ml
+index 0a74dbbe..00e6a8a5 100644
+--- a/output/output_kubevirt.ml
++++ b/output/output_kubevirt.ml
+@@ -29,6 +29,11 @@ open Utils
+ open Output
+ open Create_kubevirt_yaml
+ 
++(* Valid output names for Kubevirt (RHBZ#2162332). *)
++let rfc1123_re =
++  PCRE.compile ~anchored:true
++    "[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"
++
+ module Kubevirt = struct
+   type poptions = output_allocation * string * string * string
+ 
+@@ -60,6 +65,12 @@ module Kubevirt = struct
+ 
+     let output_name = Option.default source.s_name options.output_name in
+ 
++    if not (PCRE.matches rfc1123_re output_name) then
++      error (f_"-o kubevirt: the guest name must contain only lowercase \
++                alphanumeric characters, '-' or '.', and must start and \
++                end with an alphanumeric character.  Rerun virt-v2v with \
++                the '-on name' option to rename it.");
++
+     options.output_alloc, options.output_format, output_name, output_storage
+ 
+   let setup dir options source =

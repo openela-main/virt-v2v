@@ -1,0 +1,78 @@
+From 224243b8e26aa299bd99dd24662c4df10a3f612c Mon Sep 17 00:00:00 2001
+From: Laszlo Ersek <lersek@redhat.com>
+Date: Thu, 12 Jan 2023 12:31:10 +0100
+Subject: [PATCH] test-v2v-i-ova: spell out ntfs feature group dependency
+
+"windows.img" is created as an empty phony image if the libguestfs
+appliance lacks the ntfs feature group.
+
+"tests/Makefile.am" deals well with this, because for the "central"
+"windows.vmdk" target, we restrict the VMDK conversion to a non-empty
+"windows.img". Subsequently, dependent test cases check for "windows.vmdk"
+specifically, and if that file is missing, the tests are skipped (they
+exit with code 77).
+
+"test-v2v-i-ova.sh" and "test-v2v-i-ova-directory.sh" are exceptions
+however. They perform the same conversion manually (in their own separate
+workspace directories). They assume that, if "windows.img" exists, it can
+be converted to VMDK. When the image size is zero, the conversion breaks,
+and both test cases fail. Skip both tests if "windows.img" is empty.
+
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+Acked-by: Richard W.M. Jones <rjones@redhat.com>
+[lersek@redhat.com: replace further occurrences of windows.img with $f]
+---
+ tests/test-v2v-i-ova-directory.sh | 7 ++++---
+ tests/test-v2v-i-ova.sh           | 7 ++++---
+ 2 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/tests/test-v2v-i-ova-directory.sh b/tests/test-v2v-i-ova-directory.sh
+index fff236f5..ec858464 100755
+--- a/tests/test-v2v-i-ova-directory.sh
++++ b/tests/test-v2v-i-ova-directory.sh
+@@ -25,7 +25,9 @@ set -e
+ set -x
+ 
+ skip_if_skipped
+-requires test -f ../test-data/phony-guests/windows.img
++f=../test-data/phony-guests/windows.img
++requires test -f $f
++requires test -s $f
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+@@ -39,8 +41,7 @@ vmdk=test-ova.vmdk
+ ovf=test-v2v-i-ova.ovf
+ mf=test-ova.mf
+ 
+-qemu-img convert ../test-data/phony-guests/windows.img \
+-         -O vmdk $d/$vmdk
++qemu-img convert $f -O vmdk $d/$vmdk
+ cp "$srcdir/$ovf" $d/$ovf
+ sha1=`do_sha1 $d/$ovf`
+ echo "SHA1($ovf)= $sha1" > $d/$mf
+diff --git a/tests/test-v2v-i-ova.sh b/tests/test-v2v-i-ova.sh
+index a55966a7..7d988330 100755
+--- a/tests/test-v2v-i-ova.sh
++++ b/tests/test-v2v-i-ova.sh
+@@ -25,7 +25,9 @@ set -e
+ set -x
+ 
+ skip_if_skipped
+-requires test -f ../test-data/phony-guests/windows.img
++f=../test-data/phony-guests/windows.img
++requires test -f $f
++requires test -s $f
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+@@ -41,8 +43,7 @@ mf=test-ova.mf
+ ova=test-ova.ova
+ raw=TestOva-sda
+ 
+-qemu-img convert ../test-data/phony-guests/windows.img \
+-         -O vmdk $d/$vmdk
++qemu-img convert $f -O vmdk $d/$vmdk
+ cp "$srcdir/$ovf" $d/$ovf
+ sha1=`do_sha1 $d/$ovf`
+ echo "SHA1($ovf)= $sha1" > $d/$mf

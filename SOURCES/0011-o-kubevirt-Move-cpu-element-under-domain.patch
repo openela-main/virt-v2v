@@ -1,0 +1,46 @@
+From 6b7ef3efe748a72edad0faa508e91b340038a586 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 20 Jan 2023 09:11:52 +0000
+Subject: [PATCH] -o kubevirt: Move "cpu" element under "domain"
+
+Apparently this element doesn't go in the obvious place (under
+"resources", next to memory), but in a whole new section under "cpu",
+which makes no logical sense but here we are.  Also verified this
+against Kubevirt examples/vm-template-fedora.yaml
+
+Reported-by: Ming Xie
+Fixes: commit bfa62b4683d312fc2fa9bb3c08963fc4846831b9
+(cherry picked from commit 8db50a85f0363d90918edd1af4fc20ddc245b421)
+---
+ output/create_kubevirt_yaml.ml | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/output/create_kubevirt_yaml.ml b/output/create_kubevirt_yaml.ml
+index 205e9be3..689555e4 100644
+--- a/output/create_kubevirt_yaml.ml
++++ b/output/create_kubevirt_yaml.ml
+@@ -65,13 +65,13 @@ let create_kubevirt_yaml source inspect
+   let memory_str = sprintf "%LdMi" (source.s_memory /^ 1024_L /^ 1024_L) in
+   List.push_back resources ("requests", Assoc ["memory", String memory_str]);
+ 
+-  (* # vCPUs. XXX vendor, model, topology *)
+-  List.push_back resources ("cpu", Assoc ["cores", Int source.s_vcpu]);
+-
+   (* Machine features. *)
+   let features = List.map (fun name -> name, List []) source.s_features in
+   List.push_back resources ("features", Assoc features);
+ 
++  (* # vCPUs. XXX vendor, model, topology *)
++  let cpu = "cpu", Assoc ["cores", Int source.s_vcpu] in
++
+   (* XXX firmware, display, sound *)
+ 
+   (* XXX guestcaps: rng, balloon, vsock, virtio 1.0 *)
+@@ -109,6 +109,7 @@ let create_kubevirt_yaml source inspect
+   if !devices <> [] then
+     List.push_back domain ("devices", Assoc !devices);
+   List.push_back domain ("resources", Assoc !resources);
++  List.push_back domain cpu;
+ 
+   let spec = ref [] in
+   List.push_back spec ("domain", Assoc !domain);

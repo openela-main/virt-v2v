@@ -1,0 +1,27 @@
+From 019809794742e1990af3c14b953f8c307f629b7c Mon Sep 17 00:00:00 2001
+From: Laszlo Ersek <lersek@redhat.com>
+Date: Thu, 12 Jan 2023 12:27:26 +0100
+Subject: [PATCH] test-v2v-fedora-btrfs-conversion: spell out btrfs feature
+ group dependency
+
+In case the libguestfs appliance lacks the btrfs feature group, we create
+a zero-sized phony Fedora/BTRFS image variant, causing this test case to
+fail. In that situation, the test should just be skipped.
+
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+Acked-by: Richard W.M. Jones <rjones@redhat.com>
+---
+ tests/test-v2v-fedora-btrfs-conversion.sh | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tests/test-v2v-fedora-btrfs-conversion.sh b/tests/test-v2v-fedora-btrfs-conversion.sh
+index c78f8ae2..14099893 100755
+--- a/tests/test-v2v-fedora-btrfs-conversion.sh
++++ b/tests/test-v2v-fedora-btrfs-conversion.sh
+@@ -27,5 +27,6 @@ set -x
+ skip_if_skipped
+ f=../test-data/phony-guests/fedora-btrfs.img
+ requires test -f $f
++requires test -s $f
+ 
+ $VG virt-v2v --debug-gc -i disk $f -o null
