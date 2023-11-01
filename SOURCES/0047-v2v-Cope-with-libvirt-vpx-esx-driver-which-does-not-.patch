@@ -1,0 +1,41 @@
+From 992af0707ad54d39ec707da6daa6c4ca7c3fc69a Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Wed, 24 Nov 2021 11:23:38 +0000
+Subject: [PATCH] v2v: Cope with libvirt vpx/esx driver which does not set
+ format
+
+See discussion in this bug:
+https://bugzilla.redhat.com/show_bug.cgi?id=2026199
+
+Fixes: commit 40cfe6da0861ca6360f670e254c71ed923a0402f
+(cherry picked from commit 59dc3293a9b4fdf11da8571c50e3e5badbb511c2)
+---
+ v2v/parse_libvirt_xml.ml | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/v2v/parse_libvirt_xml.ml b/v2v/parse_libvirt_xml.ml
+index 27e08135..e65fbf4a 100644
+--- a/v2v/parse_libvirt_xml.ml
++++ b/v2v/parse_libvirt_xml.ml
+@@ -273,7 +273,11 @@ let parse_libvirt_xml ?bandwidth ?conn xml =
+         | Some "aio" -> "raw" (* Xen wierdness *)
+         | Some format -> format
+         | None ->
+-           error (f_"<disk><driver type=\"format\"> attribute is missing from the libvirt XML") in
++           (* Some libvirt drivers don't set the format.  Typically
++            * this is the vpx/esx driver (see RHBZ#2026199).  We
++            * can assume "raw", as it will be overwritten later.
++            *)
++           "raw" in
+ 
+       (* The <disk type='...'> attribute may be 'block', 'file',
+        * 'network' or 'volume'.  We ignore any other types.
+@@ -344,7 +348,7 @@ let parse_libvirt_xml ?bandwidth ?conn xml =
+             match xpath_string "/volume/target/format/@type" with
+             | Some format -> format
+             | None ->
+-               error (f_"<volume><target>.<format type=\"format\"> attribute is missing from the libvirt XML of volume %s") vol in
++               error (f_"<volume><target><format type=\"format\"> attribute is missing from the libvirt XML of volume %s") vol in
+ 
+           (match xpath_string "/volume/@type" with
+           | None | Some "file" ->

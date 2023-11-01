@@ -1,0 +1,34 @@
+From c0c4fa145da8a1d7b423c6f54bdf94d270c633de Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 3 Dec 2020 10:06:29 +0000
+Subject: [PATCH] docs: Document how to remove "Out of HTTP sessions" limit.
+
+Thanks: Tamir
+(cherry picked from commit 00649e98be43b4b05a28c5c8c858a54ec4fe3e7a)
+---
+ docs/virt-v2v-input-vmware.pod | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/docs/virt-v2v-input-vmware.pod b/docs/virt-v2v-input-vmware.pod
+index e4df920e..ae8964dd 100644
+--- a/docs/virt-v2v-input-vmware.pod
++++ b/docs/virt-v2v-input-vmware.pod
+@@ -579,6 +579,18 @@ a stable IP address.  After that log in to the vCenter server’s admin
+ console at C<https://vcenter:5480/>.  Under the C<Admin> tab, select
+ C<Certificate regeneration enabled> and then reboot it.
+ 
++=head2 vCenter: "Out of HTTP sessions: Limited to ..."
++
++VMware vCenter appears to limit HTTP sessions and in some
++circumstances virt-v2v may exceed this number.  You can adjust or
++remove the limit by editing F</etc/vmware-vpx/vpxd.cfg> on the vCenter
++server.  Increase the C<E<lt>maxSessionCountE<gt>> field, or set it to
++C<0> which makes it unlimited:
++
++ <soap>
++   <maxSessionCount>0</maxSessionCount>
++ </soap>
++
+ =head1 SEE ALSO
+ 
+ L<virt-v2v(1)>.

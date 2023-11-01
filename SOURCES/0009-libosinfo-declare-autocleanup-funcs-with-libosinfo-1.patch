@@ -1,0 +1,41 @@
+From a8f3d2b2e87aead9f6a1db66dccebb6239ddf004 Mon Sep 17 00:00:00 2001
+From: Pino Toscano <ptoscano@redhat.com>
+Date: Fri, 19 Jun 2020 17:57:36 +0200
+Subject: [PATCH] libosinfo: declare autocleanup funcs with libosinfo < 1.8.0
+
+libosinfo 1.8.0 declares them automatically for all of its classes, so
+there is no need to declare ours. This requires fixing the definition of
+the IS_LIBOSINFO_VERSION macro to wrap its body in brackets.
+
+While in the process, simplify the workaround for a related bug by
+removing a now-useless check.
+
+(cherry picked from commit c1caf7132000a4560c3e20c2753978e8dd10036a)
+---
+ v2v/libosinfo-c.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/v2v/libosinfo-c.c b/v2v/libosinfo-c.c
+index 1ab6bb4d..497840c2 100644
+--- a/v2v/libosinfo-c.c
++++ b/v2v/libosinfo-c.c
+@@ -40,12 +40,18 @@
+ #define V2V_LIBOSINFO_VERSION_HEX \
+     MAKE_VERSION_HEX(OSINFO_MAJOR_VERSION, OSINFO_MINOR_VERSION, OSINFO_MICRO_VERSION)
+ #define IS_LIBOSINFO_VERSION(maj, min, mic) \
+-    V2V_LIBOSINFO_VERSION_HEX >= MAKE_VERSION_HEX(maj, min, mic)
++    (V2V_LIBOSINFO_VERSION_HEX >= MAKE_VERSION_HEX(maj, min, mic))
+ 
++/*
++ * libosinfo 1.8.0 provides auto-cleanup functions for all its classes,
++ * so avoid declaring our own.
++ */
++#if !IS_LIBOSINFO_VERSION(1, 8, 0)
+ G_DEFINE_AUTOPTR_CLEANUP_FUNC(OsinfoFilter, g_object_unref)
+ G_DEFINE_AUTOPTR_CLEANUP_FUNC(OsinfoLoader, g_object_unref)
+ G_DEFINE_AUTOPTR_CLEANUP_FUNC(OsinfoList, g_object_unref)
+ G_DEFINE_AUTOPTR_CLEANUP_FUNC(OsinfoOsList, g_object_unref)
++#endif
+ 
+ typedef OsinfoDb *OsinfoDb_t;
+ typedef OsinfoOs *OsinfoOs_t;

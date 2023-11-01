@@ -1,0 +1,25 @@
+From e8d3beabfba4b309296569e84b275724e3cd9709 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Wed, 30 Jun 2021 16:18:20 +0100
+Subject: [PATCH] RHEL 8: docs: Fix version of virt-v2v which added UEFI for
+ OpenStack
+
+Reported-by: Tingting Zheng
+Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=1872100#c7
+---
+ docs/virt-v2v-support.pod | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/docs/virt-v2v-support.pod b/docs/virt-v2v-support.pod
+index 1ffc0f9d..a9bfffab 100644
+--- a/docs/virt-v2v-support.pod
++++ b/docs/virt-v2v-support.pod
+@@ -38,7 +38,7 @@ hypervisor, else you will have to adjust paths in the metadata.
+ 
+ =item UEFI on OpenStack
+ 
+-Supported since virt-v2v E<ge> 1.43.2.
++Supported since virt-v2v E<ge> 1.42.0-7.
+ 
+ =item UEFI on oVirt or RHV
+ 

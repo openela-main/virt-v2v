@@ -1,0 +1,385 @@
+From 186c237ac1cb6f6830cfe2d08dfdcfdbdffab264 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 6 Apr 2020 10:19:12 +0100
+Subject: [PATCH] v2v: Allow large temporary directory to be set on a global
+ basis.
+
+Previously we placed large files in g#get_cachedir () (usually
+/var/tmp).  However the problem is this ties the libguestfs appliance
+and the virt-v2v overlay files to the same location.
+
+When virt-v2v is run in a container, or any other situation where
+local storage is limited, it's helpful to be able to put the overlay
+files on an externally mounted PVC, which might be using NFS and
+shared between containers.  But putting the libguestfs appliance on
+NFS in a shared location is certainly not recommended.
+
+This allows the two locations to be set separately:
+
+  VIRT_V2V_TMPDIR - location of large temporary files, can use NFS
+                    and may be shared
+
+  LIBGUESTFS_CACHEDIR - location of libguestfs appliance
+
+Another motivation for this patch is to allow more reliable cleanup of
+large temporary files by an external process, as described in the
+updated documentation.
+
+Small temporary files are placed in $TMPDIR (usually /tmp).  I cleaned
+up some existing code which used /var/tmp for small temporaries.
+
+(cherry picked from commit 717b808bc5cb632778973eb000600e87eaf5c31a)
+---
+ docs/virt-v2v.pod        | 27 +++++++++++++++++++--------
+ v2v/input_ova.ml         |  4 ++--
+ v2v/input_vmx.ml         |  3 +--
+ v2v/output_glance.ml     |  3 +--
+ v2v/output_null.ml       |  3 +--
+ v2v/output_rhv_upload.ml | 29 ++++++++++++++++-------------
+ v2v/parse_ova.ml         |  6 ++----
+ v2v/python_script.ml     | 12 +++---------
+ v2v/python_script.mli    |  5 +----
+ v2v/utils.ml             |  6 +++++-
+ v2v/utils.mli            |  5 +++++
+ v2v/v2v.ml               | 14 ++++++--------
+ 12 files changed, 62 insertions(+), 55 deletions(-)
+
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index 6f9f323e..af69d633 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -1172,8 +1172,8 @@ possible.
+ =head3 Disk space
+ 
+ Virt-v2v places potentially large temporary files in
+-C<$LIBGUESTFS_CACHEDIR> (which is F</var/tmp> if you don't set it).
+-Using tmpfs is a bad idea.
++C<$VIRT_V2V_TMPDIR> (usually F</var/tmp>, see also
++L</ENVIRONMENT VARIBLES> below).  Using tmpfs is a bad idea.
+ 
+ For each guest disk, an overlay is stored temporarily.  This stores
+ the changes made during conversion, and is used as a cache.  The
+@@ -1186,12 +1186,12 @@ and output methods may use disk space, as outlined in the table below.
+ =item I<-i ova>
+ 
+ This temporarily places a full copy of the uncompressed source disks
+-in C<$LIBGUESTFS_CACHEDIR> (or F</var/tmp>).
++in C<$VIRT_V2V_TMPDIR> (or F</var/tmp>).
+ 
+ =item I<-o glance>
+ 
+ This temporarily places a full copy of the output disks in
+-C<$LIBGUESTFS_CACHEDIR> (or F</var/tmp>).
++C<$VIRT_V2V_TMPDIR> (or F</var/tmp>).
+ 
+ =item I<-o local>
+ 
+@@ -1311,7 +1311,7 @@ have at least 100 available inodes.
+ =head3 Minimum free space check in the host
+ 
+ You must have sufficient free space in the host directory used to
+-store temporary overlays.  To find out
++store large temporary overlays.  To find out
+ which directory this is, use:
+ 
+  $ df -h "`guestfish get-cachedir`"
+@@ -1319,9 +1319,12 @@ which directory this is, use:
+  /dev/mapper/root   50G   40G  6.8G  86% /
+ 
+ and look under the C<Avail> column.  Virt-v2v will refuse to do the
+-conversion at all unless at least 1GB is available there.
++conversion at all unless at least 1GB is available there.  You can
++change the directory that virt-v2v uses by setting
++C<$VIRT_V2V_TMPDIR>.
+ 
+-See also L</Resource requirements> above.
++See also L</Resource requirements> above and L</ENVIRONMENT VARIABLES>
++below.
+ 
+ =head2 Running virt-v2v as root or non-root
+ 
+@@ -1496,10 +1499,18 @@ conversion.
+ 
+ =over 4
+ 
++=item C<VIRT_V2V_TMPDIR>
++
+ =item C<LIBGUESTFS_CACHEDIR>
+ 
+ Location of the temporary directory used for the potentially large
+-temporary overlay file.  If not set, F</var/tmp> is used.
++temporary overlay file.  If neither environment variable is set then
++F</var/tmp> is used.
++
++To reliably ensure large temporary files are cleaned up (for example
++in case virt-v2v crashes) you should create a randomly named directory
++under F</var/tmp>, set C<VIRT_V2V_TMPDIR> to point to this directory,
++then when virt-v2v exits remove the directory.
+ 
+ See the L</Disk space> section above.
+ 
+diff --git a/v2v/input_ova.ml b/v2v/input_ova.ml
+index 5d3bece1..d78a5ce8 100644
+--- a/v2v/input_ova.ml
++++ b/v2v/input_ova.ml
+@@ -132,8 +132,8 @@ class input_ova ova = object
+            (* The spec allows the file to be gzip-compressed, in
+             * which case we must uncompress it into a temporary.
+             *)
+-           let temp_dir = (open_guestfs ())#get_cachedir () in
+-           let new_filename = Filename.temp_file ~temp_dir "ova" ".vmdk" in
++           let new_filename =
++             Filename.temp_file ~temp_dir:Utils.large_tmpdir "ova" ".vmdk" in
+            unlink_on_exit new_filename;
+            let cmd =
+              sprintf "zcat %s > %s" (quote filename) (quote new_filename) in
+diff --git a/v2v/input_vmx.ml b/v2v/input_vmx.ml
+index f1d143e9..7a7647e5 100644
+--- a/v2v/input_vmx.ml
++++ b/v2v/input_vmx.ml
+@@ -389,8 +389,7 @@ and find_nics vmx =
+ 
+ class input_vmx input_password input_transport arg =
+   let tmpdir =
+-    let base_dir = (open_guestfs ())#get_cachedir () in
+-    let t = Mkdtemp.temp_dir ~base_dir "vmx." in
++    let t = Mkdtemp.temp_dir "vmx." in
+     rmdir_on_exit t;
+     t in
+ object
+diff --git a/v2v/output_glance.ml b/v2v/output_glance.ml
+index 0a9e9181..e8facd0a 100644
+--- a/v2v/output_glance.ml
++++ b/v2v/output_glance.ml
+@@ -33,8 +33,7 @@ class output_glance () =
+    * to write to a temporary file.  XXX
+    *)
+   let tmpdir =
+-    let base_dir = (open_guestfs ())#get_cachedir () in
+-    let t = Mkdtemp.temp_dir ~base_dir "glance." in
++    let t = Mkdtemp.temp_dir ~base_dir:large_tmpdir "glance." in
+     rmdir_on_exit t;
+     t in
+ object
+diff --git a/v2v/output_null.ml b/v2v/output_null.ml
+index 3528da50..edb749ea 100644
+--- a/v2v/output_null.ml
++++ b/v2v/output_null.ml
+@@ -75,8 +75,7 @@ class output_null =
+    * the null-co device w/ a JSON URL.
+    *)
+   let tmpdir =
+-    let base_dir = (open_guestfs ())#get_cachedir () in
+-    let t = Mkdtemp.temp_dir ~base_dir "null." in
++    let t = Mkdtemp.temp_dir ~base_dir:large_tmpdir "null." in
+     rmdir_on_exit t;
+     t in
+ object
+diff --git a/v2v/output_rhv_upload.ml b/v2v/output_rhv_upload.ml
+index 81896e53..913992d9 100644
+--- a/v2v/output_rhv_upload.ml
++++ b/v2v/output_rhv_upload.ml
+@@ -148,25 +148,28 @@ class output_rhv_upload output_alloc output_conn
+                         rhv_options =
+   (* Create a temporary directory which will be deleted on exit. *)
+   let tmpdir =
+-    let base_dir = (open_guestfs ())#get_cachedir () in
+-    let t = Mkdtemp.temp_dir ~base_dir "rhvupload." in
++    let t = Mkdtemp.temp_dir "rhvupload." in
+     rmdir_on_exit t;
+     t in
+ 
+   let diskid_file_of_id id = tmpdir // sprintf "diskid.%d" id in
+ 
+   (* Create Python scripts for precheck, vmcheck, plugin and create VM. *)
+-  let py_create = Python_script.create ~tmpdir in
+-  let precheck_script = py_create ~name:"rhv-upload-precheck.py"
+-                        Output_rhv_upload_precheck_source.code in
+-  let vmcheck_script = py_create ~name:"rhv-upload-vmcheck.py"
+-                       Output_rhv_upload_vmcheck_source.code in
+-  let plugin_script = py_create ~name:"rhv-upload-plugin.py"
+-                      Output_rhv_upload_plugin_source.code in
+-  let createvm_script = py_create ~name:"rhv-upload-createvm.py"
+-                        Output_rhv_upload_createvm_source.code in
+-  let deletedisks_script = py_create ~name:"rhv-upload-deletedisks.py"
+-                           Output_rhv_upload_deletedisks_source.code in
++  let precheck_script =
++    Python_script.create ~name:"rhv-upload-precheck.py"
++      Output_rhv_upload_precheck_source.code in
++  let vmcheck_script =
++    Python_script.create ~name:"rhv-upload-vmcheck.py"
++      Output_rhv_upload_vmcheck_source.code in
++  let plugin_script =
++    Python_script.create ~name:"rhv-upload-plugin.py"
++      Output_rhv_upload_plugin_source.code in
++  let createvm_script =
++    Python_script.create ~name:"rhv-upload-createvm.py"
++      Output_rhv_upload_createvm_source.code in
++  let deletedisks_script =
++    Python_script.create ~name:"rhv-upload-deletedisks.py"
++      Output_rhv_upload_deletedisks_source.code in
+ 
+   (* JSON parameters which are invariant between disks. *)
+   let json_params = [
+diff --git a/v2v/parse_ova.ml b/v2v/parse_ova.ml
+index 0b939ac4..568ac5fa 100644
+--- a/v2v/parse_ova.ml
++++ b/v2v/parse_ova.ml
+@@ -71,8 +71,7 @@ let rec parse_ova ova =
+     if is_directory ova then ova, Directory
+     else (
+       let tmpdir =
+-        let base_dir = (open_guestfs ())#get_cachedir () in
+-        let t = Mkdtemp.temp_dir ~base_dir "ova." in
++        let t = Mkdtemp.temp_dir ~base_dir:large_tmpdir "ova." in
+         rmdir_on_exit t;
+         t in
+ 
+@@ -221,8 +220,7 @@ and uncompress_head format file =
+  *)
+ and uncompressed_type format file =
+   let head, headlen = uncompress_head format file in
+-  let tmpfile, chan =
+-    Filename.open_temp_file "ova.file." "" in
++  let tmpfile, chan = Filename.open_temp_file "ova.file." "" in
+   output chan head 0 headlen;
+   close_out chan;
+   let ret = detect_file_type tmpfile in
+diff --git a/v2v/python_script.ml b/v2v/python_script.ml
+index b1ea8f9d..212c8e1b 100644
+--- a/v2v/python_script.ml
++++ b/v2v/python_script.ml
+@@ -31,15 +31,9 @@ type script = {
+   path : string;                (* Path to script. *)
+ }
+ 
+-let create ?(name = "script.py") ?tmpdir code =
+-  let tmpdir =
+-    match tmpdir with
+-    | None ->
+-      let base_dir = (open_guestfs ())#get_cachedir () in
+-      let t = Mkdtemp.temp_dir ~base_dir "v2v." in
+-      rmdir_on_exit t;
+-      t
+-    | Some dir -> dir in
++let create ?(name = "script.py") code =
++  let tmpdir = Mkdtemp.temp_dir "v2v." in
++  rmdir_on_exit tmpdir;
+   let path = tmpdir // name in
+   with_open_out path (fun chan -> output_string chan code);
+   { tmpdir; path }
+diff --git a/v2v/python_script.mli b/v2v/python_script.mli
+index 6bf77e34..fdf73514 100644
+--- a/v2v/python_script.mli
++++ b/v2v/python_script.mli
+@@ -20,14 +20,11 @@
+ 
+ type script
+ 
+-val create : ?name:string -> ?tmpdir:string -> string -> script
++val create : ?name:string -> string -> script
+ (** Create a Python script object.
+ 
+     The optional parameter [?name] is a hint for the name of the script.
+ 
+-    The optional parameter [?tmpdir] is the temporary directory to use
+-    (instead of creating a new one).
+-
+     The parameter is the Python code.  Usually this is
+     [Some_source.code] where [some_source.ml] is generated from
+     the Python file by [v2v/embed.sh] (see also [v2v/Makefile.am]). *)
+diff --git a/v2v/utils.ml b/v2v/utils.ml
+index c2940582..a6c359f0 100644
+--- a/v2v/utils.ml
++++ b/v2v/utils.ml
+@@ -24,6 +24,10 @@ open Std_utils
+ open Tools_utils
+ open Common_gettext.Gettext
+ 
++let large_tmpdir =
++  try Sys.getenv "VIRT_V2V_TMPDIR"
++  with Not_found -> (open_guestfs ())#get_cachedir ()
++
+ (* Is SELinux enabled and enforcing on the host? *)
+ let have_selinux =
+   0 = Sys.command "getenforce 2>/dev/null | grep -isq Enforcing"
+@@ -114,6 +118,7 @@ let qemu_img_supports_offset_and_size () =
+    * file that has an offset and size.
+    *)
+   let tmp = Filename.temp_file "v2vqemuimgtst" ".img" in
++  unlink_on_exit tmp;
+   Unix.truncate tmp 1024;
+ 
+   let json = [
+@@ -133,7 +138,6 @@ let qemu_img_supports_offset_and_size () =
+             (if verbose () then "" else " 2>&1") in
+   debug "%s" cmd;
+   let r = 0 = Sys.command cmd in
+-  Unix.unlink tmp;
+   debug "qemu-img supports \"offset\" and \"size\" in json URLs: %b" r;
+   r
+ 
+diff --git a/v2v/utils.mli b/v2v/utils.mli
+index 937e2b9b..d86ca507 100644
+--- a/v2v/utils.mli
++++ b/v2v/utils.mli
+@@ -18,6 +18,11 @@
+ 
+ (** Utilities used in virt-v2v only. *)
+ 
++val large_tmpdir : string
++(** [VIRT_V2V_TMPDIR] or [/var/tmp].  Create all large temporary files
++    such as overlays in this directory.  Small temporary files can
++    use the default behaviour eg. of {!Filename.temp_file} *)
++
+ val have_selinux : bool
+ (** True if SELinux is enabled and enforcing on the host. *)
+ 
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index 73edff2c..a58ff433 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -264,8 +264,6 @@ and set_source_networks_and_bridges cmdline source =
+   let nics = List.map (Networks.map cmdline.network_map) source.s_nics in
+   { source with s_nics = nics }
+ 
+-and overlay_dir = (open_guestfs ())#get_cachedir ()
+-
+ (* Conversion can fail or hang if there is insufficient free space in
+  * the temporary directory used to store overlays on the host
+  * (RHBZ#1316479).  Although only a few hundred MB is actually
+@@ -273,12 +271,12 @@ and overlay_dir = (open_guestfs ())#get_cachedir ()
+  * guestfs appliance which is also stored here.
+  *)
+ and check_host_free_space () =
+-  let free_space = StatVFS.free_space (StatVFS.statvfs overlay_dir) in
+-  debug "check_host_free_space: overlay_dir=%s free_space=%Ld"
+-        overlay_dir free_space;
++  let free_space = StatVFS.free_space (StatVFS.statvfs large_tmpdir) in
++  debug "check_host_free_space: large_tmpdir=%s free_space=%Ld"
++        large_tmpdir free_space;
+   if free_space < 1_073_741_824L then
+     error (f_"insufficient free space in the conversion server temporary directory %s (%s).\n\nEither free up space in that directory, or set the LIBGUESTFS_CACHEDIR environment variable to point to another directory with more than 1GB of free space.\n\nSee also the virt-v2v(1) manual, section \"Minimum free space check in the host\".")
+-          overlay_dir (human_size free_space)
++          large_tmpdir (human_size free_space)
+ 
+ (* Create a qcow2 v3 overlay to protect the source image(s). *)
+ and create_overlays source_disks =
+@@ -286,7 +284,7 @@ and create_overlays source_disks =
+   List.mapi (
+     fun i ({ s_qemu_uri = qemu_uri; s_format = format } as source) ->
+       let overlay_file =
+-        Filename.temp_file ~temp_dir:overlay_dir "v2vovl" ".qcow2" in
++        Filename.temp_file ~temp_dir:large_tmpdir "v2vovl" ".qcow2" in
+       unlink_on_exit overlay_file;
+ 
+       (* There is a specific reason to use the newer qcow2 variant:
+@@ -823,7 +821,7 @@ and preserve_overlays overlays src_name =
+   List.iter (
+     fun ov ->
+       let saved_filename =
+-        sprintf "%s/%s-%s.qcow2" overlay_dir src_name ov.ov_sd in
++        sprintf "%s/%s-%s.qcow2" large_tmpdir src_name ov.ov_sd in
+       rename ov.ov_overlay_file saved_filename;
+       info (f_"Overlay saved as %s [--debug-overlays]") saved_filename
+   ) overlays

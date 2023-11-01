@@ -1,0 +1,39 @@
+From e12604349587b67b3b4c3d0b7b1779999460a93d Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 19 Jun 2020 13:43:47 +0100
+Subject: [PATCH] v2v: Disable readahead for VMware curl sources too
+ (RHBZ#1848862).
+
+This appears to be the cause of timeouts during the conversion step
+where VMware VCenter server's Tomcat HTTPS server stops responding to
+requests (or rather, responds only with 503 errors).  The server later
+recovers and in fact because of the retry filter the conversion
+usually succeeds, but I found that we can avoid the problem by
+disabling readahead.
+
+(cherry picked from commit 9f4940068022d4e7abdfea6617b73a2b206f19aa)
+---
+ v2v/nbdkit_sources.ml | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/v2v/nbdkit_sources.ml b/v2v/nbdkit_sources.ml
+index f5e91911..7c177e35 100644
+--- a/v2v/nbdkit_sources.ml
++++ b/v2v/nbdkit_sources.ml
+@@ -99,12 +99,12 @@ let common_create ?bandwidth ?extra_debug ?extra_env password
+ 
+   (* Adding the readahead filter is always a win for our access
+    * patterns.  If it doesn't exist don't worry.  However it
+-   * breaks VMware servers (RHBZ#1832805).
++   * breaks VMware servers (RHBZ#1832805, RHBZ#1848862).
+    *)
+   let cmd =
+-    if plugin_name <> "vddk" then
+-      Nbdkit.add_filter_if_available cmd "readahead"
+-    else cmd in
++    match plugin_name with
++    | "vddk" | "curl" -> cmd
++    | _ -> Nbdkit.add_filter_if_available cmd "readahead" in
+ 
+   (* Caching extents speeds up qemu-img, especially its consecutive
+    * block_status requests with req_one=1.

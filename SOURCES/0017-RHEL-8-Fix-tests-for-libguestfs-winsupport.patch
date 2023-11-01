@@ -1,0 +1,76 @@
+From d6b625021e4bc1662b796e8c2f2a646d118f9fa1 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Sun, 30 Aug 2015 03:21:57 -0400
+Subject: [PATCH] RHEL 8: Fix tests for libguestfs-winsupport.
+
+It doesn't let us use guestfish for arbitrary Windows edits.
+---
+ test-data/phony-guests/make-windows-img.sh | 1 +
+ tests/test-v2v-virtio-win-iso.sh           | 8 +++++++-
+ tests/test-v2v-windows-conversion.sh       | 8 +++++++-
+ 3 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/test-data/phony-guests/make-windows-img.sh b/test-data/phony-guests/make-windows-img.sh
+index 30908a91..73cf5144 100755
+--- a/test-data/phony-guests/make-windows-img.sh
++++ b/test-data/phony-guests/make-windows-img.sh
+@@ -37,6 +37,7 @@ fi
+ 
+ # Create a disk image.
+ guestfish <<EOF
++set-program virt-testing
+ sparse windows.img-t 512M
+ run
+ 
+diff --git a/tests/test-v2v-virtio-win-iso.sh b/tests/test-v2v-virtio-win-iso.sh
+index 6e99f0f1..a8e572c5 100755
+--- a/tests/test-v2v-virtio-win-iso.sh
++++ b/tests/test-v2v-virtio-win-iso.sh
+@@ -79,6 +79,12 @@ mktest ()
+ :> "$script"
+ :> "$expected"
+ 
++cat >> "$script" <<EOF
++  set-program virt-testing
++  run
++  mount /dev/sda2 /
++EOF
++
+ firstboot_dir="/Program Files/Guestfs/Firstboot"
+ mktest "is-dir \"$firstboot_dir\"" true
+ mktest "is-file \"$firstboot_dir/firstboot.bat\"" true
+@@ -91,7 +97,7 @@ for drv in netkvm vioscsi viostor; do
+     done
+ done
+ 
+-guestfish --ro -a "$d/windows-sda" -i < "$script" > "$response"
++guestfish --ro -a "$d/windows-sda" < "$script" > "$response"
+ diff -u "$expected" "$response"
+ 
+ rm -r $d
+diff --git a/tests/test-v2v-windows-conversion.sh b/tests/test-v2v-windows-conversion.sh
+index f1da222a..ff94fe39 100755
+--- a/tests/test-v2v-windows-conversion.sh
++++ b/tests/test-v2v-windows-conversion.sh
+@@ -73,6 +73,12 @@ mktest ()
+ :> "$script"
+ :> "$expected"
+ 
++cat >> "$script" <<EOF
++  set-program virt-testing
++  run
++  mount /dev/sda2 /
++EOF
++
+ firstboot_dir="/Program Files/Guestfs/Firstboot"
+ mktest "is-dir \"$firstboot_dir\"" true
+ mktest "is-file \"$firstboot_dir/firstboot.bat\"" true
+@@ -85,7 +91,7 @@ for drv in netkvm qxl vioscsi viostor; do
+     done
+ done
+ 
+-guestfish --ro -a "$d/windows-sda" -i < "$script" > "$response"
++guestfish --ro -a "$d/windows-sda" < "$script" > "$response"
+ diff -u "$expected" "$response"
+ 
+ # We also update the Registry several times, for firstboot, and (ONLY

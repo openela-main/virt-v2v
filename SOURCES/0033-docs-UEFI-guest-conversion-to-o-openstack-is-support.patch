@@ -1,0 +1,24 @@
+From 6fb69c6239902cd4462b6c28bc82118cbf9643f2 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 25 Aug 2020 08:27:42 +0100
+Subject: [PATCH] docs: UEFI guest conversion to -o openstack is supported
+ (RHBZ#1872100).
+
+(cherry picked from commit db4e673df51d1235a040dc4a4782268743523e5a)
+---
+ docs/virt-v2v-support.pod | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/docs/virt-v2v-support.pod b/docs/virt-v2v-support.pod
+index a5150907..1ffc0f9d 100644
+--- a/docs/virt-v2v-support.pod
++++ b/docs/virt-v2v-support.pod
+@@ -38,7 +38,7 @@ hypervisor, else you will have to adjust paths in the metadata.
+ 
+ =item UEFI on OpenStack
+ 
+-Not supported.
++Supported since virt-v2v E<ge> 1.43.2.
+ 
+ =item UEFI on oVirt or RHV
+ 

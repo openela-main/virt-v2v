@@ -1,0 +1,24 @@
+From ca86a08fe00a56a21d239cb6d1ca6dc9f8ff28fa Mon Sep 17 00:00:00 2001
+From: Pino Toscano <ptoscano@redhat.com>
+Date: Sun, 16 Dec 2018 16:42:46 +0100
+Subject: [PATCH] RHEL 8: use platform-python
+
+Use the stable platform-python provided in BaseOS, instead of relying on
+some arbitrary version installed by the user.
+---
+ v2v/python_script.ml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/v2v/python_script.ml b/v2v/python_script.ml
+index 33c5e9a2..b1ea8f9d 100644
+--- a/v2v/python_script.ml
++++ b/v2v/python_script.ml
+@@ -24,7 +24,7 @@ open Unix_utils
+ 
+ open Common_gettext.Gettext
+ 
+-let python = "python3"          (* Defined by PEP 394 *)
++let python = "/usr/libexec/platform-python"
+ 
+ type script = {
+   tmpdir : string;              (* Temporary directory. *)

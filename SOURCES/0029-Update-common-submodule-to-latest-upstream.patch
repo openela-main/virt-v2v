@@ -1,0 +1,447 @@
+From 9292a4637e8f4d534f4dde70e8e5451f61ad0162 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 19 Jan 2021 14:22:33 +0000
+Subject: [PATCH] Update common/ submodule to latest upstream.
+
+Only for RHEL AV 8.4.0, allowing this branch to be compiled
+from git with libguestfs 1.44.
+---
+ common | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Submodule common 9338df5e...be09523d:
+diff --git a/common/mlcustomize/SELinux_relabel.ml b/common/mlcustomize/SELinux_relabel.ml
+index 44995df6..5ecf7bd7 100644
+--- a/common/mlcustomize/SELinux_relabel.ml
++++ b/common/mlcustomize/SELinux_relabel.ml
+@@ -28,65 +28,80 @@ module G = Guestfs
+ let array_find a l =
+   List.mem a (Array.to_list l)
+ 
+-let relabel (g : G.guestfs) =
+-  (* Is the guest using SELinux? *)
+-  if g#is_file ~followsymlinks:true "/usr/sbin/load_policy" &&
+-     g#is_file ~followsymlinks:true "/etc/selinux/config" then (
+-    (* Is setfiles / SELinux relabelling functionality available? *)
+-    if g#feature_available [| "selinuxrelabel" |] then (
+-      (* Use Augeas to parse /etc/selinux/config. *)
+-      g#aug_init "/" (16+32) (* AUG_SAVE_NOOP | AUG_NO_LOAD *);
+-      (* See: https://bugzilla.redhat.com/show_bug.cgi?id=975412#c0 *)
+-      ignore (g#aug_rm "/augeas/load/*[\"/etc/selinux/config/\" !~ regexp('^') + glob(incl) + regexp('/.*')]");
+-      g#aug_load ();
+-      debug_augeas_errors g;
+-
+-      (* Get the SELinux policy name, eg. "targeted", "minimum".
+-       * Use "targeted" if not specified, just like libselinux does.
+-       *)
+-      let policy =
+-        let config_path = "/files/etc/selinux/config" in
+-        let selinuxtype_path = config_path ^ "/SELINUXTYPE" in
+-        let keys = g#aug_ls config_path in
+-        if array_find selinuxtype_path keys then
+-          g#aug_get selinuxtype_path
+-        else
+-          "targeted" in
+-
+-      g#aug_close ();
+-
+-      (* Get the spec file name. *)
+-      let specfile =
+-        sprintf "/etc/selinux/%s/contexts/files/file_contexts" policy in
+-
+-      (* RHEL 6.2 - 6.5 had a malformed specfile that contained the
+-       * invalid regular expression "/var/run/spice-vdagentd.\pid"
+-       * (instead of "\.p").  This stops setfiles from working on
+-       * the guest.
+-       *
+-       * Because an SELinux relabel writes all over the filesystem,
+-       * it seems reasonable to fix this problem in the specfile
+-       * at the same time.  (RHBZ#1374232)
+-       *)
+-      if g#grep ~fixed:true "vdagentd.\\pid" specfile <> [||] then (
+-        debug "fixing invalid regular expression in %s" specfile;
+-        let old_specfile = specfile ^ "~" in
+-        g#mv specfile old_specfile;
+-        let content = g#read_file old_specfile in
+-        let content =
+-          String.replace content "vdagentd.\\pid" "vdagentd\\.pid" in
+-        g#write specfile content;
+-        g#copy_attributes ~all:true old_specfile specfile
+-      );
+-
+-      (* Relabel everything. *)
+-      g#selinux_relabel ~force:true specfile "/";
+-
+-      (* If that worked, we don't need to autorelabel. *)
++let rec relabel (g : G.guestfs) =
++  (* Is the guest using SELinux?  (Otherwise this is a no-op). *)
++  if is_selinux_guest g then (
++    try
++      use_setfiles g;
++      (* That worked, so we don't need to autorelabel. *)
+       g#rm_f "/.autorelabel"
+-    )
+-    else (
+-      (* SELinux guest, but not SELinux host.  Fallback to this. *)
++    with Failure _ ->
++      (* This is the fallback in case something in the setfiles
++       * method didn't work.  That includes the case where a non-SELinux
++       * host is processing an SELinux guest, and other things.
++       *)
+       g#touch "/.autorelabel"
+-    )
+   )
++
++and is_selinux_guest g =
++  g#is_file ~followsymlinks:true "/usr/sbin/load_policy" &&
++  g#is_file ~followsymlinks:true "/etc/selinux/config"
++
++and use_setfiles g =
++  (* Is setfiles / SELinux relabelling functionality available? *)
++  if not (g#feature_available [| "selinuxrelabel" |]) then
++    failwith "no selinux relabel feature";
++
++  (* Use Augeas to parse /etc/selinux/config. *)
++  g#aug_init "/" (16+32) (* AUG_SAVE_NOOP | AUG_NO_LOAD *);
++  (* See: https://bugzilla.redhat.com/show_bug.cgi?id=975412#c0 *)
++  ignore (g#aug_rm "/augeas/load/*[\"/etc/selinux/config/\" !~ regexp('^') + glob(incl) + regexp('/.*')]");
++  g#aug_load ();
++  debug_augeas_errors g;
++
++  (* Get the SELinux policy name, eg. "targeted", "minimum".
++   * Use "targeted" if not specified, just like libselinux does.
++   *)
++  let policy =
++    let config_path = "/files/etc/selinux/config" in
++    let selinuxtype_path = config_path ^ "/SELINUXTYPE" in
++    let keys = g#aug_ls config_path in
++    if array_find selinuxtype_path keys then
++      g#aug_get selinuxtype_path
++    else
++      "targeted" in
++
++  g#aug_close ();
++
++  (* Get the spec file name. *)
++  let specfile =
++    sprintf "/etc/selinux/%s/contexts/files/file_contexts" policy in
++
++  (* If the spec file doesn't exist then fall back to using
++   * autorelabel (RHBZ#1828952).
++   *)
++  if not (g#is_file ~followsymlinks:true specfile) then
++    failwith "no spec file";
++
++  (* RHEL 6.2 - 6.5 had a malformed specfile that contained the
++   * invalid regular expression "/var/run/spice-vdagentd.\pid"
++   * (instead of "\.p").  This stops setfiles from working on
++   * the guest.
++   *
++   * Because an SELinux relabel writes all over the filesystem,
++   * it seems reasonable to fix this problem in the specfile
++   * at the same time.  (RHBZ#1374232)
++   *)
++  if g#grep ~fixed:true "vdagentd.\\pid" specfile <> [||] then (
++    debug "fixing invalid regular expression in %s" specfile;
++    let old_specfile = specfile ^ "~" in
++    g#mv specfile old_specfile;
++    let content = g#read_file old_specfile in
++    let content =
++      String.replace content "vdagentd.\\pid" "vdagentd\\.pid" in
++    g#write specfile content;
++    g#copy_attributes ~all:true old_specfile specfile
++  );
++
++  (* Relabel everything. *)
++  g#selinux_relabel ~force:true specfile "/"
+diff --git a/common/mltools/Makefile.am b/common/mltools/Makefile.am
+index 3b4172db..aea2dce9 100644
+--- a/common/mltools/Makefile.am
++++ b/common/mltools/Makefile.am
+@@ -95,6 +95,7 @@ libmltools_a_CPPFLAGS = \
+ 	-I$(shell $(OCAMLC) -where) \
+ 	-I$(top_srcdir)/common/utils \
+ 	-I$(top_srcdir)/lib \
++	$(INCLUDE_DIRECTORY) \
+ 	-I$(top_srcdir)/common/options \
+ 	-I$(top_srcdir)/common/mlgettext \
+ 	-I$(top_srcdir)/common/mlpcre \
+diff --git a/common/mltools/tools_utils.ml b/common/mltools/tools_utils.ml
+index 12718022..d54ec581 100644
+--- a/common/mltools/tools_utils.ml
++++ b/common/mltools/tools_utils.ml
+@@ -679,3 +679,53 @@ let with_timeout op timeout ?(sleep = 2) fn =
+        loop ()
+   in
+   loop ()
++
++let run_in_guest_command g root ?logfile ?incompatible_fn cmd =
++  (* Is the host_cpu compatible with the guest arch?  ie. Can we
++   * run commands in this guest?
++   *)
++  let guest_arch = g#inspect_get_arch root in
++  let guest_arch_compatible = guest_arch_compatible guest_arch in
++  if not guest_arch_compatible then (
++    match incompatible_fn with
++    | None -> ()
++    | Some fn -> fn ()
++  )
++  else (
++    (* Add a prologue to the scripts:
++     * - Pass environment variables through from the host.
++     * - Optionally send stdout and stderr to a log file so we capture
++     *   all output in error messages.
++     * - Use setarch when running x86_64 host + i686 guest.
++     *)
++    let env_vars =
++      List.filter_map (
++        fun name ->
++          try Some (sprintf "export %s=%s" name (quote (Sys.getenv name)))
++          with Not_found -> None
++      ) [ "http_proxy"; "https_proxy"; "ftp_proxy"; "no_proxy" ] in
++    let env_vars = String.concat "\n" env_vars ^ "\n" in
++
++    let cmd =
++      match Guestfs_config.host_cpu, guest_arch with
++      | "x86_64", ("i386"|"i486"|"i586"|"i686") ->
++        sprintf "setarch i686 <<\"__EOCMD\"
++%s
++__EOCMD
++" cmd
++      | _ -> cmd in
++
++    let logfile_redirect =
++      match logfile with
++      | None -> ""
++      | Some logfile -> sprintf "exec >>%s 2>&1" (quote logfile) in
++
++    let cmd = sprintf "\
++%s
++%s
++%s
++" (logfile_redirect) env_vars cmd in
++
++    debug "running command:\n%s" cmd;
++    ignore (g#sh cmd)
++  )
+diff --git a/common/mltools/tools_utils.mli b/common/mltools/tools_utils.mli
+index ab70f583..1d1ac8a8 100644
+--- a/common/mltools/tools_utils.mli
++++ b/common/mltools/tools_utils.mli
+@@ -195,9 +195,8 @@ val is_btrfs_subvolume : Guestfs.guestfs -> string -> bool
+ (** Checks if a filesystem is a btrfs subvolume. *)
+ 
+ val inspect_decrypt : Guestfs.guestfs -> key_store -> unit
+-(** Simple implementation of decryption: look for any [crypto_LUKS]
+-    partitions and decrypt them, then rescan for VGs.  This only works
+-    for Fedora whole-disk encryption. *)
++(** Simple implementation of decryption: look for any encrypted
++    partitions and decrypt them, then rescan for VGs. *)
+ 
+ val with_timeout : string -> int -> ?sleep:int -> (unit -> 'a option) -> 'a
+ (** [with_timeout op timeout ?sleep fn] implements a timeout loop.
+@@ -212,3 +211,13 @@ val with_timeout : string -> int -> ?sleep:int -> (unit -> 'a option) -> 'a
+     calls {!error} and the program exits.  The error message will
+     contain the diagnostic string [op] to identify the operation
+     which timed out. *)
++
++val run_in_guest_command : Guestfs.guestfs -> string -> ?logfile:string -> ?incompatible_fn:(unit -> unit) -> string -> unit
++(** [run_in_guest_command g root ?incompatible_archs_fn cmd]
++    runs a command in the guest, which is already mounted for the
++    specified [root].  The command is run directly in case the
++    architecture of the host and the guest are compatible, optionally
++    calling [?incompatible_fn] in case they are not.
++
++    [?logfile] is an optional file in the guest to where redirect
++    stdout and stderr of the command. *)
+diff --git a/common/mlutils/unix_utils-c.c b/common/mlutils/unix_utils-c.c
+index 33099611..8acf0395 100644
+--- a/common/mlutils/unix_utils-c.c
++++ b/common/mlutils/unix_utils-c.c
+@@ -77,6 +77,7 @@ extern value guestfs_int_mllib_mkdtemp (value val_pattern);
+ extern value guestfs_int_mllib_realpath (value pathv);
+ extern value guestfs_int_mllib_statvfs_statvfs (value pathv);
+ extern value guestfs_int_mllib_statvfs_is_network_filesystem (value pathv);
++extern value guestfs_int_mllib_sysconf_nr_processors_online (value unitv);
+ 
+ /* NB: This is a "noalloc" call. */
+ value
+@@ -368,3 +369,17 @@ guestfs_int_mllib_statvfs_is_network_filesystem (value pathv)
+   return Val_bool (0);
+ #endif
+ }
++
++/* NB: This is a "noalloc" call. */
++value
++guestfs_int_mllib_sysconf_nr_processors_online (value unitv)
++{
++#ifdef _SC_NPROCESSORS_ONLN
++  long n;
++
++  n = sysconf (_SC_NPROCESSORS_ONLN);
++  if (n > 0) return Val_int (n);
++#endif
++  /* Return a safe value so that callers don't need to deal with errors. */
++  return Val_int (1);
++}
+diff --git a/common/mlutils/unix_utils.ml b/common/mlutils/unix_utils.ml
+index 52eb824d..2bdda12a 100644
+--- a/common/mlutils/unix_utils.ml
++++ b/common/mlutils/unix_utils.ml
+@@ -84,3 +84,8 @@ module StatVFS = struct
+   external is_network_filesystem : string -> bool =
+     "guestfs_int_mllib_statvfs_is_network_filesystem" "noalloc"
+ end
++
++module Sysconf = struct
++  external nr_processors_online : unit -> int =
++    "guestfs_int_mllib_sysconf_nr_processors_online" "noalloc"
++end
+diff --git a/common/mlutils/unix_utils.mli b/common/mlutils/unix_utils.mli
+index 4fcea4a3..aead4df2 100644
+--- a/common/mlutils/unix_utils.mli
++++ b/common/mlutils/unix_utils.mli
+@@ -121,3 +121,12 @@ module StatVFS : sig
+   (** [is_network_filesystem path] returns true if [path] is located on
+       a network filesystem such as NFS or CIFS. *)
+ end
++
++module Sysconf : sig
++  val nr_processors_online : unit -> int
++  (** [nr_processors_online ()] returns the number of processors
++      currently online, from [sysconf (_SC_NPROCESSORS_ONLN)].
++
++      Note this never fails.  In case we cannot get the number of
++      cores it returns 1. *)
++end
+diff --git a/common/options/Makefile.am b/common/options/Makefile.am
+index f7ea7493..162d143b 100644
+--- a/common/options/Makefile.am
++++ b/common/options/Makefile.am
+@@ -41,8 +41,9 @@ liboptions_la_SOURCES = \
+ liboptions_la_CPPFLAGS = \
+ 	-DGUESTFS_NO_DEPRECATED=1 \
+ 	-I$(top_srcdir)/common/utils -I$(top_builddir)/common/utils \
++	-I$(top_srcdir)/gnulib/lib -I$(top_builddir)/gnulib/lib \
+ 	-I$(top_srcdir)/lib -I$(top_builddir)/lib \
+-	-I$(top_srcdir)/gnulib/lib -I$(top_builddir)/gnulib/lib
++	$(INCLUDE_DIRECTORY)
+ liboptions_la_CFLAGS = \
+ 	$(WARN_CFLAGS) $(WERROR_CFLAGS) \
+ 	$(LIBCONFIG_CFLAGS) \
+diff --git a/common/options/decrypt.c b/common/options/decrypt.c
+index 683cf5ed..434b7d58 100644
+--- a/common/options/decrypt.c
++++ b/common/options/decrypt.c
+@@ -25,6 +25,7 @@
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <stdbool.h>
+ #include <string.h>
+ #include <libintl.h>
+ #include <error.h>
+@@ -38,18 +39,18 @@
+ 
+ /**
+  * Make a LUKS map name from the partition name,
+- * eg. C<"/dev/vda2" =E<gt> "luksvda2">
++ * eg. C<"/dev/vda2" =E<gt> "cryptvda2">
+  */
+ static void
+ make_mapname (const char *device, char *mapname, size_t len)
+ {
+   size_t i = 0;
+ 
+-  if (len < 5)
++  if (len < 6)
+     abort ();
+-  strcpy (mapname, "luks");
+-  mapname += 4;
+-  len -= 4;
++  strcpy (mapname, "crypt");
++  mapname += 5;
++  len -= 5;
+ 
+   if (STRPREFIX (device, "/dev/"))
+     i = 5;
+@@ -65,10 +66,8 @@ make_mapname (const char *device, char *mapname, size_t len)
+ }
+ 
+ /**
+- * Simple implementation of decryption: look for any C<crypto_LUKS>
+- * partitions and decrypt them, then rescan for VGs.  This only works
+- * for Fedora whole-disk encryption.  WIP to make this work for other
+- * encryption schemes.
++ * Simple implementation of decryption: look for any encrypted
++ * partitions and decrypt them, then rescan for VGs.
+  */
+ void
+ inspect_do_decrypt (guestfs_h *g, struct key_store *ks)
+@@ -82,12 +81,21 @@ inspect_do_decrypt (guestfs_h *g, struct key_store *ks)
+ 
+   for (i = 0; partitions[i] != NULL; ++i) {
+     CLEANUP_FREE char *type = guestfs_vfs_type (g, partitions[i]);
+-    if (type && STREQ (type, "crypto_LUKS")) {
++    if (type &&
++        (STREQ (type, "crypto_LUKS") || STREQ (type, "BitLocker"))) {
++      bool is_bitlocker = STREQ (type, "BitLocker");
+       char mapname[32];
+       make_mapname (partitions[i], mapname, sizeof mapname);
+ 
+ #ifdef GUESTFS_HAVE_LUKS_UUID
+-      CLEANUP_FREE char *uuid = guestfs_luks_uuid (g, partitions[i]);
++      CLEANUP_FREE char *uuid = NULL;
++
++      /* This fails for Windows BitLocker disks because cryptsetup
++       * luksUUID cannot read a UUID (unclear if this is a limitation
++       * of the format or cryptsetup).
++       */
++      if (!is_bitlocker)
++        uuid = guestfs_luks_uuid (g, partitions[i]);
+ #else
+       const char *uuid = NULL;
+ #endif
+@@ -97,11 +105,15 @@ inspect_do_decrypt (guestfs_h *g, struct key_store *ks)
+ 
+       /* Try each key in turn. */
+       for (j = 0; keys[j] != NULL; ++j) {
+-        /* XXX Should we call guestfs_luks_open_ro if readonly flag
++        /* XXX Should we set GUESTFS_CRYPTSETUP_OPEN_READONLY if readonly
+          * is set?  This might break 'mount_ro'.
+          */
+         guestfs_push_error_handler (g, NULL, NULL);
++#ifdef GUESTFS_HAVE_CRYPTSETUP_OPEN
++        r = guestfs_cryptsetup_open (g, partitions[i], keys[j], mapname, -1);
++#else
+         r = guestfs_luks_open (g, partitions[i], keys[j], mapname);
++#endif
+         guestfs_pop_error_handler (g);
+         if (r == 0)
+           goto opened;
+diff --git a/common/options/uri.c b/common/options/uri.c
+index ac36bccb..6b696fc2 100644
+--- a/common/options/uri.c
++++ b/common/options/uri.c
+@@ -194,6 +194,7 @@ parse (const char *arg, char **path_ret, char **protocol_ret,
+   if (path && path[0] == '/' &&
+       (STREQ (uri->scheme, "gluster") ||
+        STREQ (uri->scheme, "iscsi") ||
++       STREQ (uri->scheme, "nbd") ||
+        STREQ (uri->scheme, "rbd") ||
+        STREQ (uri->scheme, "sheepdog")))
+     path++;
+diff --git a/common/utils/guestfs-stringlists-utils.h b/common/utils/guestfs-stringlists-utils.h
+index 0bac1587..ade3b6f3 100644
+--- a/common/utils/guestfs-stringlists-utils.h
++++ b/common/utils/guestfs-stringlists-utils.h
+@@ -21,7 +21,8 @@
+ 
+ /* stringlists-utils.c */
+ extern void guestfs_int_free_string_list (char **);
+-extern size_t guestfs_int_count_strings (char *const *);
++extern size_t guestfs_int_count_strings (char *const *)
++  __attribute__((__nonnull__ (1)));
+ extern char *guestfs_int_concat_strings (char *const *);
+ extern char **guestfs_int_copy_string_list (char *const *);
+ extern char *guestfs_int_join_strings (const char *sep, char *const *);

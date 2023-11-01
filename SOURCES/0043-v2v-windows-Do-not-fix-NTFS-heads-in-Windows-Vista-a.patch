@@ -1,0 +1,77 @@
+From 72f50e52515369ef8decda9493422d6235f5b365 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Wed, 18 Aug 2021 11:00:12 +0100
+Subject: [PATCH] v2v: windows: Do not fix NTFS heads in Windows Vista and
+ later
+
+Setting/adjusting the number of drive heads in the NTFS header is only
+necessary for ancient versions of Windows.  Modern versions ignore
+this.  In addition this operation broke when we added BitLocker
+support.  Only do this for ancient Windows 2000/XP and skip it for
+everything else.
+
+Reported-by: Ming Xie
+Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=1994984
+(cherry picked from commit 0a394c5c2f802098c9e481b4bacee7821e5dd0ae)
+---
+ v2v/convert_windows.ml | 44 ++++++++++++++++++++++--------------------
+ 1 file changed, 23 insertions(+), 21 deletions(-)
+
+diff --git a/v2v/convert_windows.ml b/v2v/convert_windows.ml
+index 33fbd410..13de10cb 100644
+--- a/v2v/convert_windows.ml
++++ b/v2v/convert_windows.ml
+@@ -730,30 +730,32 @@ if errorlevel 3010 exit /b 0
+        however, as this is specific to Windows 2003 it lists location
+        0x1A as unused.
+     *)
+-    let rootpart = inspect.i_root in
++    if inspect.i_major_version < 6 (* is Windows 2000/XP *) then (
++      let rootpart = inspect.i_root in
+ 
+-    (* Ignore if the rootpart is something like /dev/sda.  RHBZ#1276540. *)
+-    if not (g#is_whole_device rootpart) then (
+-      (* Check that the root device contains NTFS magic. *)
+-      let magic = g#pread_device rootpart 8 3L in
+-      if magic = "NTFS    " then (
+-        (* Get the size of the whole disk containing the root partition. *)
+-        let rootdev = g#part_to_dev rootpart in (* eg. /dev/sda *)
+-        let size = g#blockdev_getsize64 rootdev in
++      (* Ignore if the rootpart is something like /dev/sda.  RHBZ#1276540. *)
++      if not (g#is_whole_device rootpart) then (
++        (* Check that the root device contains NTFS magic. *)
++        let magic = g#pread_device rootpart 8 3L in
++        if magic = "NTFS    " then (
++          (* Get the size of the whole disk containing the root partition. *)
++          let rootdev = g#part_to_dev rootpart in (* eg. /dev/sda *)
++          let size = g#blockdev_getsize64 rootdev in
+ 
+-        let heads =             (* refer to the table above *)
+-          if size < 2114445312L then 0x40
+-          else if size < 4228374780L then 0x80
+-          else 0xff in
++          let heads =             (* refer to the table above *)
++            if size < 2114445312L then 0x40
++            else if size < 4228374780L then 0x80
++            else 0xff in
+ 
+-        (* Update NTFS's idea of the number of heads.  This is an
+-         * unsigned 16 bit little-endian integer, offset 0x1a from the
+-         * beginning of the partition.
+-         *)
+-        let b = Bytes.create 2 in
+-        Bytes.unsafe_set b 0 (Char.chr heads);
+-        Bytes.unsafe_set b 1 '\000';
+-        ignore (g#pwrite_device rootpart (Bytes.to_string b) 0x1a_L)
++          (* Update NTFS's idea of the number of heads.  This is an
++           * unsigned 16 bit little-endian integer, offset 0x1a from the
++           * beginning of the partition.
++           *)
++          let b = Bytes.create 2 in
++          Bytes.unsafe_set b 0 (Char.chr heads);
++          Bytes.unsafe_set b 1 '\000';
++          ignore (g#pwrite_device rootpart (Bytes.to_string b) 0x1a_L)
++        )
+       )
+     )
+ 
