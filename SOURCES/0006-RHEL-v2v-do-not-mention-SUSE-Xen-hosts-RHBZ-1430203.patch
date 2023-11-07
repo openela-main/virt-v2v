@@ -1,0 +1,23 @@
+From 71ab7854f53b0b9338de12d7dadb2c4754dfcff6 Mon Sep 17 00:00:00 2001
+From: Pino Toscano <ptoscano@redhat.com>
+Date: Wed, 8 Mar 2017 11:03:40 +0100
+Subject: [PATCH] RHEL: v2v: do not mention SUSE Xen hosts (RHBZ#1430203)
+
+They are not supported in RHEL.
+---
+ docs/virt-v2v-input-xen.pod | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/docs/virt-v2v-input-xen.pod b/docs/virt-v2v-input-xen.pod
+index 4a0544f8..9c3981e1 100644
+--- a/docs/virt-v2v-input-xen.pod
++++ b/docs/virt-v2v-input-xen.pod
+@@ -11,7 +11,7 @@ virt-v2v-input-xen - Using virt-v2v to convert guests from Xen
+ =head1 DESCRIPTION
+ 
+ This page documents how to use L<virt-v2v(1)> to convert guests from
+-RHEL 5 Xen, or SLES and OpenSUSE Xen hosts.
++RHEL 5 Xen hosts.
+ 
+ =head1 INPUT FROM XEN
+ 

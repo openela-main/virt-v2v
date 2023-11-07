@@ -1,0 +1,30 @@
+From 3447e87d922d9d0bec765ce9ffeb21d13646bec2 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Sun, 28 Sep 2014 19:14:43 +0100
+Subject: [PATCH] RHEL: v2v: Select correct qemu binary for -o qemu mode
+ (RHBZ#1147313).
+
+RHEL does not have qemu-system-x86_64 (etc), and in addition the
+qemu binary is located in /usr/libexec.  Encode the path to this
+binary directly in the script.
+
+Note that we don't support people running qemu directly like this.
+It's just for quick testing of converted VMs, and to help us with
+support cases.
+---
+ output/output_qemu.ml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/output/output_qemu.ml b/output/output_qemu.ml
+index 57b1e58d..bb6b55c8 100644
+--- a/output/output_qemu.ml
++++ b/output/output_qemu.ml
+@@ -142,7 +142,7 @@ module QEMU = struct
+      * module deals with shell and qemu comma quoting.
+      *)
+     let cmd = Qemuopts.create () in
+-    Qemuopts.set_binary_by_arch cmd (Some guestcaps.gcaps_arch);
++    Qemuopts.set_binary cmd "/usr/libexec/qemu-kvm";
+ 
+     let flag = Qemuopts.flag cmd
+     and arg = Qemuopts.arg cmd

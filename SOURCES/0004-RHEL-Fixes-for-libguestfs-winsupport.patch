@@ -1,0 +1,109 @@
+From c0bb624a151be3291e0c10c1002577615b98e74c Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Sun, 30 Aug 2015 03:21:57 -0400
+Subject: [PATCH] RHEL: Fixes for libguestfs-winsupport.
+
+In tests we cannot use guestfish for arbitrary Windows edits.
+In virt-v2v helpers we must set the program name to virt-v2v.
+
+For RHEL 9.3 and above, see this comment:
+https://bugzilla.redhat.com/show_bug.cgi?id=2187961#c1
+---
+ convert/convert.ml                         | 1 +
+ test-data/phony-guests/make-windows-img.sh | 1 +
+ tests/test-v2v-block-driver.sh             | 6 +++++-
+ tests/test-v2v-virtio-win-iso.sh           | 8 +++++++-
+ tests/test-v2v-windows-conversion.sh       | 8 +++++++-
+ 5 files changed, 21 insertions(+), 3 deletions(-)
+
+diff --git a/convert/convert.ml b/convert/convert.ml
+index 9c76f76d..caaa707e 100644
+--- a/convert/convert.ml
++++ b/convert/convert.ml
+@@ -52,6 +52,7 @@ let rec convert dir options source =
+ 
+   message (f_"Opening the source");
+   let g = open_guestfs ~identifier:"v2v" () in
++  g#set_program "virt-v2v";
+   g#set_memsize (g#get_memsize () * 2);
+   (* Setting the number of vCPUs allows parallel mkinitrd, but make
+    * sure this is not too large because each vCPU consumes guest RAM.
+diff --git a/test-data/phony-guests/make-windows-img.sh b/test-data/phony-guests/make-windows-img.sh
+index 30908a91..73cf5144 100755
+--- a/test-data/phony-guests/make-windows-img.sh
++++ b/test-data/phony-guests/make-windows-img.sh
+@@ -37,6 +37,7 @@ fi
+ 
+ # Create a disk image.
+ guestfish <<EOF
++set-program virt-testing
+ sparse windows.img-t 512M
+ run
+ 
+diff --git a/tests/test-v2v-block-driver.sh b/tests/test-v2v-block-driver.sh
+index db59a2cf..a0e56bed 100755
+--- a/tests/test-v2v-block-driver.sh
++++ b/tests/test-v2v-block-driver.sh
+@@ -100,7 +100,11 @@ check_driver_presence ()
+ 
+     local virtio_dir="/Windows/Drivers/VirtIO"
+ 
+-    guestfish --ro -a "$img" -i >$response <<-EOM
++    guestfish >$response <<-EOM
++        add-ro $img
++        set-program virt-testing
++        run
++        mount-ro /dev/sda2 /
+         is-dir $virtio_dir
+         is-file $virtio_dir/$drv.cat
+         is-file $virtio_dir/$drv.inf
+diff --git a/tests/test-v2v-virtio-win-iso.sh b/tests/test-v2v-virtio-win-iso.sh
+index 69f6f414..b9b806fb 100755
+--- a/tests/test-v2v-virtio-win-iso.sh
++++ b/tests/test-v2v-virtio-win-iso.sh
+@@ -82,6 +82,12 @@ mktest ()
+ :> "$script"
+ :> "$expected"
+ 
++cat >> "$script" <<EOF
++  set-program virt-testing
++  run
++  mount /dev/sda2 /
++EOF
++
+ firstboot_dir="/Program Files/Guestfs/Firstboot"
+ mktest "is-dir \"$firstboot_dir\"" true
+ mktest "is-file \"$firstboot_dir/firstboot.bat\"" true
+@@ -94,5 +100,5 @@ for drv in netkvm vioscsi viostor; do
+     done
+ done
+ 
+-guestfish --ro -a "$d/windows-sda" -i < "$script" > "$response"
++guestfish --ro -a "$d/windows-sda" < "$script" > "$response"
+ diff -u "$expected" "$response"
+diff --git a/tests/test-v2v-windows-conversion.sh b/tests/test-v2v-windows-conversion.sh
+index a4cf191d..1ff41f6a 100755
+--- a/tests/test-v2v-windows-conversion.sh
++++ b/tests/test-v2v-windows-conversion.sh
+@@ -76,6 +76,12 @@ mktest ()
+ :> "$script"
+ :> "$expected"
+ 
++cat >> "$script" <<EOF
++  set-program virt-testing
++  run
++  mount /dev/sda2 /
++EOF
++
+ firstboot_dir="/Program Files/Guestfs/Firstboot"
+ mktest "is-dir \"$firstboot_dir\"" true
+ mktest "is-file \"$firstboot_dir/firstboot.bat\"" true
+@@ -88,7 +94,7 @@ for drv in netkvm vioscsi viostor; do
+     done
+ done
+ 
+-guestfish --ro -a "$d/windows-sda" -i < "$script" > "$response"
++guestfish --ro -a "$d/windows-sda" < "$script" > "$response"
+ diff -u "$expected" "$response"
+ 
+ # We also update the Registry several times, for firstboot, and (ONLY

@@ -1,0 +1,60 @@
+From 6dea82d823c344af0277bb35de789828cfd3e413 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Sat, 22 Apr 2023 09:06:01 +0100
+Subject: [PATCH] Update common submodule
+
+Richard W.M. Jones (1):
+      mlcustomize/SELinux_relabel.ml: Use Array.mem
+
+Roman Kagan (1):
+      mlcustomize: skip SELinux relabeling if it's disabled
+
+(cherry picked from commit e83de8abe6c5388585885cef28d7a198b7bfc90c)
+---
+ common | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Submodule common 70c10a07..38e6988c:
+diff --git a/common/mlcustomize/SELinux_relabel.ml b/common/mlcustomize/SELinux_relabel.ml
+index 5ecf7bd7..2f3a09bf 100644
+--- a/common/mlcustomize/SELinux_relabel.ml
++++ b/common/mlcustomize/SELinux_relabel.ml
+@@ -24,10 +24,6 @@ open Printf
+ 
+ module G = Guestfs
+ 
+-(* Simple reimplementation of Array.mem, available only with OCaml >= 4.03. *)
+-let array_find a l =
+-  List.mem a (Array.to_list l)
+-
+ let rec relabel (g : G.guestfs) =
+   (* Is the guest using SELinux?  (Otherwise this is a no-op). *)
+   if is_selinux_guest g then (
+@@ -59,14 +55,24 @@ and use_setfiles g =
+   g#aug_load ();
+   debug_augeas_errors g;
+ 
++  let config_path = "/files/etc/selinux/config" in
++  let config_keys = g#aug_ls config_path in
++  (* SELinux may be disabled via a setting in config file *)
++  let selinux_disabled =
++    let selinuxmode_path = config_path ^ "/SELINUX" in
++    if Array.mem selinuxmode_path config_keys then
++      g#aug_get selinuxmode_path = "disabled"
++    else
++      false in
++  if selinux_disabled then
++      failwith "selinux disabled";
++
+   (* Get the SELinux policy name, eg. "targeted", "minimum".
+    * Use "targeted" if not specified, just like libselinux does.
+    *)
+   let policy =
+-    let config_path = "/files/etc/selinux/config" in
+     let selinuxtype_path = config_path ^ "/SELINUXTYPE" in
+-    let keys = g#aug_ls config_path in
+-    if array_find selinuxtype_path keys then
++    if Array.mem selinuxtype_path config_keys then
+       g#aug_get selinuxtype_path
+     else
+       "targeted" in

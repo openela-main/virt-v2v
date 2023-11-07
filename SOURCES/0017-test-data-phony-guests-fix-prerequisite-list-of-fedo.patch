@@ -1,0 +1,63 @@
+From 10192f8ee3a7900e76d5c9a0fb330eb5ff1fe22c Mon Sep 17 00:00:00 2001
+From: Laszlo Ersek <lersek@redhat.com>
+Date: Mon, 19 Jun 2023 18:27:29 +0200
+Subject: [PATCH] test-data/phony-guests: fix prerequisite list of
+ "fedora-luks-on-lvm.img"
+
+In the virt-v2v repo, commit 1e75569aa074 ("test-data/phony-guests: Allow
+virt-v2v to work against phony Fedora") is an ancestor of commit
+e4efe4b7d240 ("tests: add LUKS-on-LVM test"). The latter created a state
+where "fedora-static-bin" and LUKS on LVM testing would coexist (i.e.,
+where "fedora-static-bin" would be uploaded to the LUKS-on-LVM disk image
+as well), but the commit didn't spell out the dependency in
+"test-data/phony-guests/Makefile.am".
+
+Do that now.
+
+The problem can be triggered with:
+
+> autoreconf -i
+> ./configure
+> make
+> make -C test-data/phony-guests fedora-luks-on-lvm.img
+
+where the last command fails with
+
+> make: Entering directory '.../test-data/phony-guests'
+> SRCDIR=. LAYOUT=luks-on-lvm ../../run --test ./make-fedora-img.pl
+> open: fedora-static-bin: No such file or directory at
+> .../test-data/phony-guests/make-fedora-img.pl line 373.
+
+(In the guestfs-tools repo, the relative order (the descendancy) between
+both commits is the opposite. There, commit 27da4b0c4991 ("inspector: add
+LUKS-on-LVM test") came first, and commit eb0ff1859eb6
+("test-data/phony-guests: Allow virt-v2v to work against phony Fedora"),
+came second. The latter commit, in fact being a port of virt-v2v commit
+1e75569aa074, brought together "fedora-static-bin" with "LUKS on LVM"
+testing,  and it correctly added "fedora-static-bin" as a pre-requisite
+for building "fedora-luks-on-lvm.img".)
+
+Fixes: e4efe4b7d240b66b1d53fbe5a127f4f5966f6903
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=2168506
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+Message-Id: <20230619162729.153334-1-lersek@redhat.com>
+Reviewed-by: Richard W.M. Jones <rjones@redhat.com>
+(cherry picked from commit 13a6f4b9686e3fc385663bffc31c08d2c2bb7959)
+---
+ test-data/phony-guests/Makefile.am | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/test-data/phony-guests/Makefile.am b/test-data/phony-guests/Makefile.am
+index 29dbd4d0..10c0241b 100644
+--- a/test-data/phony-guests/Makefile.am
++++ b/test-data/phony-guests/Makefile.am
+@@ -103,7 +103,8 @@ fedora-btrfs.img: make-fedora-img.pl \
+ # Make a (dummy) Fedora image with LUKS-on-LVM.
+ fedora-luks-on-lvm.img: make-fedora-img.pl \
+ 		fedora-journal.tar.xz \
+-		fedora.db
++		fedora.db \
++		fedora-static-bin
+ 	SRCDIR=$(srcdir) LAYOUT=luks-on-lvm $(top_builddir)/run --test ./$<
+ 
+ # Make a (dummy) Fedora image with LVM-on-LUKS.

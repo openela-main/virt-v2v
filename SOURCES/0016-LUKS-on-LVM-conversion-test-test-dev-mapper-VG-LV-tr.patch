@@ -1,0 +1,34 @@
+From c8902c551014bc0163122d9fd2005d97d3cb38a5 Mon Sep 17 00:00:00 2001
+From: Laszlo Ersek <lersek@redhat.com>
+Date: Mon, 15 May 2023 19:55:29 +0200
+Subject: [PATCH] LUKS-on-LVM conversion test: test /dev/mapper/VG-LV
+ translation
+
+In the LUKS-on-LVM conversion test, repeat the null conversion with such
+"--key" options that exercise the recent "/dev/mapper/VG-LV" ->
+"/dev/VG/LV" translation (unescaping) from libguestfs-common.
+
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=2168506
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+Message-Id: <20230515175529.290724-3-lersek@redhat.com>
+Reviewed-by: Richard W.M. Jones <rjones@redhat.com>
+(cherry picked from commit 3060af01e87fbffe1cb413938c3c5431f2242bd4)
+---
+ tests/test-v2v-fedora-luks-on-lvm-conversion.sh | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/tests/test-v2v-fedora-luks-on-lvm-conversion.sh b/tests/test-v2v-fedora-luks-on-lvm-conversion.sh
+index 7ad17e0d..605b19fb 100755
+--- a/tests/test-v2v-fedora-luks-on-lvm-conversion.sh
++++ b/tests/test-v2v-fedora-luks-on-lvm-conversion.sh
+@@ -34,3 +34,10 @@ keys=(--key /dev/Volume-Group/Root:key:FEDORA-Root
+       --key /dev/Volume-Group/Logical-Volume-3:key:FEDORA-LV3)
+ 
+ $VG virt-v2v --debug-gc -i disk $f -o null "${keys[@]}"
++
++keys=(--key /dev/mapper/Volume--Group-Root:key:FEDORA-Root
++      --key /dev/mapper/Volume--Group-Logical--Volume--1:key:FEDORA-LV1
++      --key /dev/mapper/Volume--Group-Logical--Volume--2:key:FEDORA-LV2
++      --key /dev/mapper/Volume--Group-Logical--Volume--3:key:FEDORA-LV3)
++
++$VG virt-v2v --debug-gc -i disk $f -o null "${keys[@]}"

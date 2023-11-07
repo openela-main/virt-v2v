@@ -1,0 +1,47 @@
+From dbf8c50d6d0e157c13e505a22f6f397cb991139c Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 5 Jul 2022 11:56:54 +0100
+Subject: [PATCH] RHEL 9: -oo compressed: Remove nbdcopy version check and test
+
+In RHEL 9 nbdcopy 1.12.4-2 will be sufficient (vs nbdcopy 1.13.5
+upstream).  We will enforce this through RPM dependencies and test it
+separately.  Thus remove the version check and test.
+---
+ output/output.ml  | 11 -----------
+ tests/Makefile.am |  1 -
+ 2 files changed, 12 deletions(-)
+
+diff --git a/output/output.ml b/output/output.ml
+index e419c13d..c8f743c2 100644
+--- a/output/output.ml
++++ b/output/output.ml
+@@ -87,17 +87,6 @@ let output_to_local_file ?(changeuid = fun f -> f ()) ?(compressed = false)
+     if output_format <> "qcow2" then
+       error (f_"‘-oo compressed’ is only allowed when the output format \
+                 is a local qcow2-format file, i.e. ‘-of qcow2’");
+-
+-    (* Check nbdcopy is new enough.  This assumes that the version of
+-     * libnbd is the same as the version of nbdcopy, but parsing this
+-     * is easier.  We can remove this check when we build-depend on
+-     * libnbd >= 1.14.
+-     *)
+-    let version =
+-      NBD.create () |> NBD.get_version |>
+-      String.nsplit "." |> List.map int_of_string in
+-    if version < [1; 13; 5] then
+-      error (f_"-oo compressed option requires nbdcopy >= 1.13.5")
+   );
+ 
+   let g = open_guestfs () in
+diff --git a/tests/Makefile.am b/tests/Makefile.am
+index 5190d055..5169e2a6 100644
+--- a/tests/Makefile.am
++++ b/tests/Makefile.am
+@@ -84,7 +84,6 @@ TESTS = \
+ 	test-v2v-networks-and-bridges.sh \
+ 	test-v2v-o-glance.sh \
+ 	test-v2v-o-libvirt.sh \
+-	test-v2v-o-local-qcow2-compressed.sh \
+ 	test-v2v-o-null.sh \
+ 	test-v2v-o-openstack.sh \
+ 	test-v2v-o-qemu.sh \
