@@ -1,0 +1,41 @@
+From 358122c089d1e4df014a6821365341d3220ab6e6 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 19 Jan 2021 11:26:23 +0000
+Subject: [PATCH] v2v: Fix spelling mistake in uninstall function name.
+
+Fixes: commit 53847717fa1d0ffc2a174275badf486eb1ed6fae
+(cherry picked from commit 3515c9f617271bec89962ba8a2b8c690e6df4c99)
+---
+ v2v/convert_windows.ml | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/v2v/convert_windows.ml b/v2v/convert_windows.ml
+index ba26949f..f2f7b95c 100644
+--- a/v2v/convert_windows.ml
++++ b/v2v/convert_windows.ml
+@@ -135,7 +135,7 @@ let convert (g : G.guestfs) inspect _ output rcaps static_ips =
+   (* Locate and retrieve all the uninstallation commands for installed
+    * applications.
+    *)
+-  let unistallation_commands pretty_name matchfn extra_uninstall_string =
++  let uninstallation_commands pretty_name matchfn extra_uninstall_string =
+     let uninsts = ref [] in
+ 
+     Registry.with_hive_readonly g inspect.i_windows_software_hive
+@@ -198,14 +198,14 @@ let convert (g : G.guestfs) inspect _ output rcaps static_ips =
+      *)
+     let extra_uninstall_string =
+       Some "PREVENT_REBOOT=Yes LAUNCHED_BY_SETUP_EXE=Yes" in
+-    unistallation_commands "Parallels Tools" matchfn extra_uninstall_string in
++    uninstallation_commands "Parallels Tools" matchfn extra_uninstall_string in
+ 
+   (* Locate and retrieve all uninstallation commands for VMware Tools. *)
+   let vmwaretools_uninst =
+     let matchfn s =
+       String.find s "VMware Tools" != -1
+     in
+-    unistallation_commands "VMware Tools" matchfn None in
++    uninstallation_commands "VMware Tools" matchfn None in
+ 
+   (*----------------------------------------------------------------------*)
+   (* Perform the conversion of the Windows guest. *)

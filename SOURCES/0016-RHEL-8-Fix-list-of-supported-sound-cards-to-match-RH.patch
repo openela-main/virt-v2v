@@ -1,0 +1,31 @@
+From ff5ae6613f5b344371cd8523a022af08fa6f191b Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 24 Apr 2015 09:45:41 -0400
+Subject: [PATCH] RHEL 8: Fix list of supported sound cards to match RHEL qemu
+ (RHBZ#1176493).
+
+---
+ v2v/utils.ml | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/v2v/utils.ml b/v2v/utils.ml
+index ccbb9d68..c2940582 100644
+--- a/v2v/utils.ml
++++ b/v2v/utils.ml
+@@ -55,13 +55,14 @@ let kvm_arch = function
+ (* Does qemu support the given sound card? *)
+ let qemu_supports_sound_card = function
+   | Types.AC97
+-  | Types.ES1370
+   | Types.ICH6
+   | Types.ICH9
+   | Types.PCSpeaker
++    -> true
++  | Types.ES1370
+   | Types.SB16
+   | Types.USBAudio
+-    -> true
++    -> false
+ 
+ (* Find the UEFI firmware. *)
+ let find_uefi_firmware guest_arch =

@@ -1,0 +1,38 @@
+From 2ab37349cf37d0ffdb9929ca24c2a024600a4848 Mon Sep 17 00:00:00 2001
+From: Pino Toscano <ptoscano@redhat.com>
+Date: Thu, 21 May 2020 13:32:21 +0200
+Subject: [PATCH] libvirt: make use of libvirt's default auth handler
+ (RHBZ#1838425)
+
+Use the default libvirt authentication handler as base for ours,
+overriding it with our callback only in case we have a password to
+supply.
+
+(cherry picked from commit ce66cac50179baf2fb8b404f7eba49048c7819b0)
+---
+ v2v/libvirt_utils.ml | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/v2v/libvirt_utils.ml b/v2v/libvirt_utils.ml
+index 7df17b29..4d0b8639 100644
+--- a/v2v/libvirt_utils.ml
++++ b/v2v/libvirt_utils.ml
+@@ -33,10 +33,14 @@ let auth_for_password_file ?password_file () =
+     ) creds
+   in
+ 
+-  {
+-    Libvirt.Connect.credtype = [ Libvirt.Connect.CredentialPassphrase ];
+-    cb = auth_fn;
+-  }
++  let base_auth = Libvirt.Connect.get_auth_default () in
++
++  if password_file = None then
++    base_auth
++  else
++    { base_auth with
++      cb = auth_fn;
++    }
+ 
+ let get_domain conn name =
+   let dom =

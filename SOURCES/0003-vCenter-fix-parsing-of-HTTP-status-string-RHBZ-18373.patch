@@ -1,0 +1,31 @@
+From bb94c68c521aa546d3f2e59aa25e388bfd9c5fc5 Mon Sep 17 00:00:00 2001
+From: Pino Toscano <ptoscano@redhat.com>
+Date: Tue, 19 May 2020 12:14:18 +0200
+Subject: [PATCH] vCenter: fix parsing of HTTP status string (RHBZ#1837328)
+
+vCenter 7 answers with an HTTP/2 status string, so we cannot extract
+the status code from it by using fixed positions in that string.
+Hence, pick the status code by reading what's after the whitespace.
+
+Tested with vCenter 6.5 and 7.
+
+(cherry picked from commit d2aa82317964d62fcc8dc7b6737773003d04b998)
+---
+ v2v/vCenter.ml | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/v2v/vCenter.ml b/v2v/vCenter.ml
+index c28a4ced..4c128b0c 100644
+--- a/v2v/vCenter.ml
++++ b/v2v/vCenter.ml
+@@ -190,7 +190,9 @@ and fetch_headers_from_url password_file uri sslverify https_url =
+     | [] ->
+        dump_response stderr;
+        error (f_"vcenter: no status code in output of ‘curl’ command.  Is ‘curl’ installed?")
+-    | ss -> String.sub (List.hd (List.rev ss)) 9 3 in
++    | ss ->
++      let s = List.hd (List.rev ss) in
++      String.sub s (String.index s ' ' + 1) 3 in
+ 
+   let headers =
+     List.map (

@@ -1,0 +1,57 @@
+From 906e087d6c57d4c1f24ecb60f98a6c98f75881a7 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 20 May 2021 09:10:20 +0100
+Subject: [PATCH] v2v: Increase Linux minimum root filesystem to 100 MB
+
+Ming Xie created a RHEL 8.3 guest which required around 70 MB free in
+order to recreate the initramfs (temporary space used by the pigz
+step).  Increase the minimum space required to 100 MB, the same as for
+Windows.
+
+Seealso commit dfcf60c916a986a352938b432231a36558a3bc05.
+
+Reported-by: Ming Xie
+Fixes: https://bugzilla.redhat.com/1764569#c16
+(cherry picked from commit e82ff27c3bea5ce2cc3b7d1ce8d775989fc7e5a5)
+---
+ docs/virt-v2v.pod |  2 +-
+ v2v/v2v.ml        | 12 +++++-------
+ 2 files changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index 4016c724..4ecce369 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -1290,7 +1290,7 @@ to perform the conversion.  Currently it checks:
+ 
+ =item Linux root filesystem
+ 
+-Minimum free space: 20 MB
++Minimum free space: 100 MB
+ 
+ =item Linux F</boot>
+ 
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index bde51885..8af86687 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -389,14 +389,12 @@ and check_guest_free_space inspect mpstats =
+      * typical size of 20-30MB.  Hence:
+      *)
+     | "/boot" | "/" when not has_boot && not is_windows -> 50
+-    (* We may install some packages, and they would usually go
+-     * on the root filesystem.
++    (* Both Linux and Windows require installation of files,
++     * device drivers and guest agents.
++     * https://bugzilla.redhat.com/1949147
++     * https://bugzilla.redhat.com/1764569#c16
+      *)
+-    | "/" when not is_windows -> 20
+-    (* Windows requires copying in many device drivers and possibly
+-     * guest agents, so we need more space.  (RHBZ#1949147).
+-     *)
+-    | "/" (* when is_windows *) -> 100
++    | "/" -> 100
+     (* For everything else, just make sure there is some free space. *)
+     | _ -> 10
+   in

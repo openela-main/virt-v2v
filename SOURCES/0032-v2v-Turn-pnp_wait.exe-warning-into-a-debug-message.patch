@@ -1,0 +1,29 @@
+From b04361528b04dc39368c1d90760e50fad63baa9f Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 3 Dec 2020 10:14:08 +0000
+Subject: [PATCH] v2v: Turn pnp_wait.exe warning into a debug message.
+
+We've used virt-v2v for years in RHEL without pnp_wait and it's never
+been an issue.  We don't need a warning here.
+
+Bug: https://bugzilla.redhat.com/show_bug.cgi?id=1903960
+(cherry picked from commit 834bea6931b49dc4b14ebe04fd0e0884290bfb78)
+---
+ v2v/convert_windows.ml | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/v2v/convert_windows.ml b/v2v/convert_windows.ml
+index 4d844e2d..33fbd410 100644
+--- a/v2v/convert_windows.ml
++++ b/v2v/convert_windows.ml
+@@ -267,8 +267,8 @@ let convert (g : G.guestfs) inspect _ output rcaps static_ips =
+     if Sys.file_exists tool_path then
+       configure_wait_pnp tool_path
+     else
+-      warning (f_"%s is missing.  Firstboot scripts may conflict with PnP.")
+-              tool_path;
++      debug (f_"%s is missing.  Firstboot scripts may conflict with PnP.")
++        tool_path;
+ 
+     (* Install RHEV-APT only if appropriate for the output hypervisor. *)
+     if output#install_rhev_apt then (

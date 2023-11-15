@@ -1,0 +1,94 @@
+From 939d57ef4d5bcfa31e9b98104822962b89572481 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 19 May 2020 14:40:01 +0100
+Subject: [PATCH] v2v: -o libvirt: Remove cache=none (RHBZ#1837453).
+
+Traditionally if you did live migration (KVM to KVM), you had to
+ensure that cache=none was set on all disks of the guest up front.
+This was because of quirks in how NFS works (I think the close-to-open
+consistency and the fact that during live migration both qemus have
+the file open), and we had to assume the worst case that a guest might
+be backed by NFS.
+
+Because of this when virt-v2v converts a guest to run on KVM using
+libvirt it sets cache=none.
+
+This is not necessary with modern qemu.  If qemu supports the
+drop-cache property of the file block driver, which libvirt will
+automatically detect for us, then libvirt live migration is able to
+tell qemu to drop cached data at the right time even if the backing is
+NFS.
+
+It also had a significant performance impact.  In some synthetic
+benchmarks it could show 2 or 3 times slower performance.
+
+Thanks: Ming Xie, Peter Krempa.
+(cherry picked from commit 9720f45e0cd9283739fd2a67c19e66912489dfc7)
+---
+ docs/virt-v2v-output-local.pod | 2 +-
+ tests/test-v2v-cdrom.expected  | 2 +-
+ tests/test-v2v-floppy.expected | 2 +-
+ tests/test-v2v-i-ova.xml       | 2 +-
+ v2v/create_libvirt_xml.ml      | 1 -
+ 5 files changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/docs/virt-v2v-output-local.pod b/docs/virt-v2v-output-local.pod
+index 38df007d..a5f155cb 100644
+--- a/docs/virt-v2v-output-local.pod
++++ b/docs/virt-v2v-output-local.pod
+@@ -127,7 +127,7 @@ Edit F</var/tmp/NAME.xml> to change F</var/tmp/NAME-sda> to the pool
+ name.  In other words, locate the following bit of XML:
+ 
+  <disk type='file' device='disk'>
+-   <driver name='qemu' type='raw' cache='none' />
++   <driver name='qemu' type='raw' />
+    <source file='/var/tmp/NAME-sda' />
+    <target dev='hda' bus='ide' />
+  </disk>
+diff --git a/tests/test-v2v-cdrom.expected b/tests/test-v2v-cdrom.expected
+index e18ea6f2..34d2bf59 100644
+--- a/tests/test-v2v-cdrom.expected
++++ b/tests/test-v2v-cdrom.expected
+@@ -1,5 +1,5 @@
+     <disk type='file' device='disk'>
+-      <driver name='qemu' type='raw' cache='none'/>
++      <driver name='qemu' type='raw'/>
+       <target dev='vda' bus='virtio'/>
+     </disk>
+     <disk device='cdrom' type='file'>
+diff --git a/tests/test-v2v-floppy.expected b/tests/test-v2v-floppy.expected
+index dd74ed94..a718c21f 100644
+--- a/tests/test-v2v-floppy.expected
++++ b/tests/test-v2v-floppy.expected
+@@ -1,5 +1,5 @@
+     <disk type='file' device='disk'>
+-      <driver name='qemu' type='raw' cache='none'/>
++      <driver name='qemu' type='raw'/>
+       <target dev='vda' bus='virtio'/>
+     </disk>
+     <disk device='floppy' type='file'>
+diff --git a/tests/test-v2v-i-ova.xml b/tests/test-v2v-i-ova.xml
+index 7c198283..e26f4f83 100644
+--- a/tests/test-v2v-i-ova.xml
++++ b/tests/test-v2v-i-ova.xml
+@@ -22,7 +22,7 @@
+   <on_crash>restart</on_crash>
+   <devices>
+     <disk type='file' device='disk'>
+-      <driver name='qemu' type='raw' cache='none'/>
++      <driver name='qemu' type='raw'/>
+       <source file='TestOva-sda'/>
+       <target dev='vda' bus='virtio'/>
+     </disk>
+diff --git a/v2v/create_libvirt_xml.ml b/v2v/create_libvirt_xml.ml
+index 05553c4f..5a1fba0f 100644
+--- a/v2v/create_libvirt_xml.ml
++++ b/v2v/create_libvirt_xml.ml
+@@ -336,7 +336,6 @@ let create_libvirt_xml ?pool source targets target_buses guestcaps
+           e "driver" [
+             "name", "qemu";
+             "type", t.target_format;
+-            "cache", "none"
+           ] [];
+           (match pool with
+           | None ->
