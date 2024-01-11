@@ -1,0 +1,30 @@
+From 7a370cc7fcf4ba664eef73d4bac03dfc4d7041b3 Mon Sep 17 00:00:00 2001
+From: Laszlo Ersek <lersek@redhat.com>
+Date: Thu, 29 Jun 2023 14:34:41 +0200
+Subject: [PATCH] lib/utils: fix typo
+
+Fix a small comment typo from commit 4e7f20684373 ("lib: Improve security
+of in/out sockets when running virt-v2v as root", 2022-03-23).
+
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=2182024
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+Message-Id: <20230629123443.188350-2-lersek@redhat.com>
+Reviewed-by: Richard W.M. Jones <rjones@redhat.com>
+(cherry picked from commit dab9629c01915efc3678885e8bb0ccc5da1802a3)
+---
+ lib/utils.mli | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/utils.mli b/lib/utils.mli
+index 5687bf75..cf88a467 100644
+--- a/lib/utils.mli
++++ b/lib/utils.mli
+@@ -62,7 +62,7 @@ val backend_is_libvirt : unit -> bool
+ (** Return true iff the current backend is libvirt. *)
+ 
+ val chown_for_libvirt_rhbz_1045069 : string -> unit
+-(** If running and root, and if the backend is libvirt, libvirt
++(** If running as root, and if the backend is libvirt, libvirt
+     will run qemu as a non-root user.  This prevents access
+     to root-owned files and directories.  To fix this, provide
+     a function to chown things we might need to qemu:root so

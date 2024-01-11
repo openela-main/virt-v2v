@@ -1,23 +1,26 @@
-From 94f4aaeea12ac37a5b7515251040ce3e6fd86171 Mon Sep 17 00:00:00 2001
+From c0bb624a151be3291e0c10c1002577615b98e74c Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Sun, 30 Aug 2015 03:21:57 -0400
 Subject: [PATCH] RHEL: Fixes for libguestfs-winsupport.
 
 In tests we cannot use guestfish for arbitrary Windows edits.
 In virt-v2v helpers we must set the program name to virt-v2v.
+
+For RHEL 9.3 and above, see this comment:
+https://bugzilla.redhat.com/show_bug.cgi?id=2187961#c1
 ---
  convert/convert.ml                         | 1 +
- convert/windows_virtio.ml                  | 1 +
  test-data/phony-guests/make-windows-img.sh | 1 +
+ tests/test-v2v-block-driver.sh             | 6 +++++-
  tests/test-v2v-virtio-win-iso.sh           | 8 +++++++-
  tests/test-v2v-windows-conversion.sh       | 8 +++++++-
- 5 files changed, 17 insertions(+), 2 deletions(-)
+ 5 files changed, 21 insertions(+), 3 deletions(-)
 
 diff --git a/convert/convert.ml b/convert/convert.ml
-index d0d5b773..c3dd4151 100644
+index 9c76f76d..caaa707e 100644
 --- a/convert/convert.ml
 +++ b/convert/convert.ml
-@@ -51,6 +51,7 @@ let rec convert dir options source =
+@@ -52,6 +52,7 @@ let rec convert dir options source =
  
    message (f_"Opening the source");
    let g = open_guestfs ~identifier:"v2v" () in
@@ -25,18 +28,6 @@ index d0d5b773..c3dd4151 100644
    g#set_memsize (g#get_memsize () * 2);
    (* Setting the number of vCPUs allows parallel mkinitrd, but make
     * sure this is not too large because each vCPU consumes guest RAM.
-diff --git a/convert/windows_virtio.ml b/convert/windows_virtio.ml
-index 6b642d21..2cef4234 100644
---- a/convert/windows_virtio.ml
-+++ b/convert/windows_virtio.ml
-@@ -256,6 +256,7 @@ and copy_from_virtio_win g inspect srcdir destdir filter missing =
-     let g2 =
-       try
-         let g2 = open_guestfs ~identifier:"virtio_win" () in
-+        g#set_program "virt-v2v";
-         g2#add_drive_opts virtio_win ~readonly:true;
-         g2#launch ();
-         g2
 diff --git a/test-data/phony-guests/make-windows-img.sh b/test-data/phony-guests/make-windows-img.sh
 index 30908a91..73cf5144 100755
 --- a/test-data/phony-guests/make-windows-img.sh
@@ -49,6 +40,23 @@ index 30908a91..73cf5144 100755
  sparse windows.img-t 512M
  run
  
+diff --git a/tests/test-v2v-block-driver.sh b/tests/test-v2v-block-driver.sh
+index db59a2cf..a0e56bed 100755
+--- a/tests/test-v2v-block-driver.sh
++++ b/tests/test-v2v-block-driver.sh
+@@ -100,7 +100,11 @@ check_driver_presence ()
+ 
+     local virtio_dir="/Windows/Drivers/VirtIO"
+ 
+-    guestfish --ro -a "$img" -i >$response <<-EOM
++    guestfish >$response <<-EOM
++        add-ro $img
++        set-program virt-testing
++        run
++        mount-ro /dev/sda2 /
+         is-dir $virtio_dir
+         is-file $virtio_dir/$drv.cat
+         is-file $virtio_dir/$drv.inf
 diff --git a/tests/test-v2v-virtio-win-iso.sh b/tests/test-v2v-virtio-win-iso.sh
 index 69f6f414..b9b806fb 100755
 --- a/tests/test-v2v-virtio-win-iso.sh

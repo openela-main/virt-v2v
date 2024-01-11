@@ -1,4 +1,4 @@
-From 8fbfb57de81e9962eacc493338aee6162fefb510 Mon Sep 17 00:00:00 2001
+From 8eb1f90c3e894da7f528dbc1c54960ebcf0f759b Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Thu, 2 Dec 2021 11:56:05 +0000
 Subject: [PATCH] RHEL: Remove the --in-place option
@@ -12,7 +12,7 @@ wish to support in RHEL.
  3 files changed, 17 deletions(-)
 
 diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
-index d161b63f..0394b421 100644
+index e5400ca7..fc7e0d82 100644
 --- a/docs/virt-v2v.pod
 +++ b/docs/virt-v2v.pod
 @@ -24,9 +24,6 @@ virtualize those machines (physical to virtual, or p2v).
@@ -36,7 +36,7 @@ index d161b63f..0394b421 100644
  =head2 Other virt-v2v topics
  
  L<virt-v2v-support(1)> — Supported hypervisors, virtualization
-@@ -1612,7 +1605,6 @@ L<https://rwmj.wordpress.com/2015/09/18/importing-kvm-guests-to-ovirt-or-rhev/#c
+@@ -1622,7 +1615,6 @@ L<https://rwmj.wordpress.com/2015/09/18/importing-kvm-guests-to-ovirt-or-rhev/#c
  
  L<virt-p2v(1)>,
  L<virt-v2v-inspector(1)>,
@@ -45,7 +45,7 @@ index d161b63f..0394b421 100644
  L<virt-df(1)>,
  L<virt-filesystems(1)>,
 diff --git a/tests/Makefile.am b/tests/Makefile.am
-index a4c87398..998b871d 100644
+index 5c523204..5190d055 100644
 --- a/tests/Makefile.am
 +++ b/tests/Makefile.am
 @@ -77,7 +77,6 @@ TESTS = \
@@ -53,14 +53,14 @@ index a4c87398..998b871d 100644
  	test-v2v-i-disk.sh \
  	test-v2v-i-ova.sh \
 -	test-v2v-in-place.sh \
+ 	test-v2v-block-driver.sh \
  	test-v2v-inspector.sh \
  	test-v2v-mac.sh \
- 	test-v2v-machine-readable.sh \
 diff --git a/v2v/v2v.ml b/v2v/v2v.ml
-index 392c3dad..18a694ee 100644
+index 47d2da79..19f08aae 100644
 --- a/v2v/v2v.ml
 +++ b/v2v/v2v.ml
-@@ -216,12 +216,6 @@ let rec main () =
+@@ -217,12 +217,6 @@ let rec main () =
      warning (f_"the --vmtype option has been removed and now does nothing")
    in
  
@@ -73,7 +73,7 @@ index 392c3dad..18a694ee 100644
    let argspec = [
      [ L"bandwidth" ], Getopt.String ("bps", set_string_option_once "--bandwidth" bandwidth),
                                      s_"Set bandwidth to bits per sec";
-@@ -243,8 +237,6 @@ let rec main () =
+@@ -246,8 +240,6 @@ let rec main () =
                                      s_"Use password from file to connect to input hypervisor";
      [ M"it" ],       Getopt.String ("transport", set_string_option_once "-it" input_transport),
                                      s_"Input transport";

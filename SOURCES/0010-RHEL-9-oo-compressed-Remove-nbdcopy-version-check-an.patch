@@ -1,4 +1,4 @@
-From b04577d80b8933a04b1863727cabefc48d6ae0da Mon Sep 17 00:00:00 2001
+From dbf8c50d6d0e157c13e505a22f6f397cb991139c Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Tue, 5 Jul 2022 11:56:54 +0100
 Subject: [PATCH] RHEL 9: -oo compressed: Remove nbdcopy version check and test
@@ -34,10 +34,10 @@ index e419c13d..c8f743c2 100644
  
    let g = open_guestfs () in
 diff --git a/tests/Makefile.am b/tests/Makefile.am
-index 998b871d..8cf17f94 100644
+index 5190d055..5169e2a6 100644
 --- a/tests/Makefile.am
 +++ b/tests/Makefile.am
-@@ -83,7 +83,6 @@ TESTS = \
+@@ -84,7 +84,6 @@ TESTS = \
  	test-v2v-networks-and-bridges.sh \
  	test-v2v-o-glance.sh \
  	test-v2v-o-libvirt.sh \

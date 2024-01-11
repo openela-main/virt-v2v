@@ -1,0 +1,81 @@
+From 2558084d081c3dd9b0d681f3cf6789b48485cb62 Mon Sep 17 00:00:00 2001
+From: Laszlo Ersek <lersek@redhat.com>
+Date: Mon, 15 May 2023 19:55:28 +0200
+Subject: [PATCH] LUKS-on-LVM conversion test: rename VGs and LVs
+
+In preparation for a subsequent patch, rename "VG" to "Volume-Group", and
+"LV<n>" to "Logical-Volume-<n>", in the LUKS-on-LVM conversion test.
+
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=2168506
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+Message-Id: <20230515175529.290724-2-lersek@redhat.com>
+Reviewed-by: Richard W.M. Jones <rjones@redhat.com>
+(cherry picked from commit 0ecbe09c09cace1fe0d03cad3ac53000bfeb3cb6)
+---
+ test-data/phony-guests/make-fedora-img.pl     | 30 +++++++++++--------
+ .../test-v2v-fedora-luks-on-lvm-conversion.sh |  8 ++---
+ 2 files changed, 21 insertions(+), 17 deletions(-)
+
+diff --git a/test-data/phony-guests/make-fedora-img.pl b/test-data/phony-guests/make-fedora-img.pl
+index c30c0b53..830accfc 100755
+--- a/test-data/phony-guests/make-fedora-img.pl
++++ b/test-data/phony-guests/make-fedora-img.pl
+@@ -224,23 +224,27 @@ EOF
+ 
+     # Create the Volume Group on /dev/sda2.
+     $g->pvcreate ('/dev/sda2');
+-    $g->vgcreate ('VG', ['/dev/sda2']);
+-    $g->lvcreate ('Root', 'VG', 256);
+-    $g->lvcreate ('LV1',  'VG', 32);
+-    $g->lvcreate ('LV2',  'VG', 32);
+-    $g->lvcreate ('LV3',  'VG', 64);
++    $g->vgcreate ('Volume-Group', ['/dev/sda2']);
++    $g->lvcreate ('Root',              'Volume-Group', 256);
++    $g->lvcreate ('Logical-Volume-1',  'Volume-Group', 32);
++    $g->lvcreate ('Logical-Volume-2',  'Volume-Group', 32);
++    $g->lvcreate ('Logical-Volume-3',  'Volume-Group', 64);
+ 
+     # Format each Logical Group as a LUKS device, with a different password.
+-    $g->luks_format ('/dev/VG/Root', 'FEDORA-Root', 0);
+-    $g->luks_format ('/dev/VG/LV1',  'FEDORA-LV1',  0);
+-    $g->luks_format ('/dev/VG/LV2',  'FEDORA-LV2',  0);
+-    $g->luks_format ('/dev/VG/LV3',  'FEDORA-LV3',  0);
++    $g->luks_format ('/dev/Volume-Group/Root',              'FEDORA-Root', 0);
++    $g->luks_format ('/dev/Volume-Group/Logical-Volume-1',  'FEDORA-LV1',  0);
++    $g->luks_format ('/dev/Volume-Group/Logical-Volume-2',  'FEDORA-LV2',  0);
++    $g->luks_format ('/dev/Volume-Group/Logical-Volume-3',  'FEDORA-LV3',  0);
+ 
+     # Open the LUKS devices. This creates nodes like /dev/mapper/*-luks.
+-    $g->cryptsetup_open ('/dev/VG/Root', 'FEDORA-Root', 'Root-luks');
+-    $g->cryptsetup_open ('/dev/VG/LV1',  'FEDORA-LV1',  'LV1-luks');
+-    $g->cryptsetup_open ('/dev/VG/LV2',  'FEDORA-LV2',  'LV2-luks');
+-    $g->cryptsetup_open ('/dev/VG/LV3',  'FEDORA-LV3',  'LV3-luks');
++    $g->cryptsetup_open ('/dev/Volume-Group/Root',
++                         'FEDORA-Root', 'Root-luks');
++    $g->cryptsetup_open ('/dev/Volume-Group/Logical-Volume-1',
++                         'FEDORA-LV1',  'LV1-luks');
++    $g->cryptsetup_open ('/dev/Volume-Group/Logical-Volume-2',
++                         'FEDORA-LV2',  'LV2-luks');
++    $g->cryptsetup_open ('/dev/Volume-Group/Logical-Volume-3',
++                         'FEDORA-LV3',  'LV3-luks');
+ 
+     # Phony root filesystem.
+     $g->mkfs ('ext2', '/dev/mapper/Root-luks', blocksize => 4096, label => 'ROOT');
+diff --git a/tests/test-v2v-fedora-luks-on-lvm-conversion.sh b/tests/test-v2v-fedora-luks-on-lvm-conversion.sh
+index 1a4068cf..7ad17e0d 100755
+--- a/tests/test-v2v-fedora-luks-on-lvm-conversion.sh
++++ b/tests/test-v2v-fedora-luks-on-lvm-conversion.sh
+@@ -28,9 +28,9 @@ skip_if_skipped
+ f=../test-data/phony-guests/fedora-luks-on-lvm.img
+ requires test -f $f
+ 
+-keys=(--key /dev/VG/Root:key:FEDORA-Root
+-      --key /dev/VG/LV1:key:FEDORA-LV1
+-      --key /dev/VG/LV2:key:FEDORA-LV2
+-      --key /dev/VG/LV3:key:FEDORA-LV3)
++keys=(--key /dev/Volume-Group/Root:key:FEDORA-Root
++      --key /dev/Volume-Group/Logical-Volume-1:key:FEDORA-LV1
++      --key /dev/Volume-Group/Logical-Volume-2:key:FEDORA-LV2
++      --key /dev/Volume-Group/Logical-Volume-3:key:FEDORA-LV3)
+ 
+ $VG virt-v2v --debug-gc -i disk $f -o null "${keys[@]}"

@@ -1,19 +1,19 @@
-From 2d85522fe7b03207573952a7d95b0f621e3ff52e Mon Sep 17 00:00:00 2001
+From e4ffc4800bd8a4bbec56b374cc6d21dff88f15ae Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Wed, 30 Jun 2021 11:15:52 +0100
 Subject: [PATCH] RHEL: Disable -o glance
 
 Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=1977539
 ---
- docs/virt-v2v-output-openstack.pod | 56 ++----------------------------
+ docs/virt-v2v-output-openstack.pod | 54 ++----------------------------
  docs/virt-v2v.pod                  | 20 -----------
  output/output_glance.mli           |  2 +-
  tests/test-v2v-o-glance.sh         |  3 ++
  v2v/v2v.ml                         |  7 +---
- 5 files changed, 7 insertions(+), 81 deletions(-)
+ 5 files changed, 7 insertions(+), 79 deletions(-)
 
 diff --git a/docs/virt-v2v-output-openstack.pod b/docs/virt-v2v-output-openstack.pod
-index f5a3abad..1ab356e8 100644
+index cd4862b1..54cd276e 100644
 --- a/docs/virt-v2v-output-openstack.pod
 +++ b/docs/virt-v2v-output-openstack.pod
 @@ -10,13 +10,10 @@ virt-v2v-output-openstack - Using virt-v2v to convert guests to OpenStack
@@ -47,7 +47,7 @@ index f5a3abad..1ab356e8 100644
  =back
  
  =head1 OUTPUT TO OPENSTACK
-@@ -170,50 +158,10 @@ no Cinder volume type is used.
+@@ -176,48 +164,10 @@ no Cinder volume type is used.
  The following options are B<not> supported with OpenStack: I<-oa>,
  I<-of>.
  
@@ -60,10 +60,8 @@ index f5a3abad..1ab356e8 100644
 -
 -This runs the L<glance(1)> CLI program which must be installed on the
 -virt-v2v conversion host.  For authentication to work, you will need
--to set C<OS_*> environment variables.
--
--Normally there is a file called C<overcloudrc> or C<keystonerc_admin>
--which you can simply C<source> to set everything up.
+-to set C<OS_*> environment variables.  See
+-L</OpenStack: Authentication> above.
 -
 -Virt-v2v adds metadata for the guest to Glance, describing such things
 -as the guest operating system and what drivers it requires.  The
@@ -100,10 +98,10 @@ index f5a3abad..1ab356e8 100644
  =head1 AUTHOR
  
 diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
-index 6cfe9e44..d161b63f 100644
+index de27b795..e5400ca7 100644
 --- a/docs/virt-v2v.pod
 +++ b/docs/virt-v2v.pod
-@@ -421,14 +421,6 @@ See L</Networks and bridges> below.
+@@ -431,14 +431,6 @@ See L</Networks and bridges> below.
  
  This is the same as I<-o local>.
  
@@ -118,7 +116,7 @@ index 6cfe9e44..d161b63f 100644
  =item B<-o> B<kubevirt>
  
  Set the output method to I<kubevirt>.  B<Note the way this mode works
-@@ -1172,11 +1164,6 @@ and output methods may use disk space, as outlined in the table below.
+@@ -1182,11 +1174,6 @@ and output methods may use disk space, as outlined in the table below.
  This temporarily places a full copy of the uncompressed source disks
  in C<$VIRT_V2V_TMPDIR> (or F</var/tmp>).
  
@@ -130,7 +128,7 @@ index 6cfe9e44..d161b63f 100644
  =item I<-o local>
  
  =item I<-o qemu>
-@@ -1360,13 +1347,6 @@ instance.
+@@ -1370,13 +1357,6 @@ instance.
  Because of how Cinder volumes are presented as F</dev> block devices,
  using I<-o openstack> normally requires that virt-v2v is run as root.
  
@@ -169,10 +167,10 @@ index c0db9115..074b5e16 100755
  set -e
  set -x
 diff --git a/v2v/v2v.ml b/v2v/v2v.ml
-index dc747804..392c3dad 100644
+index 696ef75e..47d2da79 100644
 --- a/v2v/v2v.ml
 +++ b/v2v/v2v.ml
-@@ -194,7 +194,6 @@ let rec main () =
+@@ -195,7 +195,6 @@ let rec main () =
      if !output_mode <> `Not_set then
        error (f_"%s option used more than once on the command line") "-o";
      match mode with
@@ -180,7 +178,7 @@ index dc747804..392c3dad 100644
      | "kubevirt" -> output_mode := `Kubevirt
      | "libvirt" -> output_mode := `Libvirt
      | "disk" | "local" -> output_mode := `Disk
-@@ -252,7 +251,7 @@ let rec main () =
+@@ -255,7 +254,7 @@ let rec main () =
        s_"Map network ‘in’ to ‘out’";
      [ L"no-trim" ],  Getopt.String ("-", no_trim_warning),
        s_"Ignored for backwards compatibility";
@@ -189,7 +187,7 @@ index dc747804..392c3dad 100644
        s_"Set output mode (default: libvirt)";
      [ M"oa" ],       Getopt.String ("sparse|preallocated", set_output_alloc),
                                      s_"Set output allocation mode";
-@@ -320,8 +319,6 @@ virt-v2v -i libvirtxml guest-domain.xml -o local -os /var/tmp
+@@ -323,8 +322,6 @@ virt-v2v -i libvirtxml guest-domain.xml -o local -os /var/tmp
  
  virt-v2v -i disk disk.img -o local -os /var/tmp
  
@@ -198,7 +196,7 @@ index dc747804..392c3dad 100644
  There is a companion front-end called \"virt-p2v\" which comes as an
  ISO or CD image that can be booted on physical machines.
  
-@@ -390,7 +387,6 @@ read the man page virt-v2v(1).
+@@ -399,7 +396,6 @@ read the man page virt-v2v(1).
        pr "input:libvirtxml\n";
        pr "input:ova\n";
        pr "input:vmx\n";
@@ -206,7 +204,7 @@ index dc747804..392c3dad 100644
        pr "output:kubevirt\n";
        pr "output:libvirt\n";
        pr "output:local\n";
-@@ -487,7 +483,6 @@ read the man page virt-v2v(1).
+@@ -496,7 +492,6 @@ read the man page virt-v2v(1).
      | `Disk -> (module Output_disk.Disk)
      | `Null -> (module Output_null.Null)
      | `QEmu -> (module Output_qemu.QEMU)

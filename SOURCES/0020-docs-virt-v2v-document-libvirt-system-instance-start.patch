@@ -1,0 +1,79 @@
+From f2e233b9e073327b1881ef17695380bc02a51f68 Mon Sep 17 00:00:00 2001
+From: Laszlo Ersek <lersek@redhat.com>
+Date: Thu, 29 Jun 2023 14:34:43 +0200
+Subject: [PATCH] docs/virt-v2v: document libvirt system instance startup
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+It has frequently tripped us up that on RHEL / Fedora, installing the
+right set of libvirt RPMs (such as the one pulled in by
+"libvirt-daemon-kvm") does not result in an immediately running libvirt
+system instance.  Document the need, and the simplest method, for starting
+libvirt up manually.
+
+Thanks: Daniel Berrangé
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=2182024
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+Message-Id: <20230629123443.188350-4-lersek@redhat.com>
+Reviewed-by: Richard W.M. Jones <rjones@redhat.com>
+(cherry picked from commit dcfea1b9b5d0f237f49c9eb870af93527093b40b)
+---
+ docs/virt-v2v.pod | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index 0394b421..058eb800 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -237,6 +237,8 @@ In this mode you have to specify a libvirt guest name or UUID on the
+ command line.  You may also specify a libvirt connection URI (see
+ I<-ic>).
+ 
++See L</Starting the libvirt system instance> below.
++
+ =item B<-i> B<libvirtxml>
+ 
+ Set the input method to I<libvirtxml>.
+@@ -440,7 +442,8 @@ Set the output method to I<libvirt>.  This is the default.
+ In this mode, the converted guest is created as a libvirt guest.  You
+ may also specify a libvirt connection URI (see I<-oc>).
+ 
+-See L<virt-v2v-output-local(1)>.
++See L</Starting the libvirt system instance> below, and
++L<virt-v2v-output-local(1)>.
+ 
+ =item B<-o> B<local>
+ 
+@@ -1335,6 +1338,8 @@ see L<http://libvirt.org/auth.html>.  Alternatively, use
+ I<-oc qemu:///session>, which will write to your per-user libvirt
+ instance.
+ 
++See also L</Starting the libvirt system instance>.
++
+ =item Writing to Openstack
+ 
+ Because of how Cinder volumes are presented as F</dev> block devices,
+@@ -1476,6 +1481,22 @@ option at all.  The option was added when virt-v2v was rewritten in 2014.
+ It is possible to specify a format string for controlling the output;
+ see L<guestfs(3)/ADVANCED MACHINE READABLE OUTPUT>.
+ 
++=head2 Starting the libvirt system instance
++
++ Failed to connect socket to '/var/run/libvirt/virtqemud-sock': No such file or directory
++ Failed to connect socket to '/var/run/libvirt/virtqemud-sock-ro': Connection refused
++
++If you have just installed libvirt and virt-v2v, then you may see the
++errors above.  This is caused by libvirt daemons that provide various
++services not running straight after installation.  (This may depend on
++your distribution and vendor presets).
++
++To fix this on systemd-based distributions, do:
++
++ systemctl isolate multi-user.target
++
++See also L<https://bugzilla.redhat.com/2182024>.
++
+ =head1 FILES
+ 
+ =over 4

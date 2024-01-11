@@ -11,12 +11,12 @@
 %endif
 
 # The source directory.
-%global source_directory 2.2-stable
+%global source_directory 2.3-development
 
 Name:          virt-v2v
 Epoch:         1
-Version:       2.2.0
-Release:       6%{?dist}
+Version:       2.3.4
+Release:       5%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPLv2+
@@ -33,40 +33,29 @@ Source2:       libguestfs.keyring
 Source3:       copy-patches.sh
 
 # Patches are maintained in the following repository:
-# https://github.com/libguestfs/virt-v2v/commits/rhel-9.2
+# https://github.com/libguestfs/virt-v2v/commits/rhel-9.3
 
 # Patches.
-Patch0001:     0001-test-v2v-fedora-btrfs-conversion-spell-out-btrfs-fea.patch
-Patch0002:     0002-test-v2v-i-ova-spell-out-ntfs-feature-group-dependen.patch
-Patch0003:     0003-Translated-using-Weblate-Finnish.patch
-Patch0004:     0004-Translated-using-Weblate-Georgian.patch
-Patch0005:     0005-Update-translation-files.patch
-Patch0006:     0006-Translated-using-Weblate-Ukrainian.patch
-Patch0007:     0007-convert-windows-Remove-extraneous-blank-lines-in-sou.patch
-Patch0008:     0008-convert-windows-Document-what-copy_qemu_ga-function-.patch
-Patch0009:     0009-convert-windows-Remove-unused-open-Utils.patch
-Patch0010:     0010-o-kubevirt-Fix-mistake-in-error-message.patch
-Patch0011:     0011-o-kubevirt-Move-cpu-element-under-domain.patch
-Patch0012:     0012-o-kubevirt-Error-on-invalid-output-guest-names.patch
-Patch0013:     0013-Split-long-lines-in-messages.patch
-Patch0014:     0014-o-kubevirt-Implement-oo-compressed-for-qcow2-files.patch
-Patch0015:     0015-v2v-Remove-use-of-anchored.patch
-Patch0016:     0016-o-kubevirt-Replace-PCRE-anchored-with.patch
-Patch0017:     0017-o-libvirt-Add-correct-xmlns-libosinfo-for-Rocky-Linu.patch
-Patch0018:     0018-convert-linux-Require-host-cpu-for-all-RHEL-alike-9.patch
-Patch0019:     0019-detect_kernels-tighten-try-scope.patch
-Patch0020:     0020-detect_kernels-deal-with-RHEL-s-kernel-core-kernel-m.patch
-Patch0021:     0021-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
-Patch0022:     0022-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
-Patch0023:     0023-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
-Patch0024:     0024-RHEL-Fixes-for-libguestfs-winsupport.patch
-Patch0025:     0025-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
-Patch0026:     0026-RHEL-v2v-do-not-mention-SUSE-Xen-hosts-RHBZ-1430203.patch
-Patch0027:     0027-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
-Patch0028:     0028-RHEL-Disable-o-glance.patch
-Patch0029:     0029-RHEL-Remove-the-in-place-option.patch
-Patch0030:     0030-RHEL-9-oo-compressed-Remove-nbdcopy-version-check-an.patch
-Patch0031:     0031-RHEL-9-tests-Remove-btrfs-test.patch
+Patch0001:     0001-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
+Patch0002:     0002-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
+Patch0003:     0003-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
+Patch0004:     0004-RHEL-Fixes-for-libguestfs-winsupport.patch
+Patch0005:     0005-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
+Patch0006:     0006-RHEL-v2v-do-not-mention-SUSE-Xen-hosts-RHBZ-1430203.patch
+Patch0007:     0007-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
+Patch0008:     0008-RHEL-Disable-o-glance.patch
+Patch0009:     0009-RHEL-Remove-the-in-place-option.patch
+Patch0010:     0010-RHEL-9-oo-compressed-Remove-nbdcopy-version-check-an.patch
+Patch0011:     0011-RHEL-9-tests-Remove-btrfs-test.patch
+Patch0012:     0012-RHEL-9-Remove-block-driver-option.patch
+Patch0013:     0013-Update-common-submodule.patch
+Patch0014:     0014-update-common-submodule.patch
+Patch0015:     0015-LUKS-on-LVM-conversion-test-rename-VGs-and-LVs.patch
+Patch0016:     0016-LUKS-on-LVM-conversion-test-test-dev-mapper-VG-LV-tr.patch
+Patch0017:     0017-test-data-phony-guests-fix-prerequisite-list-of-fedo.patch
+Patch0018:     0018-lib-utils-fix-typo.patch
+Patch0019:     0019-lib-utils-make-chown_for_libvirt_rhbz_1045069-fail-h.patch
+Patch0020:     0020-docs-virt-v2v-document-libvirt-system-instance-start.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -94,7 +83,7 @@ BuildRequires: /usr/bin/pod2man
 BuildRequires: gcc
 BuildRequires: ocaml >= 4.04
 
-BuildRequires: libguestfs-devel >= 1:1.44
+BuildRequires: libguestfs-devel >= 1:1.49.8-1
 BuildRequires: augeas-devel
 BuildRequires: bash-completion
 BuildRequires: file-devel
@@ -131,14 +120,15 @@ BuildRequires: nbdkit-python-plugin
 BuildRequires: nbdkit-cow-filter >= 1.28.3-1.el9
 %ifarch x86_64
 BuildRequires: glibc-static
+BuildRequires: sqlite
 %endif
 
 %if 0%{verify_tarball_signature}
 BuildRequires: gnupg2
 %endif
 
-Requires:      libguestfs%{?_isa} >= 1:1.48.4-4.el9
-Requires:      guestfs-tools >= 1.42
+Requires:      libguestfs%{?_isa} >= 1:1.49.8-1
+Requires:      guestfs-tools >= 1.49.7-1
 
 # XFS is the default filesystem in Fedora and RHEL.
 Requires:      libguestfs-xfs
@@ -301,15 +291,29 @@ fi
 export LIBGUESTFS_DEBUG=1
 export LIBGUESTFS_TRACE=1
 
+# Work around RHBZ#2216496.
+export LIBGUESTFS_APPEND=nosmp
+
 # The built in tests take a very long time to run under TCG (in Koji),
 # so just perform a very simple conversion to check things are
 # working.
 for f in windows.img fedora.img; do
     make -C test-data/phony-guests $f
-    if -s test-data/phony-guests/$f; then
+    if test -s test-data/phony-guests/$f; then
         ./run virt-v2v -v -x -i disk test-data/phony-guests/$f -o null
     fi
 done
+
+# Individual tests we do want to run for checking backports.
+
+# The "windows.img" target below is harmless; it is already made by the
+# loop above (even if only with zero size, due to RHEL9 lacking NTFS
+# support). Repeat it here effectively for documentation purposes, as
+# the upstream test suite depends on "windows.img", for formatting
+# "windows.vmdk", regardless of the TESTS we want to run. The real
+# target we need to make here is "fedora-luks-on-lvm.img".
+make -C test-data/phony-guests windows.img fedora-luks-on-lvm.img
+make -C tests TESTS=test-v2v-fedora-luks-on-lvm-conversion.sh check
 %endif
 
 
@@ -355,9 +359,27 @@ done
 
 
 %changelog
+* Mon Jul 03 2023 Laszlo Ersek <lersek@redhat.com> - 1:2.3.4-5
+- improve UX when running as root and we can't chown v2v tmpdir or socks
+- make the appliance kernel UP in %check, for working around RHBZ#2216496
+  resolves: rhbz#2182024
+
+* Tue Jun 20 2023 Laszlo Ersek <lersek@redhat.com> - 1:2.3.4-3
+- recognize "--key /dev/mapper/VG-LV:key:password"
+- enable the %%check tests for real
+  resolves: rhbz#2168506
+
+* Fri Apr 28 2023 Richard W.M. Jones <rjones@redhat.com> - 1:2.3.4-2
+- Rebase to virt-v2v 2.3.4
+  resolves: rhbz#2187961, rhbz#2175703, rhbz#2172075, rhbz#2168082,
+  rhbz#1986386
+- Remove --block-driver option downstream
+  resolves: rhbz#2190387
+
 * Sun Apr 09 2023 Laszlo Ersek <lersek@redhat.com> - 1:2.2.0-6
 - cope with kernel-core / kernel-modules-core subpackage split in RHEL-9.2 guests
   resolves: rhbz#2184970
+
 * Mon Feb 06 2023 Richard W.M. Jones <rjones@redhat.com> - 1:2.2.0-5
 - Rebase to virt-v2v 2.2.0
   resolves: rhbz#2135762

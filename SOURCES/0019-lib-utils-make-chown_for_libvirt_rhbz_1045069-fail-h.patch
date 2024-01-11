@@ -1,0 +1,96 @@
+From 522a927257cfa55ac87775165be23779e00076bb Mon Sep 17 00:00:00 2001
+From: Laszlo Ersek <lersek@redhat.com>
+Date: Thu, 29 Jun 2023 14:34:42 +0200
+Subject: [PATCH] lib/utils: make "chown_for_libvirt_rhbz_1045069" fail hard
+
+Currently "chown_for_libvirt_rhbz_1045069" is best effort; if it fails, we
+suppress the exception (we log it in verbose mode only, even).
+
+That's not proved helpful: it almost certainly leads to later errors, but
+those errors are less clear than the original (suppressed) exception.
+Namely, the user sees something like
+
+> Failed to connect to '/tmp/v2v.sKlulY/in0': Permission denied
+
+rather than
+
+> Failed to connect socket to '/var/run/libvirt/virtqemud-sock-ro':
+> Connection refused
+
+So just allow the exception to propagate outwards.
+
+And then, now that "chown_for_libvirt_rhbz_1045069" will be able to fail,
+hoist the call to "On_exit.rm_rf" before the call to
+"chown_for_libvirt_rhbz_1045069", after creating the v2v temporary
+directory. In the current order, if "chown_for_libvirt_rhbz_1045069" threw
+an exception, then we'd leak the temp dir in the filesystem.
+
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=2182024
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+Message-Id: <20230629123443.188350-3-lersek@redhat.com>
+[lersek@redhat.com: reinstate parens under "then" [Rich]]
+Reviewed-by: Richard W.M. Jones <rjones@redhat.com>
+(cherry picked from commit 8bcf383510a3d9deaa9b4c069a45c1604c9d5f53)
+---
+ lib/utils.ml  | 23 +++++++++--------------
+ lib/utils.mli |  5 +----
+ 2 files changed, 10 insertions(+), 18 deletions(-)
+
+diff --git a/lib/utils.ml b/lib/utils.ml
+index 54431307..7b3aa2e2 100644
+--- a/lib/utils.ml
++++ b/lib/utils.ml
+@@ -151,19 +151,14 @@ let backend_is_libvirt () =
+ let rec chown_for_libvirt_rhbz_1045069 file =
+   let running_as_root = Unix.geteuid () = 0 in
+   if running_as_root && backend_is_libvirt () then (
+-    try
+-      let user = Option.value ~default:"qemu" (libvirt_qemu_user ()) in
+-      let uid =
+-        if String.is_prefix user "+" then
+-          int_of_string (String.sub user 1 (String.length user - 1))
+-        else
+-          (Unix.getpwnam user).pw_uid in
+-      debug "setting owner of %s to %d:root" file uid;
+-      Unix.chown file uid 0
+-    with
+-    | exn -> (* Print exception, but continue. *)
+-       debug "could not set owner of %s: %s"
+-         file (Printexc.to_string exn)
++    let user = Option.value ~default:"qemu" (libvirt_qemu_user ()) in
++    let uid =
++      if String.is_prefix user "+" then
++        int_of_string (String.sub user 1 (String.length user - 1))
++      else
++        (Unix.getpwnam user).pw_uid in
++    debug "setting owner of %s to %d:root" file uid;
++    Unix.chown file uid 0
+   )
+ 
+ (* Get the local user that libvirt uses to run qemu when we are
+@@ -206,8 +201,8 @@ let error_if_no_ssh_agent () =
+ (* Create the directory containing inX and outX sockets. *)
+ let create_v2v_directory () =
+   let d = Mkdtemp.temp_dir "v2v." in
+-  chown_for_libvirt_rhbz_1045069 d;
+   On_exit.rm_rf d;
++  chown_for_libvirt_rhbz_1045069 d;
+   d
+ 
+ (* Wait for a file to appear until a timeout. *)
+diff --git a/lib/utils.mli b/lib/utils.mli
+index cf88a467..391a2a35 100644
+--- a/lib/utils.mli
++++ b/lib/utils.mli
+@@ -67,10 +67,7 @@ val chown_for_libvirt_rhbz_1045069 : string -> unit
+     to root-owned files and directories.  To fix this, provide
+     a function to chown things we might need to qemu:root so
+     qemu can access them.  Note that root normally ignores
+-    permissions so can still access the resource.
+-
+-    This is best-effort.  If something fails then we carry
+-    on and hope for the best. *)
++    permissions so can still access the resource. *)
+ 
+ val error_if_no_ssh_agent : unit -> unit
+ 

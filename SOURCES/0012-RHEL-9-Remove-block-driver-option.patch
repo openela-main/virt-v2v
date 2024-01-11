@@ -1,0 +1,157 @@
+From 9c18f8772f7c8801ef47126f55b0313dc2188b03 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 28 Apr 2023 12:28:19 +0100
+Subject: [PATCH] RHEL 9: Remove --block-driver option
+
+Go back to the old default of always installing virtio-blk drivers in
+Windows guests.
+
+Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=2190387
+---
+ docs/virt-v2v-in-place.pod | 10 ----------
+ docs/virt-v2v.pod          | 10 ----------
+ in-place/in_place.ml       | 11 +----------
+ tests/Makefile.am          |  1 -
+ v2v/v2v.ml                 | 11 +----------
+ 5 files changed, 2 insertions(+), 41 deletions(-)
+
+diff --git a/docs/virt-v2v-in-place.pod b/docs/virt-v2v-in-place.pod
+index ce57e229..6e1c5363 100644
+--- a/docs/virt-v2v-in-place.pod
++++ b/docs/virt-v2v-in-place.pod
+@@ -47,16 +47,6 @@ Display help.
+ 
+ See I<--network> below.
+ 
+-=item B<--block-driver> B<virtio-blk>
+-
+-=item B<--block-driver> B<virtio-scsi>
+-
+-When choosing a block driver for Windows guests, prefer C<virtio-blk> or
+-C<virtio-scsi>.  The default is C<virtio-blk>.
+-
+-Note this has no effect for Linux guests at the moment.  That may be
+-added in future.
+-
+ =item B<--colors>
+ 
+ =item B<--colours>
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index fc7e0d82..0394b421 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -195,16 +195,6 @@ The options are silently ignored for other input methods.
+ 
+ See I<--network> below.
+ 
+-=item B<--block-driver> B<virtio-blk>
+-
+-=item B<--block-driver> B<virtio-scsi>
+-
+-When choosing a block driver for Windows guests, prefer C<virtio-blk> or
+-C<virtio-scsi>.  The default is C<virtio-blk>.
+-
+-Note this has no effect for Linux guests at the moment.  That may be
+-added in future.
+-
+ =item B<--colors>
+ 
+ =item B<--colours>
+diff --git a/in-place/in_place.ml b/in-place/in_place.ml
+index e8c260c2..2049db16 100644
+--- a/in-place/in_place.ml
++++ b/in-place/in_place.ml
+@@ -43,7 +43,6 @@ let rec main () =
+ 
+   let bandwidth = ref None in
+   let bandwidth_file = ref None in
+-  let block_driver = ref None in
+   let input_conn = ref None in
+   let input_format = ref None in
+   let input_password = ref None in
+@@ -157,8 +156,6 @@ let rec main () =
+   let argspec = [
+     [ S 'b'; L"bridge" ], Getopt.String ("in:out", add_bridge),
+                                     s_"Map bridge ‘in’ to ‘out’";
+-    [ L"block-driver" ], Getopt.String ("driver", set_string_option_once "--block-driver" block_driver),
+-                                    s_"Prefer 'virtio-blk' or 'virtio-scsi'";
+     [ S 'i' ],       Getopt.String ("disk|libvirt|libvirtxml|ova|vmx", set_input_mode),
+                                     s_"Set input mode (default: libvirt)";
+     [ M"ic" ],       Getopt.String ("uri", set_string_option_once "-ic" input_conn),
+@@ -214,12 +211,6 @@ read the man page virt-v2v-in-place(1).
+ 
+   (* Dereference the arguments. *)
+   let args = List.rev !args in
+-  let block_driver =
+-    match !block_driver with
+-    | None | Some "virtio-blk" -> Virtio_blk
+-    | Some "virtio-scsi" -> Virtio_SCSI
+-    | Some driver ->
+-       error (f_"unknown block driver ‘--block-driver %s’") driver in
+   let input_conn = !input_conn in
+   let input_mode = !input_mode in
+   let print_source = !print_source in
+@@ -303,7 +294,7 @@ read the man page virt-v2v-in-place(1).
+ 
+   (* Get the conversion options. *)
+   let conv_options = {
+-    Convert.block_driver = block_driver;
++    Convert.block_driver = Virtio_blk;
+     keep_serial_console = true;
+     ks = opthandle.ks;
+     network_map;
+diff --git a/tests/Makefile.am b/tests/Makefile.am
+index a1c61f8f..8e22ab64 100644
+--- a/tests/Makefile.am
++++ b/tests/Makefile.am
+@@ -77,7 +77,6 @@ TESTS = \
+ 	test-v2v-floppy.sh \
+ 	test-v2v-i-disk.sh \
+ 	test-v2v-i-ova.sh \
+-	test-v2v-block-driver.sh \
+ 	test-v2v-inspector.sh \
+ 	test-v2v-mac.sh \
+ 	test-v2v-machine-readable.sh \
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index 19f08aae..89c08fc5 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -48,7 +48,6 @@ let rec main () =
+ 
+   let bandwidth = ref None in
+   let bandwidth_file = ref None in
+-  let block_driver = ref None in
+   let input_conn = ref None in
+   let input_format = ref None in
+   let input_password = ref None in
+@@ -224,8 +223,6 @@ let rec main () =
+                                     s_"Set bandwidth dynamically from file";
+     [ S 'b'; L"bridge" ], Getopt.String ("in:out", add_bridge),
+       s_"Map bridge ‘in’ to ‘out’";
+-    [ L"block-driver" ], Getopt.String ("driver", set_string_option_once "--block-driver" block_driver),
+-                                    s_"Prefer 'virtio-blk' or 'virtio-scsi'";
+     [ L"compressed" ], Getopt.Unit (fun () -> set_output_option_compat "compressed" ""),
+       s_"Compress output file (-of qcow2 only)";
+     [ S 'i' ],       Getopt.String ("disk|libvirt|libvirtxml|ova|vmx", set_input_mode),
+@@ -341,12 +338,6 @@ read the man page virt-v2v(1).
+ 
+   (* Dereference the arguments. *)
+   let args = List.rev !args in
+-  let block_driver =
+-    match !block_driver with
+-    | None | Some "virtio-blk" -> Virtio_blk
+-    | Some "virtio-scsi" -> Virtio_SCSI
+-    | Some driver ->
+-       error (f_"unknown block driver ‘--block-driver %s’") driver in
+   let input_conn = !input_conn in
+   let input_mode = !input_mode in
+   let input_transport =
+@@ -518,7 +509,7 @@ read the man page virt-v2v(1).
+ 
+   (* Get the conversion options. *)
+   let conv_options = {
+-    Convert.block_driver = block_driver;
++    Convert.block_driver = Virtio_blk;
+     keep_serial_console = not remove_serial_console;
+     ks = opthandle.ks;
+     network_map;
