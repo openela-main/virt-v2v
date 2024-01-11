@@ -1,0 +1,86 @@
+From 4bd92b1fc4f830529b439c4a4e09281fcd9eab78 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 14 May 2018 10:16:58 +0100
+Subject: [PATCH] RHEL 8: v2v: rhv-upload: Remove restriction on -oa sparse.
+
+See: https://bugzilla.redhat.com/show_bug.cgi?id=1565681
+and the v2v-devel private thread "Do we already support migration using FC?"
+---
+ docs/virt-v2v-output-rhv.pod |  8 +-------
+ v2v/output_rhv_upload.ml     | 10 +---------
+ v2v/rhv-upload-plugin.py     |  4 +---
+ 3 files changed, 3 insertions(+), 19 deletions(-)
+
+diff --git a/docs/virt-v2v-output-rhv.pod b/docs/virt-v2v-output-rhv.pod
+index 7c9b478a..36c3676f 100644
+--- a/docs/virt-v2v-output-rhv.pod
++++ b/docs/virt-v2v-output-rhv.pod
+@@ -5,7 +5,7 @@ virt-v2v-output-rhv - Using virt-v2v to convert guests to oVirt or RHV
+ =head1 SYNOPSIS
+ 
+  virt-v2v [-i* options] -o rhv-upload [-oc ENGINE_URL] -os STORAGE
+-                        [-op PASSWORD] [-of raw]
++                        [-op PASSWORD]
+                         [-oo rhv-cafile=FILE]
+                         [-oo rhv-cluster=CLUSTER]
+                         [-oo rhv-direct]
+@@ -79,12 +79,6 @@ username is not specified then virt-v2v defaults to using
+ C<admin@internal> which is the typical superuser account for oVirt
+ instances.
+ 
+-=item I<-of raw>
+-
+-Currently you must use I<-of raw> and you cannot use I<-oa preallocated>.
+-
+-These restrictions will be loosened in a future version.
+-
+ =item I<-op> F<password-file>
+ 
+ A file containing a password to be used when connecting to the oVirt
+diff --git a/v2v/output_rhv_upload.ml b/v2v/output_rhv_upload.ml
+index 5c6c2611..81896e53 100644
+--- a/v2v/output_rhv_upload.ml
++++ b/v2v/output_rhv_upload.ml
+@@ -135,17 +135,10 @@ let error_unless_nbdkit_compiled_with_selinux config =
+       error (f_"nbdkit was compiled without SELinux support.  You will have to recompile nbdkit with libselinux-devel installed, or else set SELinux to Permissive mode while doing the conversion.")
+   )
+ 
+-(* Output sparse must be sparse.  We may be able to
+- * lift this limitation in future, but it requires changes on the
+- * RHV side.  See TODO file for details.  XXX
+- *)
++(* Output format must be raw. *)
+ let error_current_limitation required_param =
+   error (f_"rhv-upload: currently you must use ‘%s’.  This restriction will be loosened in a future version.") required_param
+ 
+-let error_unless_output_alloc_sparse output_alloc =
+-  if output_alloc <> Sparse then
+-    error_current_limitation "-oa sparse"
+-
+ let json_optstring = function
+   | Some s -> JSON.String s
+   | None -> JSON.Null
+@@ -247,7 +240,6 @@ object
+     error_unless_nbdkit_min_version config;
+     error_unless_nbdkit_python_plugin_working plugin_script;
+     error_unless_nbdkit_compiled_with_selinux config;
+-    error_unless_output_alloc_sparse output_alloc;
+ 
+     (* Python code prechecks. *)
+     let precheck_fn = tmpdir // "v2vprecheck.json" in
+diff --git a/v2v/rhv-upload-plugin.py b/v2v/rhv-upload-plugin.py
+index d3e6260e..471102da 100644
+--- a/v2v/rhv-upload-plugin.py
++++ b/v2v/rhv-upload-plugin.py
+@@ -477,10 +477,8 @@ def create_disk(connection):
+             # size, based on qemu-img measure of the overlay.
+             initial_size=params['disk_size'],
+             provisioned_size=params['disk_size'],
+-            # XXX Ignores params['output_sparse'].
+-            # Handling this properly will be complex, see:
+             # https://www.redhat.com/archives/libguestfs/2018-March/msg00177.html
+-            sparse=True,
++            sparse=params['output_sparse'],
+             storage_domains=[
+                 types.StorageDomain(
+                     name=params['output_storage'],

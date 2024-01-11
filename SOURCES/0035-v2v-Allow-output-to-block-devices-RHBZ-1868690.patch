@@ -1,0 +1,149 @@
+From 704e86cb3bd4ddc3b7c207967f0413b4637be1f3 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 1 Sep 2020 14:44:17 +0100
+Subject: [PATCH] v2v: Allow output to block devices (RHBZ#1868690).
+
+We previously implicitly supported writing to block devices instead of
+local files, but there were several problems:
+
+* Block devices could be deleted, especially if virt-v2v failed during
+  a conversion.
+
+* Block devices could be overwritten by a file with the same name,
+  although I believe this is just an observed consequence of the
+  previous point, or at least I was not able to reproduce this until
+  virt-v2v failed for another reason and then I noticed that because
+  the block device was deleted, the next run overwrote it with a file.
+
+* It was not documented anywhere how to do it.
+
+This commit makes the small code change needed to allow virt-v2v to
+write to a block device, only for existing outputs which write to
+local files (ie. using TargetFile).  Also it avoids deleting block
+devices accidentally on failure.
+
+Note this commit intentionally does not prevent you from writing qcow2
+to a block device.  RHV uses this so it is a thing that people do.
+
+(cherry picked from commit 9a5974fa3bc038e5e5dbb9605a6db77d06e7bf77)
+---
+ docs/virt-v2v.pod | 33 ++++++++++++++++++++++++++++++
+ v2v/v2v.ml        | 51 ++++++++++++++++++++++++++++-------------------
+ 2 files changed, 63 insertions(+), 21 deletions(-)
+
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index af69d633..50b0bc8e 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -1378,8 +1378,41 @@ require either a special user and/or for you to source a script that
+ sets authentication environment variables.  Consult the Glance
+ documentation.
+ 
++=item Writing to block devices
++
++This normally requires root.  See the next section.
++
+ =back
+ 
++=head2 Writing to block devices
++
++Some output modes write to local files.  In general these modes also
++let you write to block devices, but before you run virt-v2v you may
++have to arrange for symbolic links to the desired block devices in the
++output directory.
++
++For example if using I<-o local -os /dir> then virt-v2v would normally
++create files called:
++
++ /dir/name-sda     # first disk
++ /dir/name-sdb     # second disk
++ ...
++ /dir/name.xml     # metadata
++
++If you wish the disks to be written to block devices then you would
++need to create F</dir/I<name>-sda> (etc) as symlinks to the block
++devices:
++
++ # lvcreate -L 10G -n VolumeForDiskA VG
++ # lvcreate -L 6G -n VolumeForDiskB VG
++ # ln -sf /dev/VG/VolumeForDiskA /dir/name-sda
++ # ln -sf /dev/VG/VolumeForDiskB /dir/name-sdb
++
++Note that you must precreate the correct number of block devices of
++the correct size.  Typically I<-of raw> has to be used too, but other
++formats such as qcow2 can be useful occasionally so virt-v2v does not
++force you to use raw on block devices.
++
+ =head2 Minimal XML for -i libvirtxml option
+ 
+ When using the I<-i libvirtxml> option, you have to supply some
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index a58ff433..1f8d0138 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -681,7 +681,10 @@ and copy_targets cmdline targets input output =
+         fun t ->
+           match t.target_file with
+           | TargetURI _ -> ()
+-          | TargetFile s -> try unlink s with _ -> ()
++          | TargetFile filename ->
++             if not (is_block_device filename) then (
++               try unlink filename with _ -> ()
++             )
+       ) targets
+     )
+   );
+@@ -711,27 +714,33 @@ and copy_targets cmdline targets input output =
+ 
+       (match t.target_file with
+        | TargetFile filename ->
+-          (* It turns out that libguestfs's disk creation code is
+-           * considerably more flexible and easier to use than
+-           * qemu-img, so create the disk explicitly using libguestfs
+-           * then pass the 'qemu-img convert -n' option so qemu reuses
+-           * the disk.
+-           *
+-           * Also we allow the output mode to actually create the disk
+-           * image.  This lets the output mode set ownership and
+-           * permissions correctly if required.
++          (* As a special case, allow output to a block device or
++           * symlink to a block device.  In this case we don't
++           * create/overwrite the block device.  (RHBZ#1868690).
+            *)
+-          (* What output preallocation mode should we use? *)
+-          let preallocation =
+-            match t.target_format, cmdline.output_alloc with
+-            | ("raw"|"qcow2"), Sparse -> Some "sparse"
+-            | ("raw"|"qcow2"), Preallocated -> Some "full"
+-            | _ -> None (* ignore -oa flag for other formats *) in
+-          let compat =
+-            match t.target_format with "qcow2" -> Some "1.1" | _ -> None in
+-          output#disk_create filename t.target_format
+-                             t.target_overlay.ov_virtual_size
+-                             ?preallocation ?compat
++          if not (is_block_device filename) then (
++            (* It turns out that libguestfs's disk creation code is
++             * considerably more flexible and easier to use than
++             * qemu-img, so create the disk explicitly using libguestfs
++             * then pass the 'qemu-img convert -n' option so qemu reuses
++             * the disk.
++             *
++             * Also we allow the output mode to actually create the disk
++             * image.  This lets the output mode set ownership and
++             * permissions correctly if required.
++             *)
++            (* What output preallocation mode should we use? *)
++            let preallocation =
++              match t.target_format, cmdline.output_alloc with
++              | ("raw"|"qcow2"), Sparse -> Some "sparse"
++              | ("raw"|"qcow2"), Preallocated -> Some "full"
++              | _ -> None (* ignore -oa flag for other formats *) in
++            let compat =
++              match t.target_format with "qcow2" -> Some "1.1" | _ -> None in
++            output#disk_create filename t.target_format
++                               t.target_overlay.ov_virtual_size
++                               ?preallocation ?compat
++          )
+ 
+        | TargetURI _ ->
+           (* XXX For the moment we assume that qemu URI outputs

@@ -1,0 +1,272 @@
+From cc9a507e2372b5b6408964f9c31a3bd526aabf7c Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Wed, 23 Sep 2020 09:56:27 +0100
+Subject: [PATCH] v2v: vcenter: Implement cookie scripts.
+
+For conversions[*] which take longer than 30 minutes it can happen
+that the HTTPS authorization cookie that we fetched from VMware when
+we first connect expires.  This can especially happen when there are
+multiple disks, because we may not "touch" (therefore autorenew) the
+second disk while we are doing the long conversion.  This can lead to
+failures, some of which are silent: again if there are multiple disks,
+fstrim of the non-system disks can fail silently resulting in the copy
+step taking a very long time.
+
+The solution to this is to use the new nbdkit-curl-plugin
+cookie-script feature which allows nbdkit to automatically renew the
+cookie as required.
+
+During the conversion or copying steps you may see the cookie being
+autorenewed:
+
+  nbdkit: curl[3]: debug: curl: running cookie-script
+  nbdkit: curl[3]: debug: cookie-script returned cookies
+
+This removes the ?user and ?password parameters from Nbdkit_sources.-
+create_curl because they are no longer needed after this change.
+Note for future: if we need to add them back, we must prevent both
+user and cookie_script parameters from being used at the same time,
+because simply having the user parameter will try basic
+authentication, overriding the cookie, which will either fail (no
+password) or run very slowly.
+
+This change requires nbdkit >= 1.22 which is checked at runtime only
+if this feature is used.
+
+[*] Note here I mean conversions not the total runtime of virt-v2v.
+When doing the copy the cookie does not expire because it is
+continuously auto-renewed by VMware as we continuously access the disk
+(this works differently from systems like Docker where the cookie is
+only valid from the absolute time when it is first created).  This
+change also implements the cookie-script logic for copying.
+
+(cherry picked from commit 2b9a11743b74ef3716b66a7e395108a26382e331)
+
+Notes for cherry pick to RHEL 8.6:
+
+We no longer need the session_cookie field inside virt-v2v since it is
+replaced by the cookie script.  However it is still needed by
+virt-v2v-copy-to-local.  (This utility is removed upstream and in RHEL
+9, but we need to keep it around at least for appearances in RHEL 8.)
+
+So when cherry picking I had to retain the get_session_cookie function
+which required also keeping fetch_headers_and_url as it was (not
+dropping headers).
+---
+ v2v/nbdkit_sources.ml    | 34 ++++++++++++-----
+ v2v/nbdkit_sources.mli   |  5 +--
+ v2v/parse_libvirt_xml.ml |  3 +-
+ v2v/vCenter.ml           | 80 +++++++++++++++++++++++++++++++---------
+ 4 files changed, 90 insertions(+), 32 deletions(-)
+
+diff --git a/v2v/nbdkit_sources.ml b/v2v/nbdkit_sources.ml
+index 7c177e35..16af5f5c 100644
+--- a/v2v/nbdkit_sources.ml
++++ b/v2v/nbdkit_sources.ml
+@@ -26,7 +26,6 @@ open Types
+ open Utils
+ 
+ let nbdkit_min_version = (1, 12, 0)
+-let nbdkit_min_version_string = "1.12.0"
+ 
+ type password =
+ | NoPassword                    (* no password option at all *)
+@@ -38,11 +37,16 @@ let error_unless_nbdkit_working () =
+   if not (Nbdkit.is_installed ()) then
+     error (f_"nbdkit is not installed or not working")
+ 
+-let error_unless_nbdkit_min_version config =
++let error_unless_nbdkit_version_ge config min_version =
+   let version = Nbdkit.version config in
+-  if version < nbdkit_min_version then
+-    error (f_"nbdkit is too old.  nbdkit >= %s is required.")
+-          nbdkit_min_version_string
++  if version < min_version then (
++    let min_major, min_minor, min_release = min_version in
++    error (f_"nbdkit is too old.  nbdkit >= %d.%d.%d is required.")
++          min_major min_minor min_release
++  )
++
++let error_unless_nbdkit_min_version config =
++  error_unless_nbdkit_version_ge config nbdkit_min_version
+ 
+ let error_unless_nbdkit_plugin_exists plugin =
+   if not (Nbdkit.probe_plugin plugin) then
+@@ -297,23 +301,35 @@ let create_ssh ?bandwidth ~password ?port ~server ?user path =
+   common_create ?bandwidth password "ssh" (get_args ())
+ 
+ (* Create an nbdkit module specialized for reading from Curl sources. *)
+-let create_curl ?bandwidth ?cookie ~password ?(sslverify=true) ?user url =
++let create_curl ?bandwidth ?cookie_script ?cookie_script_renew
++                ?(sslverify=true) url =
+   error_unless_nbdkit_plugin_exists "curl";
+ 
++  (* The cookie* parameters require nbdkit 1.22, so check that early. *)
++  if cookie_script <> None || cookie_script_renew <> None then (
++    let config = Nbdkit.config () in
++    error_unless_nbdkit_version_ge config (1, 22, 0)
++  );
++
+   let add_arg, get_args =
+     let args = ref [] in
+     let add_arg (k, v) = List.push_front (k, v) args in
+     let get_args () = List.rev !args in
+     add_arg, get_args in
+ 
+-  Option.may (fun s -> add_arg ("user", s)) user;
+   (* https://bugzilla.redhat.com/show_bug.cgi?id=1146007#c10 *)
+   add_arg ("timeout", "2000");
+-  Option.may (fun s -> add_arg ("cookie", s)) cookie;
++  Option.may (fun s -> add_arg ("cookie-script", s)) cookie_script;
++  Option.may (fun i -> add_arg ("cookie-script-renew", string_of_int i))
++             cookie_script_renew;
+   if not sslverify then add_arg ("sslverify", "false");
+   add_arg ("url", url);
+ 
+-  common_create ?bandwidth password "curl" (get_args ())
++  (* For lots of extra debugging, uncomment one or both lines. *)
++  (*add_arg ("--debug", "curl.verbose=1");*)
++  (*add_arg ("--debug", "curl.scripts=1");*)
++
++  common_create ?bandwidth NoPassword "curl" (get_args ())
+ 
+ let run cmd =
+   let sock, _ = Nbdkit.run_unix cmd in
+diff --git a/v2v/nbdkit_sources.mli b/v2v/nbdkit_sources.mli
+index 94810ea6..922642df 100644
+--- a/v2v/nbdkit_sources.mli
++++ b/v2v/nbdkit_sources.mli
+@@ -60,10 +60,9 @@ val create_ssh : ?bandwidth:Types.bandwidth ->
+     Note this doesn't run nbdkit yet, it just creates the object. *)
+ 
+ val create_curl : ?bandwidth:Types.bandwidth ->
+-                  ?cookie:string ->
+-                  password:password ->
++                  ?cookie_script:string ->
++                  ?cookie_script_renew:int ->
+                   ?sslverify:bool ->
+-                  ?user:string ->
+                   string -> Nbdkit.cmd
+ (** Create a nbdkit object using the Curl plugin.  The required
+     string parameter is the URL.
+diff --git a/v2v/parse_libvirt_xml.ml b/v2v/parse_libvirt_xml.ml
+index 0b136839..fffc5a24 100644
+--- a/v2v/parse_libvirt_xml.ml
++++ b/v2v/parse_libvirt_xml.ml
+@@ -319,8 +319,7 @@ let parse_libvirt_xml ?bandwidth ?conn xml =
+                | _, Some port ->
+                   invalid_arg "invalid port number in libvirt XML" in
+              sprintf "%s://%s%s%s" driver host port (uri_quote path) in
+-           let nbdkit = Nbdkit_sources.create_curl ?bandwidth ~password:NoPassword
+-                                           url in
++           let nbdkit = Nbdkit_sources.create_curl ?bandwidth url in
+            let qemu_uri = Nbdkit_sources.run nbdkit in
+            add_disk qemu_uri format controller P_dont_rewrite
+         | Some protocol, _, _ ->
+diff --git a/v2v/vCenter.ml b/v2v/vCenter.ml
+index 4c128b0c..ead03364 100644
+--- a/v2v/vCenter.ml
++++ b/v2v/vCenter.ml
+@@ -46,11 +46,12 @@ let rec map_source ?bandwidth ?password_file dcPath uri server path =
+        (* XXX only works if the query string is not URI-quoted *)
+        String.find query "no_verify=1" = -1 in
+ 
++  (* Check the URL exists and authentication info is correct. *)
+   let https_url =
+     let https_url = get_https_url dcPath uri server path in
+-    (* Check the URL exists. *)
+-    let status, _, _ =
++    let status, _, dump_response =
+       fetch_headers_from_url password_file uri sslverify https_url in
++
+     (* If a disk is actually a snapshot image it will have '-00000n'
+      * appended to its name, e.g.:
+      *   [yellow:storage1] RHEL4-X/RHEL4-X-000003.vmdk
+@@ -58,28 +59,71 @@ let rec map_source ?bandwidth ?password_file dcPath uri server path =
+      * a 404 and the vmdk name looks like it might be a snapshot, try
+      * again without the snapshot suffix.
+      *)
+-    if status = "404" && PCRE.matches snapshot_re path then (
+-      let path = PCRE.sub 1 ^ PCRE.sub 2 in
+-      get_https_url dcPath uri server path
+-    )
+-    else
+-      (* Note that other non-200 status errors will be handled
+-       * in get_session_cookie below, so we don't have to worry
+-       * about them here.
+-       *)
+-      https_url in
++    let https_url, status, dump_response =
++      if status = "404" && PCRE.matches snapshot_re path then (
++        let path = PCRE.sub 1 ^ PCRE.sub 2 in
++        let https_url = get_https_url dcPath uri server path in
++        let status, _, dump_response =
++          fetch_headers_from_url password_file uri sslverify https_url in
++        https_url, status, dump_response
++      )
++      else (https_url, status, dump_response) in
++
++    if status = "401" then (
++      dump_response stderr;
++      if uri.uri_user <> None then
++        error (f_"vcenter: incorrect username or password")
++      else
++        error (f_"vcenter: incorrect username or password.  You might need to specify the username in the URI like this: [vpx|esx|..]://USERNAME@[etc]")
++    );
++
++    if status = "404" then (
++      dump_response stderr;
++      error (f_"vcenter: URL not found: %s") https_url
++    );
++
++    if status <> "200" then (
++      dump_response stderr;
++      error (f_"vcenter: invalid response from server: %s") status
++    );
++
++    https_url in
+ 
+   let session_cookie =
+     get_session_cookie password_file uri sslverify https_url in
+ 
+-  let password =
+-    match password_file with
+-    | None -> Nbdkit_sources.NoPassword
+-    | Some password_file -> Nbdkit_sources.PasswordFile password_file in
++  (* Write a cookie script to retrieve the session cookie.
++   * See nbdkit-curl-plugin(1) "Example: VMware ESXi cookies"
++   *)
++  let cookie_script, chan =
++    Filename.open_temp_file ~perms:0o700 "v2vcs" ".sh" in
++  unlink_on_exit cookie_script;
++  let fpf fs = fprintf chan fs in
++  fpf "#!/bin/sh -\n";
++  fpf "\n";
++  fpf "curl --head -s";
++  if not sslverify then fpf " --insecure";
++  (match uri.uri_user, password_file with
++   | None, None -> ()
++   | Some user, None -> fpf " -u %s" (quote user)
++   | None, Some password_file ->
++      fpf " -u \"$LOGNAME\":\"$(cat %s)\"" (quote password_file)
++   | Some user, Some password_file ->
++      fpf " -u %s:\"$(cat %s)\"" (quote user) (quote password_file)
++  );
++  fpf " %s" (quote https_url);
++  fpf " |\n";
++  fpf "\tsed -ne %s\n" (quote "{ s/^Set-Cookie: \\([^;]*\\);.*/\\1/ip }");
++  close_out chan;
++
++  (* VMware authentication expires after 30 minutes so we must renew
++   * after < 30 minutes.
++   *)
++  let cookie_script_renew = 25*60 in
+ 
+   let nbdkit =
+-    Nbdkit_sources.create_curl ?bandwidth ?cookie:session_cookie ~password ~sslverify
+-                       ?user:uri.uri_user https_url in
++    Nbdkit_sources.create_curl ?bandwidth ~cookie_script ~cookie_script_renew
++                               ~sslverify https_url in
+   let qemu_uri = Nbdkit_sources.run nbdkit in
+ 
+   (* Return the struct. *)

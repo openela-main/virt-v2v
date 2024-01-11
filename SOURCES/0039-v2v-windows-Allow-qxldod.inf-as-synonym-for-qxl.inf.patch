@@ -1,0 +1,27 @@
+From 575cb719ceb56d5f1812b6580f3a181bd95f5030 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 27 Apr 2021 17:29:42 +0100
+Subject: [PATCH] v2v: windows: Allow qxldod.inf as synonym for qxl.inf
+
+Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=1926102
+Thanks: Xiaodai Wang, Ming Xie
+(cherry picked from commit 11d1f3cd6878ae7713e589194f97526f744dc090)
+---
+ v2v/windows_virtio.ml | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/v2v/windows_virtio.ml b/v2v/windows_virtio.ml
+index 4e00cd61..b8256bad 100644
+--- a/v2v/windows_virtio.ml
++++ b/v2v/windows_virtio.ml
+@@ -155,7 +155,9 @@ let rec install_drivers ((g, _) as reg) inspect rcaps =
+ 
+     (* Can we install the QXL driver? *)
+     let video : guestcaps_video_type =
+-      let has_qxl = g#exists (driverdir // "qxl.inf") in
++      let has_qxl =
++        g#exists (driverdir // "qxl.inf") ||
++        g#exists (driverdir // "qxldod.inf") in
+       match rcaps.rcaps_video, has_qxl with
+       | Some QXL, false ->
+         error (f_"there is no QXL driver for this version of Windows (%d.%d %s).  virt-v2v looks for this driver in %s")

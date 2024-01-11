@@ -1,0 +1,32 @@
+From 217a74ad09bad781ee9efd5599f4323bdf9e3cff Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 3 Apr 2023 09:41:37 +0100
+Subject: [PATCH] RHEL 8: If setfiles fails fall back to autorelabel
+
+SFDC case 03473932, RHEL 8 only.
+
+See discussion in private email thread "Customer case requiring our
+assistance" in 2023.
+---
+ common | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Submodule common 1174b443..c4841a70:
+diff --git a/common/mlcustomize/SELinux_relabel.ml b/common/mlcustomize/SELinux_relabel.ml
+index 5ecf7bd7..f0630db1 100644
+--- a/common/mlcustomize/SELinux_relabel.ml
++++ b/common/mlcustomize/SELinux_relabel.ml
+@@ -35,11 +35,12 @@ let rec relabel (g : G.guestfs) =
+       use_setfiles g;
+       (* That worked, so we don't need to autorelabel. *)
+       g#rm_f "/.autorelabel"
+-    with Failure _ ->
++    with Failure _
+       (* This is the fallback in case something in the setfiles
+        * method didn't work.  That includes the case where a non-SELinux
+        * host is processing an SELinux guest, and other things.
+        *)
++    | Guestfs.Error _ -> (* this is for SFDC case 03473932 in RHEL 8 only *)
+       g#touch "/.autorelabel"
+   )
+ 

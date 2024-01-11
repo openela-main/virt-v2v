@@ -1,0 +1,211 @@
+From e04f4d6aa0e94a61b40fa6b10a5274ea89cd96a1 Mon Sep 17 00:00:00 2001
+From: Pino Toscano <ptoscano@redhat.com>
+Date: Mon, 25 May 2020 16:52:07 +0200
+Subject: [PATCH] -i libvirt: print URI without connecting (RHBZ#1839917)
+
+Pass (again) around the libvirt URI string in the various input_libvirt
+subclasses so that input_libvirt#as_options does not need to connect to
+print the connection URI.
+
+As related change: pass input_conn as non-optional string parameter in
+classes that require one (all but input_libvirt_other, basically). This
+avoids the need for extra checks.
+
+(cherry picked from commit 86d87563ee03e86ca9abdcad4f674af66a883006)
+---
+ v2v/input_libvirt.ml                | 10 +++++-----
+ v2v/input_libvirt_other.ml          | 12 ++++++++----
+ v2v/input_libvirt_other.mli         |  4 ++--
+ v2v/input_libvirt_vcenter_https.ml  |  4 ++--
+ v2v/input_libvirt_vcenter_https.mli |  2 +-
+ v2v/input_libvirt_vddk.ml           |  9 ++-------
+ v2v/input_libvirt_vddk.mli          |  4 ++--
+ v2v/input_libvirt_xen_ssh.ml        |  4 ++--
+ v2v/input_libvirt_xen_ssh.mli       |  2 +-
+ 9 files changed, 25 insertions(+), 26 deletions(-)
+
+diff --git a/v2v/input_libvirt.ml b/v2v/input_libvirt.ml
+index cd5f351c..352fae94 100644
+--- a/v2v/input_libvirt.ml
++++ b/v2v/input_libvirt.ml
+@@ -53,22 +53,22 @@ let input_libvirt input_conn input_password input_transport guest =
+ 
+     | Some _, None, _                   (* No scheme? *)
+     | Some _, Some "", _ ->
+-      Input_libvirt_other.input_libvirt_other libvirt_conn guest
++      Input_libvirt_other.input_libvirt_other libvirt_conn ?input_conn guest
+ 
+     (* vCenter over https. *)
+     | Some server, Some ("esx"|"gsx"|"vpx"), None ->
+        Input_libvirt_vcenter_https.input_libvirt_vcenter_https
+-         libvirt_conn input_password parsed_uri server guest
++         libvirt_conn orig_uri input_password parsed_uri server guest
+ 
+     (* vCenter or ESXi using nbdkit vddk plugin *)
+     | Some server, Some ("esx"|"gsx"|"vpx"), Some (`VDDK vddk_options) ->
+        Input_libvirt_vddk.input_libvirt_vddk
+-         libvirt_conn input_conn input_password vddk_options parsed_uri guest
++         libvirt_conn orig_uri input_password vddk_options parsed_uri guest
+ 
+     (* Xen over SSH *)
+     | Some server, Some "xen+ssh", _ ->
+       Input_libvirt_xen_ssh.input_libvirt_xen_ssh
+-        libvirt_conn input_password parsed_uri server guest
++        libvirt_conn orig_uri input_password parsed_uri server guest
+ 
+     (* Old virt-v2v also supported qemu+ssh://.  However I am
+      * deliberately not supporting this in new virt-v2v.  Don't
+@@ -79,6 +79,6 @@ let input_libvirt input_conn input_password input_transport guest =
+     | Some _, Some _, _ ->
+       warning (f_"no support for remote libvirt connections to '-ic %s'.  The conversion may fail when it tries to read the source disks.")
+         orig_uri;
+-      Input_libvirt_other.input_libvirt_other libvirt_conn guest
++      Input_libvirt_other.input_libvirt_other libvirt_conn ?input_conn guest
+ 
+ let () = Modules_list.register_input_module "libvirt"
+diff --git a/v2v/input_libvirt_other.ml b/v2v/input_libvirt_other.ml
+index e00944db..6a19ae52 100644
+--- a/v2v/input_libvirt_other.ml
++++ b/v2v/input_libvirt_other.ml
+@@ -40,12 +40,16 @@ let error_if_libvirt_does_not_support_json_backingfile () =
+     error (f_"because of libvirt bug https://bugzilla.redhat.com/1134878 you must EITHER upgrade to libvirt >= 2.1.0 OR set this environment variable:\n\nexport LIBGUESTFS_BACKEND=direct\n\nand then rerun the virt-v2v command.")
+ 
+ (* Superclass. *)
+-class virtual input_libvirt libvirt_conn guest =
++class virtual input_libvirt libvirt_conn ?input_conn guest =
+ object (self)
+   inherit input
+ 
+   method as_options =
+-    sprintf "-i libvirt -ic %s %s" (Libvirt.Connect.get_uri self#conn) guest
++    sprintf "-i libvirt%s %s"
++      (match input_conn with
++      | None -> ""
++      | Some uri -> " -ic " ^ uri)
++      guest
+ 
+   method private conn : Libvirt.rw Libvirt.Connect.t =
+     Lazy.force libvirt_conn
+@@ -54,9 +58,9 @@ end
+ (* Subclass specialized for handling anything that's *not* VMware vCenter
+  * or Xen.
+  *)
+-class input_libvirt_other libvirt_conn guest =
++class input_libvirt_other libvirt_conn ?input_conn guest =
+ object (self)
+-  inherit input_libvirt libvirt_conn guest
++  inherit input_libvirt libvirt_conn ?input_conn guest
+ 
+   method source ?bandwidth () =
+     debug "input_libvirt_other: source ()";
+diff --git a/v2v/input_libvirt_other.mli b/v2v/input_libvirt_other.mli
+index c528c3ee..ae2c0c6d 100644
+--- a/v2v/input_libvirt_other.mli
++++ b/v2v/input_libvirt_other.mli
+@@ -20,11 +20,11 @@
+ 
+ val error_if_libvirt_does_not_support_json_backingfile : unit -> unit
+ 
+-class virtual input_libvirt : Libvirt.rw Libvirt.Connect.t Lazy.t -> string -> object
++class virtual input_libvirt : Libvirt.rw Libvirt.Connect.t Lazy.t -> ?input_conn:string -> string -> object
+   method precheck : unit -> unit
+   method as_options : string
+   method virtual source : ?bandwidth:Types.bandwidth -> unit -> Types.source * Types.source_disk list
+   method private conn : Libvirt.rw Libvirt.Connect.t
+ end
+ 
+-val input_libvirt_other : Libvirt.rw Libvirt.Connect.t Lazy.t -> string -> Types.input
++val input_libvirt_other : Libvirt.rw Libvirt.Connect.t Lazy.t -> ?input_conn:string -> string -> Types.input
+diff --git a/v2v/input_libvirt_vcenter_https.ml b/v2v/input_libvirt_vcenter_https.ml
+index 77bc315d..ed2e5eed 100644
+--- a/v2v/input_libvirt_vcenter_https.ml
++++ b/v2v/input_libvirt_vcenter_https.ml
+@@ -32,9 +32,9 @@ open Printf
+ 
+ (* Subclass specialized for handling VMware vCenter over https. *)
+ class input_libvirt_vcenter_https
+-        libvirt_conn input_password parsed_uri server guest =
++        libvirt_conn input_conn input_password parsed_uri server guest =
+ object (self)
+-  inherit input_libvirt libvirt_conn guest
++  inherit input_libvirt libvirt_conn ~input_conn guest
+ 
+   val mutable dcPath = ""
+ 
+diff --git a/v2v/input_libvirt_vcenter_https.mli b/v2v/input_libvirt_vcenter_https.mli
+index c2e0f3fe..a12a9815 100644
+--- a/v2v/input_libvirt_vcenter_https.mli
++++ b/v2v/input_libvirt_vcenter_https.mli
+@@ -18,4 +18,4 @@
+ 
+ (** [-i libvirt] when the source is VMware vCenter *)
+ 
+-val input_libvirt_vcenter_https : Libvirt.rw Libvirt.Connect.t Lazy.t -> string option -> Xml.uri -> string -> string -> Types.input
++val input_libvirt_vcenter_https : Libvirt.rw Libvirt.Connect.t Lazy.t -> string -> string option -> Xml.uri -> string -> string -> Types.input
+diff --git a/v2v/input_libvirt_vddk.ml b/v2v/input_libvirt_vddk.ml
+index fbd1e0c6..75fd146e 100644
+--- a/v2v/input_libvirt_vddk.ml
++++ b/v2v/input_libvirt_vddk.ml
+@@ -99,7 +99,7 @@ class input_libvirt_vddk libvirt_conn input_conn input_password vddk_options
+   in
+ 
+ object (self)
+-  inherit input_libvirt libvirt_conn guest as super
++  inherit input_libvirt libvirt_conn ~input_conn guest as super
+ 
+   method precheck () =
+     error_unless_thumbprint ()
+@@ -138,12 +138,7 @@ object (self)
+       match parsed_uri.Xml.uri_server with
+       | Some server -> server
+       | None ->
+-         match input_conn with
+-         | Some input_conn ->
+-            error (f_"‘-ic %s’ URL does not contain a host name field")
+-                  input_conn
+-         | None ->
+-            error (f_"you must use the ‘-ic’ parameter.  See the virt-v2v-input-vmware(1) manual.") in
++         error (f_"‘-ic %s’ URL does not contain a host name field") input_conn in
+ 
+     let user = parsed_uri.Xml.uri_user in
+ 
+diff --git a/v2v/input_libvirt_vddk.mli b/v2v/input_libvirt_vddk.mli
+index 2fc6e9cf..f37d88e7 100644
+--- a/v2v/input_libvirt_vddk.mli
++++ b/v2v/input_libvirt_vddk.mli
+@@ -25,7 +25,7 @@ val print_input_options : unit -> unit
+ val parse_input_options : (string * string) list -> vddk_options
+ (** Print and parse vddk -io options. *)
+ 
+-val input_libvirt_vddk : Libvirt.rw Libvirt.Connect.t Lazy.t -> string option -> string option -> vddk_options -> Xml.uri -> string -> Types.input
+-(** [input_libvirt_vddk libvirt_conn vddk_options parsed_uri guest]
++val input_libvirt_vddk : Libvirt.rw Libvirt.Connect.t Lazy.t -> string -> string option -> vddk_options -> Xml.uri -> string -> Types.input
++(** [input_libvirt_vddk libvirt_conn input_conn vddk_options parsed_uri guest]
+     creates and returns a {!Types.input} object specialized for reading
+     the guest disks using the nbdkit vddk plugin. *)
+diff --git a/v2v/input_libvirt_xen_ssh.ml b/v2v/input_libvirt_xen_ssh.ml
+index bd1235a6..ec366b4a 100644
+--- a/v2v/input_libvirt_xen_ssh.ml
++++ b/v2v/input_libvirt_xen_ssh.ml
+@@ -30,9 +30,9 @@ open Input_libvirt_other
+ open Printf
+ 
+ (* Subclass specialized for handling Xen over SSH. *)
+-class input_libvirt_xen_ssh libvirt_conn input_password parsed_uri server guest =
++class input_libvirt_xen_ssh libvirt_conn input_conn input_password parsed_uri server guest =
+ object (self)
+-  inherit input_libvirt libvirt_conn guest
++  inherit input_libvirt libvirt_conn ~input_conn guest
+ 
+   method precheck () =
+     if backend_is_libvirt () then
+diff --git a/v2v/input_libvirt_xen_ssh.mli b/v2v/input_libvirt_xen_ssh.mli
+index 120a52f7..3cbca9d7 100644
+--- a/v2v/input_libvirt_xen_ssh.mli
++++ b/v2v/input_libvirt_xen_ssh.mli
+@@ -18,4 +18,4 @@
+ 
+ (** [-i libvirt] when the source is Xen *)
+ 
+-val input_libvirt_xen_ssh : Libvirt.rw Libvirt.Connect.t Lazy.t -> string option -> Xml.uri -> string -> string -> Types.input
++val input_libvirt_xen_ssh : Libvirt.rw Libvirt.Connect.t Lazy.t -> string -> string option -> Xml.uri -> string -> string -> Types.input

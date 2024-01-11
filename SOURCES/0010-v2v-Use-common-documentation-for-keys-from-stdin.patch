@@ -1,0 +1,57 @@
+From 6aec975c07d60a2518d3f16ee91db1d03a704882 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 30 Jul 2020 14:01:48 +0100
+Subject: [PATCH] v2v: Use common documentation for --keys-from-stdin.
+
+(cherry picked from commit 3f9b5f26398694a8a496eae85525e3be5c4b9cca)
+---
+ common            |  2 +-
+ docs/virt-v2v.pod | 11 ++++-------
+ 2 files changed, 5 insertions(+), 8 deletions(-)
+
+Submodule common be42b0b8..5ea1baec:
+diff --git a/common/options/Makefile.am b/common/options/Makefile.am
+index b38fedc7..f7ea7493 100644
+--- a/common/options/Makefile.am
++++ b/common/options/Makefile.am
+@@ -19,6 +19,7 @@ include $(top_srcdir)/subdir-rules.mk
+ 
+ EXTRA_DIST = \
+ 	key-option.pod \
++	keys-from-stdin-option.pod \
+ 	blocksize-option.pod
+ 
+ # liboptions.la contains guestfish code which is used in other
+diff --git a/common/options/keys-from-stdin-option.pod b/common/options/keys-from-stdin-option.pod
+new file mode 100644
+index 00000000..03c5339b
+--- /dev/null
++++ b/common/options/keys-from-stdin-option.pod
+@@ -0,0 +1,4 @@
++=item B<--keys-from-stdin>
++
++Read key or passphrase parameters from stdin.  The default is
++to try to read passphrases from the user by opening F</dev/tty>.
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index a00fa8af..74934eb4 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -382,14 +382,11 @@ through VDDK.
+ 
+ __INCLUDE:key-option.pod__
+ 
+-=item B<--keys-from-stdin>
++__INCLUDE:keys-from-stdin-option.pod__
+ 
+-Read key or passphrase parameters from stdin.  The default is
+-to try to read passphrases from the user by opening F</dev/tty>.
+-
+-Note this options only applies to keys and passphrases for encrypted
+-devices and partitions, not for passwords used to connect to remote
+-servers.
++Note I<--keys-from-stdin> only applies to keys and passphrases for
++encrypted devices and partitions, not for passwords used to connect to
++remote servers.
+ 
+ =item B<--mac> aa:bb:cc:dd:ee:ffB<:network:>out
+ 

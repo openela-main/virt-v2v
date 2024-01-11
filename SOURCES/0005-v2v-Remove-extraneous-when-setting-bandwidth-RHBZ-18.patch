@@ -1,0 +1,48 @@
+From f3ea9ceb1c3c9741d4f62d0c1d23b7c94634353a Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 28 May 2020 11:40:45 +0100
+Subject: [PATCH] v2v: Remove extraneous '=' when setting bandwidth
+ (RHBZ#1841096).
+
+Commit c3a54d6aed6dfc65f9ffa59976bb8d20044c03a8 ("v2v: Add standalone
+nbdkit module.") was supposed to be a simple refactoring but it broke
+the --bandwidth and --bandwidth-file options (amongst other things).
+
+Because of an extra '=' character which was accidentally left over, it
+would add an extra character in the nbdkit-rate-filter command line.
+For example:
+
+  virt-v2v .. --bandwidth 200M
+
+would invoke:
+
+  nbdkit .. --filter rate rate==200M
+
+which causes a parse error.  The --bandwidth-file option does not
+invoke a parse error but does not work, for similar reasons.
+
+Thanks: Ming Xie
+(cherry picked from commit a89a084b2d0f6d40716c1d34969f6c49ea28e9b3)
+---
+ v2v/nbdkit_sources.ml | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/v2v/nbdkit_sources.ml b/v2v/nbdkit_sources.ml
+index 979c3773..402dfd0e 100644
+--- a/v2v/nbdkit_sources.ml
++++ b/v2v/nbdkit_sources.ml
+@@ -118,11 +118,11 @@ let common_create ?bandwidth ?extra_debug ?extra_env plugin_name plugin_args =
+          let args =
+            match bandwidth with
+            | StaticBandwidth rate ->
+-              [ "rate=", rate ]
++              [ "rate", rate ]
+            | DynamicBandwidth (None, filename) ->
+-              [ "rate-file=", filename ]
++              [ "rate-file", filename ]
+            | DynamicBandwidth (Some rate, filename) ->
+-              [ "rate=", rate; "rate-file=", filename ] in
++              [ "rate", rate; "rate-file", filename ] in
+          cmd, args
+     )
+     else cmd, [] in

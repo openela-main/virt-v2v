@@ -1,0 +1,208 @@
+From 350baba10cbef38f7e2829927c2768c7f913e82f Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 23 Nov 2021 09:58:50 +0000
+Subject: [PATCH] v2v: Force format of input to be specified
+
+qemu 6.1 unnecessarily insists on the backing format of files being
+set.  Change the type of the input disk so the format is no longer an
+option, but must be set by the input mode.
+
+This change is only required on the 1.44 branch, since modular
+virt-v2v uses the qemu-nbd -s (snapshot) option to do the equivalent
+which seems to handle the backing format automatically.
+
+Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=2025769
+Reported-by: Vera Wu
+(cherry picked from commit 40cfe6da0861ca6360f670e254c71ed923a0402f)
+---
+ v2v/input_disk.ml                  |  2 +-
+ v2v/input_libvirt_vcenter_https.ml |  2 +-
+ v2v/input_libvirt_vddk.ml          |  2 +-
+ v2v/input_vmx.ml                   |  2 +-
+ v2v/parse_libvirt_xml.ml           | 13 +++++++++----
+ v2v/parse_ovf_from_ova.ml          |  2 +-
+ v2v/types.ml                       |  9 +++------
+ v2v/types.mli                      |  2 +-
+ v2v/v2v.ml                         | 19 +++++++------------
+ 9 files changed, 25 insertions(+), 28 deletions(-)
+
+diff --git a/v2v/input_disk.ml b/v2v/input_disk.ml
+index 4e403003..beaa9a4d 100644
+--- a/v2v/input_disk.ml
++++ b/v2v/input_disk.ml
+@@ -64,7 +64,7 @@ class input_disk input_format disk = object
+     let disk = {
+       s_disk_id = 0;
+       s_qemu_uri = disk_absolute;
+-      s_format = Some format;
++      s_format = format;
+       s_controller = None;
+     } in
+ 
+diff --git a/v2v/input_libvirt_vcenter_https.ml b/v2v/input_libvirt_vcenter_https.ml
+index ed2e5eed..f3c55b79 100644
+--- a/v2v/input_libvirt_vcenter_https.ml
++++ b/v2v/input_libvirt_vcenter_https.ml
+@@ -84,7 +84,7 @@ object (self)
+         (* The libvirt ESX driver doesn't normally specify a format, but
+          * the format of the -flat file is *always* raw, so force it here.
+          *)
+-        { disk with s_qemu_uri = qemu_uri; s_format = Some "raw" }
++        { disk with s_qemu_uri = qemu_uri; s_format = "raw" }
+     ) disks in
+ 
+     source, disks
+diff --git a/v2v/input_libvirt_vddk.ml b/v2v/input_libvirt_vddk.ml
+index 75fd146e..9463f6ba 100644
+--- a/v2v/input_libvirt_vddk.ml
++++ b/v2v/input_libvirt_vddk.ml
+@@ -187,7 +187,7 @@ object (self)
+          (* nbdkit always presents us with the raw disk blocks from
+           * the guest, so force the format to raw here.
+           *)
+-         { disk with s_qemu_uri = qemu_uri; s_format = Some "raw" }
++         { disk with s_qemu_uri = qemu_uri; s_format = "raw" }
+     ) disks in
+ 
+     source, disks
+diff --git a/v2v/input_vmx.ml b/v2v/input_vmx.ml
+index 7a7647e5..a4ed999a 100644
+--- a/v2v/input_vmx.ml
++++ b/v2v/input_vmx.ml
+@@ -190,7 +190,7 @@ and find_hdds ?bandwidth input_password vmx vmx_source
+            let uri, format = qemu_uri_of_filename ?bandwidth input_password
+                                                   vmx_source filename in
+            let s = { s_disk_id = (-1);
+-                     s_qemu_uri = uri; s_format = Some format;
++                     s_qemu_uri = uri; s_format = format;
+                      s_controller = Some controller } in
+            Some (c, t, s)
+         | _ -> None
+diff --git a/v2v/parse_libvirt_xml.ml b/v2v/parse_libvirt_xml.ml
+index fffc5a24..27e08135 100644
+--- a/v2v/parse_libvirt_xml.ml
++++ b/v2v/parse_libvirt_xml.ml
+@@ -270,9 +270,10 @@ let parse_libvirt_xml ?bandwidth ?conn xml =
+ 
+       let format =
+         match xpath_string "driver/@type" with
+-        | Some "aio" -> Some "raw" (* Xen wierdness *)
+-        | None -> None
+-        | Some format -> Some format in
++        | Some "aio" -> "raw" (* Xen wierdness *)
++        | Some format -> format
++        | None ->
++           error (f_"<disk><driver type=\"format\"> attribute is missing from the libvirt XML") in
+ 
+       (* The <disk type='...'> attribute may be 'block', 'file',
+        * 'network' or 'volume'.  We ignore any other types.
+@@ -339,7 +340,11 @@ let parse_libvirt_xml ?bandwidth ?conn xml =
+           let xpath_string = Xpath_helpers.xpath_string xpathctx in
+ 
+           (* Use the format specified in the volume itself. *)
+-          let format = xpath_string "/volume/target/format/@type" in
++          let format =
++            match xpath_string "/volume/target/format/@type" with
++            | Some format -> format
++            | None ->
++               error (f_"<volume><target>.<format type=\"format\"> attribute is missing from the libvirt XML of volume %s") vol in
+ 
+           (match xpath_string "/volume/@type" with
+           | None | Some "file" ->
+diff --git a/v2v/parse_ovf_from_ova.ml b/v2v/parse_ovf_from_ova.ml
+index 758718a2..bc795166 100644
+--- a/v2v/parse_ovf_from_ova.ml
++++ b/v2v/parse_ovf_from_ova.ml
+@@ -157,7 +157,7 @@ and parse_disks xpathctx =
+         source_disk = {
+           s_disk_id = i;
+           s_qemu_uri = "";
+-          s_format = Some "vmdk";
++          s_format = "vmdk";
+           s_controller = controller;
+         };
+         href = href;
+diff --git a/v2v/types.ml b/v2v/types.ml
+index 53daefed..e04bfacf 100644
+--- a/v2v/types.ml
++++ b/v2v/types.ml
+@@ -56,7 +56,7 @@ and source_firmware =
+ and source_disk = {
+   s_disk_id : int;
+   s_qemu_uri : string;
+-  s_format : string option;
++  s_format : string;
+   s_controller : s_controller option;
+ }
+ and s_controller = Source_IDE | Source_SATA | Source_SCSI |
+@@ -197,11 +197,8 @@ and string_of_source_firmware = function
+ 
+ and string_of_source_disk { s_qemu_uri = qemu_uri; s_format = format;
+                             s_controller = controller } =
+-  sprintf "\t%s%s%s"
+-    qemu_uri
+-    (match format with
+-    | None -> ""
+-    | Some format -> " (" ^ format ^ ")")
++  sprintf "\t%s (%s)%s"
++    qemu_uri format
+     (match controller with
+     | None -> ""
+     | Some controller -> " [" ^ string_of_controller controller ^ "]")
+diff --git a/v2v/types.mli b/v2v/types.mli
+index a9b0a70e..61a19eea 100644
+--- a/v2v/types.mli
++++ b/v2v/types.mli
+@@ -103,7 +103,7 @@ and source_firmware =
+ and source_disk = {
+   s_disk_id : int;                      (** A unique ID for each source disk. *)
+   s_qemu_uri : string;                  (** QEMU URI of source disk. *)
+-  s_format : string option;             (** Format. *)
++  s_format : string;                    (** Format of source disk. *)
+   s_controller : s_controller option;   (** Controller, eg. IDE, SCSI. *)
+ }
+ (** A source disk. *)
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index 8af86687..203b93f1 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -293,12 +293,11 @@ and create_overlays source_disks =
+        * should allow us to fstrim/blkdiscard and avoid copying
+        * significant parts of the data over the wire.
+        *)
+-      let options =
+-        "compat=1.1" ^
+-          (match format with None -> ""
+-                           | Some fmt -> ",backing_fmt=" ^ fmt) in
+-      let cmd = [ "qemu-img"; "create"; "-q"; "-f"; "qcow2"; "-b"; qemu_uri;
+-                  "-o"; options; overlay_file ] in
++      let cmd = [ "qemu-img"; "create"; "-q";
++                  "-o"; "compat=1.1";
++                  "-b"; qemu_uri; "-F"; format;
++                  "-f"; "qcow2";
++                  overlay_file ] in
+       if run_command cmd <> 0 then
+         error (f_"qemu-img command failed, see earlier errors");
+ 
+@@ -344,7 +343,7 @@ and populate_overlays g overlays =
+ and populate_disks g source_disks =
+   List.iter (
+     fun ({s_qemu_uri = qemu_uri; s_format = format}) ->
+-      g#add_drive_opts qemu_uri ?format ~cachemode:"unsafe"
++      g#add_drive_opts qemu_uri ~format ~cachemode:"unsafe"
+                           ~discard:"besteffort"
+   ) source_disks
+ 
+@@ -604,11 +603,7 @@ and get_target_formats cmdline output overlays =
+         | None ->
+            match cmdline.output_format with
+            | Some format -> format
+-           | None ->
+-              match ov.ov_source.s_format with
+-              | Some format -> format
+-              | None ->
+-                 error (f_"disk %s (%s) has no defined format.\n\nThe input metadata did not define the disk format (eg. raw/qcow2/etc) of this disk, and so virt-v2v will try to autodetect the format when reading it.\n\nHowever because the input format was not defined, we do not know what output format you want to use.  You have two choices: either define the original format in the source metadata, or use the ‘-of’ option to force the output format.") ov.ov_sd ov.ov_source.s_qemu_uri in
++           | None -> ov.ov_source.s_format in
+ 
+       (* What really happens here is that the call to #disk_create
+        * below fails if the format is not raw or qcow2.  We would

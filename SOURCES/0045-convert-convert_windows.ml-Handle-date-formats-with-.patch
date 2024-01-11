@@ -1,0 +1,41 @@
+From 84cb43440a2ad143eb7474a028b1b1549cb8c0f1 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 12 Nov 2021 08:47:55 +0000
+Subject: [PATCH] convert/convert_windows.ml: Handle date formats with dots
+ instead of /
+
+If the ShortDatePattern is yy.M.d (as can happen for US locale) we may
+not always reformat the date for schtasks.exe correctly.  For
+explanation and testing see:
+
+https://bugzilla.redhat.com/show_bug.cgi?id=1895323#c46 (- #c50)
+
+Thanks: Xiaodai Wang for suggesting the fix and testing it
+Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=1895323
+(cherry picked from commit d9dc6c42ae64ba92993dbd9477f003ba73fcfa2f)
+---
+ v2v/convert_windows.ml | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/v2v/convert_windows.ml b/v2v/convert_windows.ml
+index 13de10cb..6c7440aa 100644
+--- a/v2v/convert_windows.ml
++++ b/v2v/convert_windows.ml
+@@ -422,12 +422,15 @@ popd
+  and configure_qemu_ga files =
+    List.iter (
+      fun msi_path ->
+-       (* Windows is a trashfire. https://stackoverflow.com/a/18730884 *)
++       (* Windows is a trashfire.
++        * https://stackoverflow.com/a/18730884
++        * https://bugzilla.redhat.com/show_bug.cgi?id=1895323
++        *)
+        let fb_script = sprintf "\
+ echo Removing any previously scheduled qemu-ga installation
+ schtasks.exe /Delete /TN Firstboot-qemu-ga /F
+ echo Scheduling delayed installation of qemu-ga from %s
+-powershell.exe -command \"$d = (get-date).AddSeconds(120); $FormatHack = ($([System.Globalization.DateTimeFormatInfo]::CurrentInfo.ShortDatePattern) -replace 'M+/', 'MM/') -replace 'd+/', 'dd/'; schtasks.exe /Create /SC ONCE /ST $d.ToString('HH:mm') /SD $d.ToString($FormatHack) /RU SYSTEM /TN Firstboot-qemu-ga /TR \\\"C:\\%s /forcerestart /qn /l+*vx C:\\%s.log\\\"\"
++powershell.exe -command \"$d = (get-date).AddSeconds(120); $FormatHack = (($([System.Globalization.DateTimeFormatInfo]::CurrentInfo.ShortDatePattern) -replace 'y+', 'yyyy') -replace 'M+', 'MM') -replace 'd+', 'dd'; schtasks.exe /Create /SC ONCE /ST $d.ToString('HH:mm') /SD $d.ToString($FormatHack) /RU SYSTEM /TN Firstboot-qemu-ga /TR \\\"C:\\%s /forcerestart /qn /l+*vx C:\\%s.log\\\"\"
+       "
+       msi_path msi_path msi_path in
+       Firstboot.add_firstboot_script g inspect.i_root

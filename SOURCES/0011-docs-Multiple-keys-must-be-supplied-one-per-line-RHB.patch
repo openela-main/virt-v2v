@@ -1,0 +1,23 @@
+From 37ae5e04bd5f95c0c8a462dc6ef3fbdcfff4af75 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 30 Jul 2020 14:10:18 +0100
+Subject: [PATCH] docs: Multiple keys must be supplied one per line
+ (RHBZ#1858765).
+
+(cherry picked from commit 7ba65d14c0139dcf7fec45d33cee67c0f6737dd2)
+---
+ common | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Submodule common 5ea1baec..9338df5e:
+diff --git a/common/options/keys-from-stdin-option.pod b/common/options/keys-from-stdin-option.pod
+index 03c5339b..83790394 100644
+--- a/common/options/keys-from-stdin-option.pod
++++ b/common/options/keys-from-stdin-option.pod
+@@ -2,3 +2,6 @@
+ 
+ Read key or passphrase parameters from stdin.  The default is
+ to try to read passphrases from the user by opening F</dev/tty>.
++
++If there are multiple encrypted devices then you may need to supply
++multiple keys on stdin, one per line.

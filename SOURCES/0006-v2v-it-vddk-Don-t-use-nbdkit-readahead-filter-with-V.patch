@@ -1,0 +1,46 @@
+From 4e0b3de57486613c8f28ef7726df728cccd7624b Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 28 May 2020 10:59:57 +0100
+Subject: [PATCH] v2v: -it vddk: Don't use nbdkit readahead filter with VDDK
+ (RHBZ#1832805).
+
+This filter deliberately tries to coalesce reads into larger requests.
+Unfortunately VMware has low limits on the size of requests it can
+serve to a VDDK client and the larger requests would break with errors
+like this:
+
+  nbdkit: vddk[3]: error: [NFC ERROR] NfcFssrvrProcessErrorMsg: received NFC error 5 from server: Failed to allocate the requested 33554456 bytes
+
+We already increase the maximum request size by changing the
+configuration on the VMware server, but it's not sufficient for VDDK
+with the readahead filter.
+
+As readahead is only an optimization, the simplest solution is to
+disable this filter when we're using nbdkit-vddk-plugin.
+
+Thanks: Ming Xie
+(cherry picked from commit 1438174488f111fa24420758ba3bf0218dc9ee2a)
+---
+ v2v/nbdkit_sources.ml | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/v2v/nbdkit_sources.ml b/v2v/nbdkit_sources.ml
+index 402dfd0e..bfda91a7 100644
+--- a/v2v/nbdkit_sources.ml
++++ b/v2v/nbdkit_sources.ml
+@@ -97,9 +97,13 @@ let common_create ?bandwidth ?extra_debug ?extra_env plugin_name plugin_args =
+   let cmd = Nbdkit.add_filter_if_available cmd "retry" in
+ 
+   (* Adding the readahead filter is always a win for our access
+-   * patterns.  However if it doesn't exist don't worry.
++   * patterns.  If it doesn't exist don't worry.  However it
++   * breaks VMware servers (RHBZ#1832805).
+    *)
+-  let cmd = Nbdkit.add_filter_if_available cmd "readahead" in
++  let cmd =
++    if plugin_name <> "vddk" then
++      Nbdkit.add_filter_if_available cmd "readahead"
++    else cmd in
+ 
+   (* Caching extents speeds up qemu-img, especially its consecutive
+    * block_status requests with req_one=1.

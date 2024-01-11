@@ -1,0 +1,123 @@
+From fd1cbaa0907b30f639497c38953fe605bfc68ad0 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 28 Jul 2020 13:20:10 +0100
+Subject: [PATCH] v2v: Check that --mac :ip: parameters are sensible
+ (RHBZ#1858775).
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This is not a complete check since IP addresses come in many forms,
+but this at least stops nonsense being written through to the Windows
+firstboot script.
+
+$ virt-v2v --mac 11:22:33:44:55:66:ip:hello,world,999,invalid -i disk test1.img -o null
+virt-v2v: error: cannot parse --mac ip ipaddr: doesn’t look like
+“hello” is an IP address
+
+$ virt-v2v --mac 11:22:33:44:55:66:ip:192.168.0.10,192.168.0.1,999,192.168.2.1,192.168.2.2 -i disk test1.img -o null
+virt-v2v: error: --mac ip prefix length field is out of range
+
+Thanks: Zi Liu
+(cherry picked from commit e8bcf9615490447e1b53a8b0d3e9d202ab178cf0)
+---
+ v2v/cmdline.ml | 55 ++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 35 insertions(+), 20 deletions(-)
+
+diff --git a/v2v/cmdline.ml b/v2v/cmdline.ml
+index 249137ab..3b74f307 100644
+--- a/v2v/cmdline.ml
++++ b/v2v/cmdline.ml
+@@ -47,6 +47,7 @@ type cmdline = {
+ 
+ (* Matches --mac command line parameters. *)
+ let mac_re = PCRE.compile ~anchored:true "([[:xdigit:]]{2}:[[:xdigit:]]{2}:[[:xdigit:]]{2}:[[:xdigit:]]{2}:[[:xdigit:]]{2}:[[:xdigit:]]{2}):(network|bridge|ip):(.*)"
++let mac_ip_re = PCRE.compile ~anchored:true "([[:xdigit:]]|:|\\.)+"
+ 
+ let parse_cmdline () =
+   let bandwidth = ref None in
+@@ -102,7 +103,7 @@ let parse_cmdline () =
+ 
+   let network_map = Networks.create () in
+   let static_ips = ref [] in
+-  let add_network str =
++  let rec add_network str =
+     match String.split ":" str with
+     | "", "" ->
+        error (f_"invalid -n/--network parameter")
+@@ -110,8 +111,7 @@ let parse_cmdline () =
+        Networks.add_default_network network_map out
+     | in_, out ->
+        Networks.add_network network_map in_ out
+-  in
+-  let add_bridge str =
++  and add_bridge str =
+     match String.split ":" str with
+     | "", "" ->
+        error (f_"invalid -b/--bridge parameter")
+@@ -119,8 +119,7 @@ let parse_cmdline () =
+        Networks.add_default_bridge network_map out
+     | in_, out ->
+        Networks.add_bridge network_map in_ out
+-  in
+-  let add_mac str =
++  and add_mac str =
+     if not (PCRE.matches mac_re str) then
+       error (f_"cannot parse --mac \"%s\" parameter") str;
+     let mac = PCRE.sub 1 and out = PCRE.sub 3 in
+@@ -130,24 +129,40 @@ let parse_cmdline () =
+     | "bridge" ->
+        Networks.add_mac network_map mac Bridge out
+     | "ip" ->
+-       let add if_mac_addr if_ip_address if_default_gateway
+-               if_prefix_length if_nameservers =
+-         List.push_back static_ips
+-                        { if_mac_addr; if_ip_address; if_default_gateway;
+-                          if_prefix_length; if_nameservers }
+-       in
+        (match String.nsplit "," out with
+-        | [] ->
+-           error (f_"invalid --mac ip option")
+-        | [ip] -> add mac ip None None []
+-        | [ip; gw] -> add mac ip (Some gw) None []
++        | [] -> error (f_"invalid --mac ip option")
++        | [ip] -> add_static_ip mac ip None None []
++        | [ip; gw] -> add_static_ip mac ip (Some gw) None []
+         | ip :: gw :: len :: nameservers ->
+-           let len =
+-             try int_of_string len with
+-             | Failure _ -> error (f_"cannot parse --mac ip prefix length field as an integer: %s") len in
+-           add mac ip (Some gw) (Some len) nameservers
+-       );
++           add_static_ip mac ip (Some gw) (Some len) nameservers
++       )
+     | _ -> assert false
++  and add_static_ip if_mac_addr if_ip_address if_default_gateway
++                    if_prefix_length_str if_nameservers =
++    (* Check the IP addresses and prefix length are sensible.  This
++     * is only a very simple test that they are sane, since IP addresses
++     * come in too many valid forms to check thoroughly.
++     *)
++    let rec error_unless_ip_addr what addr =
++      if not (PCRE.matches mac_ip_re addr) then
++        error (f_"cannot parse --mac ip %s: doesn’t look like “%s” is an IP address") what addr
++    in
++    error_unless_ip_addr "ipaddr" if_ip_address;
++    Option.may (error_unless_ip_addr "gw") if_default_gateway;
++    List.iter (error_unless_ip_addr "nameserver") if_nameservers;
++    let if_prefix_length =
++      match if_prefix_length_str with
++      | None -> None
++      | Some len ->
++         let len =
++           try int_of_string len with
++           | Failure _ -> error (f_"cannot parse --mac ip prefix length field as an integer: %s") len in
++         if len < 0 || len > 128 then
++           error (f_"--mac ip prefix length field is out of range");
++         Some len in
++    List.push_back static_ips
++      { if_mac_addr; if_ip_address; if_default_gateway;
++        if_prefix_length; if_nameservers }
+   in
+ 
+   let no_trim_warning _ =
