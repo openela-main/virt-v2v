@@ -1,0 +1,34 @@
+From fd9694a3a2ea2911335cd3a85558a92b14d946fc Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 16 Jan 2023 12:19:29 +0000
+Subject: [PATCH] convert: windows: Remove extraneous blank lines in source
+
+---
+ convert/convert_windows.ml | 1 -
+ convert/windows_virtio.ml  | 1 -
+ 2 files changed, 2 deletions(-)
+
+diff --git a/convert/convert_windows.ml b/convert/convert_windows.ml
+index 57a7ff03..b0436fe4 100644
+--- a/convert/convert_windows.ml
++++ b/convert/convert_windows.ml
+@@ -476,7 +476,6 @@ let convert (g : G.guestfs) _ inspect _ static_ips =
+         (sprintf "install-%s.ps1" msi_path) !psh_script;
+     ) files
+ 
+-
+   and unconfigure_xenpv () =
+     match xenpv_uninst with
+     | None -> () (* nothing to be uninstalled *)
+diff --git a/convert/windows_virtio.ml b/convert/windows_virtio.ml
+index d9fda13f..2ce92ece 100644
+--- a/convert/windows_virtio.ml
++++ b/convert/windows_virtio.ml
+@@ -215,7 +215,6 @@ and copy_qemu_ga g inspect =
+     (fun () ->
+       error (f_"root directory ‘/’ is missing from the virtio-win directory or ISO.\n\nThis should not happen and may indicate that virtio-win or virt-v2v is broken in some way.  Please report this as a bug with a full debug log."))
+ 
+-
+ (* Copy all files from virtio_win directory/ISO located in [srcdir]
+  * subdirectory and all its subdirectories to the [destdir]. The directory
+  * hierarchy is not preserved, meaning all files will be directly in [destdir].

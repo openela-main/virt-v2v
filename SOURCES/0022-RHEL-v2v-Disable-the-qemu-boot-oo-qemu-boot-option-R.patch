@@ -1,0 +1,121 @@
+From b638c2083ee9af57d036859e8a807ad56e9e9361 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 30 Sep 2014 10:50:27 +0100
+Subject: [PATCH] RHEL: v2v: Disable the --qemu-boot / -oo qemu-boot option
+ (RHBZ#1147313).
+
+This cannot work because there is no Gtk or SDL output mode
+in RHEL's qemu-kvm.
+
+In addition you will have to edit the -display option in the
+qemu script.
+---
+ docs/virt-v2v-output-local.pod |  6 ++----
+ docs/virt-v2v.pod              | 17 -----------------
+ output/output_qemu.ml          |  3 +++
+ v2v/v2v.ml                     |  2 --
+ 4 files changed, 5 insertions(+), 23 deletions(-)
+
+diff --git a/docs/virt-v2v-output-local.pod b/docs/virt-v2v-output-local.pod
+index d2a1c270..0be37f5e 100644
+--- a/docs/virt-v2v-output-local.pod
++++ b/docs/virt-v2v-output-local.pod
+@@ -9,7 +9,7 @@ or libvirt
+ 
+  virt-v2v [-i* options] -o local -os DIRECTORY
+ 
+- virt-v2v [-i* options] -o qemu -os DIRECTORY [--qemu-boot]
++ virt-v2v [-i* options] -o qemu -os DIRECTORY
+ 
+  virt-v2v [-i* options] -o null
+ 
+@@ -47,12 +47,10 @@ where C<NAME> is the guest name.
+ 
+ =item B<-o qemu -os> C<DIRECTORY>
+ 
+-=item B<-o qemu -os> C<DIRECTORY> B<--qemu-boot>
+-
+ This converts the guest to files in C<DIRECTORY>.  Unlike I<-o local>
+ above, a shell script is created which contains the raw qemu command
+ you would need to boot the guest.  However the shell script is not
+-run, I<unless> you also add the I<--qemu-boot> option.
++run.
+ 
+ =item B<-o null>
+ 
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index b458607d..6cfe9e44 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -144,11 +144,6 @@ Since F<guest-domain.xml> contains the path(s) to the guest disk
+ image(s) you do not need to specify the name of the disk image on the
+ command line.
+ 
+-To convert a local disk image and immediately boot it in local
+-qemu, do:
+-
+- virt-v2v -i disk disk.img -o qemu -os /var/tmp -oo qemu-boot
+-
+ =head1 OPTIONS
+ 
+ =over 4
+@@ -507,9 +502,6 @@ This is similar to I<-o local>, except that a shell script is written
+ which you can use to boot the guest in qemu.  The converted disks and
+ shell script are written to the directory specified by I<-os>.
+ 
+-When using this output mode, you can also specify the I<-oo qemu-boot>
+-option which boots the guest under qemu immediately.
+-
+ =item B<-o> B<rhev>
+ 
+ This is the same as I<-o rhv>.
+@@ -588,11 +580,6 @@ For I<-o openstack> (L<virt-v2v-output-openstack(1)>) only, set a guest ID
+ which is saved on each Cinder volume in the C<virt_v2v_guest_id>
+ volume property.
+ 
+-=item B<-oo qemu-boot>
+-
+-When using I<-o qemu> only, this boots the guest immediately after
+-virt-v2v finishes.
+-
+ =item B<-oo verify-server-certificate>
+ 
+ =item B<-oo verify-server-certificate=>C<true|false>
+@@ -763,10 +750,6 @@ Print information about the source guest and stop.  This option is
+ useful when you are setting up network and bridge maps.
+ See L</Networks and bridges>.
+ 
+-=item B<--qemu-boot>
+-
+-This is the same as I<-oo qemu-boot>.
+-
+ =item B<-q>
+ 
+ =item B<--quiet>
+diff --git a/output/output_qemu.ml b/output/output_qemu.ml
+index 3a57a009..4be9b650 100644
+--- a/output/output_qemu.ml
++++ b/output/output_qemu.ml
+@@ -65,6 +65,9 @@ module QEMU = struct
+     let compressed = !compressed
+     and qemu_boot = !qemu_boot in
+ 
++    if qemu_boot then
++      error (f_"-o qemu: the -oo qemu-boot option cannot be used in RHEL");
++
+     (* -os must be set to a directory. *)
+     let output_storage =
+       match options.output_storage with
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index 7a01eab5..dc747804 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -272,8 +272,6 @@ let rec main () =
+       s_"Same as ‘-ip filename’";
+     [ L"print-source" ], Getopt.Set print_source,
+       s_"Print source and stop";
+-    [ L"qemu-boot" ], Getopt.Unit (fun () -> set_output_option_compat "qemu-boot" ""),
+-      s_"Boot in qemu (-o qemu only)";
+     [ L"root" ],     Getopt.String ("ask|... ", set_root_choice),
+       s_"How to choose root filesystem";
+     [ L"vddk-config" ], Getopt.String ("filename", set_input_option_compat "vddk-config"),

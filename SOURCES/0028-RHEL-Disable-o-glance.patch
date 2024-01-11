@@ -1,0 +1,216 @@
+From 2d85522fe7b03207573952a7d95b0f621e3ff52e Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Wed, 30 Jun 2021 11:15:52 +0100
+Subject: [PATCH] RHEL: Disable -o glance
+
+Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=1977539
+---
+ docs/virt-v2v-output-openstack.pod | 56 ++----------------------------
+ docs/virt-v2v.pod                  | 20 -----------
+ output/output_glance.mli           |  2 +-
+ tests/test-v2v-o-glance.sh         |  3 ++
+ v2v/v2v.ml                         |  7 +---
+ 5 files changed, 7 insertions(+), 81 deletions(-)
+
+diff --git a/docs/virt-v2v-output-openstack.pod b/docs/virt-v2v-output-openstack.pod
+index f5a3abad..1ab356e8 100644
+--- a/docs/virt-v2v-output-openstack.pod
++++ b/docs/virt-v2v-output-openstack.pod
+@@ -10,13 +10,10 @@ virt-v2v-output-openstack - Using virt-v2v to convert guests to OpenStack
+                         [-oo verify-server-certificate=false]
+                         [-oo os-username=admin] [-oo os-*=*]
+ 
+- virt-v2v [-i* options] -o glance
+-
+ =head1 DESCRIPTION
+ 
+ This page documents how to use L<virt-v2v(1)> to convert guests to run
+-on OpenStack.  There are two output modes you can select, but only
+-I<-o openstack> should be used normally.
++on OpenStack.
+ 
+ =over 4
+ 
+@@ -27,15 +24,6 @@ Full description: L</OUTPUT TO OPENSTACK>
+ This is the modern method for uploading to OpenStack via the REST API.
+ Guests can be directly converted into Cinder volumes.
+ 
+-=item B<-o glance>
+-
+-Full description: L</OUTPUT TO GLANCE>
+-
+-This is the old method for uploading to Glance.  Unfortunately Glance
+-is not well suited to storing converted guests (since virt-v2v deals
+-with "pets" not templated "cattle"), so this method is not recommended
+-unless you really know what you are doing.
+-
+ =back
+ 
+ =head1 OUTPUT TO OPENSTACK
+@@ -170,50 +158,10 @@ no Cinder volume type is used.
+ The following options are B<not> supported with OpenStack: I<-oa>,
+ I<-of>.
+ 
+-=head1 OUTPUT TO GLANCE
+-
+-Note this is a legacy option.  In most cases you should use
+-L</OUTPUT TO OPENSTACK> instead.
+-
+-To output to OpenStack Glance, use the I<-o glance> option.
+-
+-This runs the L<glance(1)> CLI program which must be installed on the
+-virt-v2v conversion host.  For authentication to work, you will need
+-to set C<OS_*> environment variables.
+-
+-Normally there is a file called C<overcloudrc> or C<keystonerc_admin>
+-which you can simply C<source> to set everything up.
+-
+-Virt-v2v adds metadata for the guest to Glance, describing such things
+-as the guest operating system and what drivers it requires.  The
+-command C<glance image-show> will display the metadata as "Property"
+-fields such as C<os_type> and C<hw_disk_bus>.
+-
+-=head2 Glance and sparseness
+-
+-Glance image upload doesn't appear to correctly handle sparseness.
+-For this reason, using qcow2 will be faster and use less space on the
+-Glance server.  Use the virt-v2v S<I<-of qcow2>> option.
+-
+-=head2 Glance and multiple disks
+-
+-If the guest has a single disk, then the name of the disk in Glance
+-will be the name of the guest.  You can control this using the I<-on>
+-option.
+-
+-Glance doesn't have a concept of associating multiple disks with a
+-single guest, and Nova doesn't allow you to boot a guest from multiple
+-Glance disks either.  If the guest has multiple disks, then the first
+-(assumed to be the system disk) will have the name of the guest, and
+-the second and subsequent data disks will be called
+-C<I<guestname>-disk2>, C<I<guestname>-disk3> etc.  It may be best to
+-leave the system disk in Glance, and import the data disks to Cinder.
+-
+ =head1 SEE ALSO
+ 
+ L<virt-v2v(1)>,
+-L<https://docs.openstack.org/python-openstackclient/latest/cli/man/openstack.html>,
+-L<glance(1)>.
++L<https://docs.openstack.org/python-openstackclient/latest/cli/man/openstack.html>.
+ 
+ =head1 AUTHOR
+ 
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index 6cfe9e44..d161b63f 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -421,14 +421,6 @@ See L</Networks and bridges> below.
+ 
+ This is the same as I<-o local>.
+ 
+-=item B<-o> B<glance>
+-
+-This is a legacy option.  You should probably use I<-o openstack>
+-instead.
+-
+-Set the output method to OpenStack Glance.  In this mode the converted
+-guest is uploaded to Glance.  See L<virt-v2v-output-openstack(1)>.
+-
+ =item B<-o> B<kubevirt>
+ 
+ Set the output method to I<kubevirt>.  B<Note the way this mode works
+@@ -1172,11 +1164,6 @@ and output methods may use disk space, as outlined in the table below.
+ This temporarily places a full copy of the uncompressed source disks
+ in C<$VIRT_V2V_TMPDIR> (or F</var/tmp>).
+ 
+-=item I<-o glance>
+-
+-This temporarily places a full copy of the output disks in
+-C<$VIRT_V2V_TMPDIR> (or F</var/tmp>).
+-
+ =item I<-o local>
+ 
+ =item I<-o qemu>
+@@ -1360,13 +1347,6 @@ instance.
+ Because of how Cinder volumes are presented as F</dev> block devices,
+ using I<-o openstack> normally requires that virt-v2v is run as root.
+ 
+-=item Writing to Glance
+-
+-This does I<not> need root (in fact it probably won’t work), but may
+-require either a special user and/or for you to source a script that
+-sets authentication environment variables.  Consult the Glance
+-documentation.
+-
+ =item Writing to block devices
+ 
+ This normally requires root.  See the next section.
+diff --git a/output/output_glance.mli b/output/output_glance.mli
+index 972320a2..9befc461 100644
+--- a/output/output_glance.mli
++++ b/output/output_glance.mli
+@@ -18,4 +18,4 @@
+ 
+ (** [-o glance] output mode. *)
+ 
+-module Glance : Output.OUTPUT
++(*module Glance : Output.OUTPUT*)
+diff --git a/tests/test-v2v-o-glance.sh b/tests/test-v2v-o-glance.sh
+index c0db9115..074b5e16 100755
+--- a/tests/test-v2v-o-glance.sh
++++ b/tests/test-v2v-o-glance.sh
+@@ -20,6 +20,9 @@
+ 
+ set -e
+ 
++# Feature is disabled in RHEL 9.
++exit 77
++
+ source ./functions.sh
+ set -e
+ set -x
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index dc747804..392c3dad 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -194,7 +194,6 @@ let rec main () =
+     if !output_mode <> `Not_set then
+       error (f_"%s option used more than once on the command line") "-o";
+     match mode with
+-    | "glance" -> output_mode := `Glance
+     | "kubevirt" -> output_mode := `Kubevirt
+     | "libvirt" -> output_mode := `Libvirt
+     | "disk" | "local" -> output_mode := `Disk
+@@ -252,7 +251,7 @@ let rec main () =
+       s_"Map network ‘in’ to ‘out’";
+     [ L"no-trim" ],  Getopt.String ("-", no_trim_warning),
+       s_"Ignored for backwards compatibility";
+-    [ S 'o' ],       Getopt.String ("glance|kubevirt|libvirt|local|null|openstack|qemu|rhv|rhv-upload|vdsm", set_output_mode),
++    [ S 'o' ],       Getopt.String ("kubevirt|libvirt|local|null|openstack|qemu|rhv|rhv-upload|vdsm", set_output_mode),
+       s_"Set output mode (default: libvirt)";
+     [ M"oa" ],       Getopt.String ("sparse|preallocated", set_output_alloc),
+                                     s_"Set output allocation mode";
+@@ -320,8 +319,6 @@ virt-v2v -i libvirtxml guest-domain.xml -o local -os /var/tmp
+ 
+ virt-v2v -i disk disk.img -o local -os /var/tmp
+ 
+-virt-v2v -i disk disk.img -o glance
+-
+ There is a companion front-end called \"virt-p2v\" which comes as an
+ ISO or CD image that can be booted on physical machines.
+ 
+@@ -390,7 +387,6 @@ read the man page virt-v2v(1).
+       pr "input:libvirtxml\n";
+       pr "input:ova\n";
+       pr "input:vmx\n";
+-      pr "output:glance\n";
+       pr "output:kubevirt\n";
+       pr "output:libvirt\n";
+       pr "output:local\n";
+@@ -487,7 +483,6 @@ read the man page virt-v2v(1).
+     | `Disk -> (module Output_disk.Disk)
+     | `Null -> (module Output_null.Null)
+     | `QEmu -> (module Output_qemu.QEMU)
+-    | `Glance -> (module Output_glance.Glance)
+     | `Kubevirt -> (module Output_kubevirt.Kubevirt)
+     | `Openstack -> (module Output_openstack.Openstack)
+     | `RHV_Upload -> (module Output_rhv_upload.RHVUpload)

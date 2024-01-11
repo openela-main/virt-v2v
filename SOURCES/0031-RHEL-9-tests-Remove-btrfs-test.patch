@@ -1,0 +1,22 @@
+From 462f9b9eb810a5ac26f610d03b601906c9bc674e Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 5 Jul 2022 11:58:09 +0100
+Subject: [PATCH] RHEL 9: tests: Remove btrfs test
+
+RHEL does not have btrfs so this test always fails.
+---
+ tests/Makefile.am | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/tests/Makefile.am b/tests/Makefile.am
+index 8cf17f94..8b2a8685 100644
+--- a/tests/Makefile.am
++++ b/tests/Makefile.am
+@@ -97,7 +97,6 @@ TESTS = \
+ 	test-v2v-sound.sh \
+ 	test-v2v-virtio-win-iso.sh \
+ 	test-v2v-fedora-conversion.sh \
+-	test-v2v-fedora-btrfs-conversion.sh \
+ 	test-v2v-fedora-luks-on-lvm-conversion.sh \
+ 	test-v2v-fedora-lvm-on-luks-conversion.sh \
+ 	test-v2v-fedora-md-conversion.sh \

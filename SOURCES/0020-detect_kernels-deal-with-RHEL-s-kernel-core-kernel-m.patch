@@ -1,0 +1,97 @@
+From 9449d21eeae81d4283e74d7cdccf776e695783f0 Mon Sep 17 00:00:00 2001
+From: Laszlo Ersek <lersek@redhat.com>
+Date: Wed, 5 Apr 2023 17:08:29 +0200
+Subject: [PATCH] detect_kernels: deal with RHEL's kernel-core /
+ kernel-modules-core split
+
+In "kernel-5.14.0-269.el9", the "kernel-modules-core" subpackage got split
+from the "kernel-core" subpackage. Therefore, a single binary RPM
+containing *both* the "/boot/vmlinuz-5.14.0-269.el9.x86_64" file *and* the
+"/lib/modules/5.14.0-269.el9.x86_64" directory no longer exists. The file
+now belongs to "kernel-core", and the directory to "kernel-modules-core".
+
+As a result, when we investigate the file list of "kernel-core" (based on
+"kernel-core" providing "/boot/vmlinuz-5.14.0-269.el9.x86_64"), the first
+match against "/lib/modules/" is not the actual module root directory
+"/lib/modules/5.14.0-269.el9.x86_64", but the nonsensical
+"/lib/modules/5.14.0-269.el9.x86_64/.vmlinuz.hmac" regular file. This
+latter file is never a directory, therefore we rule out "kernel-core" as a
+kernel package.
+
+We also rule out "kernel-modules-core" (even earlier) because it does not
+contain "/boot/vmlinuz-5.14.0-269.el9.x86_64".
+
+Now, the code already deals with the case if the prospective kernel
+package *does not provide a match* for the "/lib/modules/" prefix: in that
+case, we construct the modpath manually, from said prefix, and the version
+number found in "/boot/vmlinuz-<version>". This fallback is good, but it's
+unreachable if *there is* a candidate, it's just wrong (i.e., not a
+directory).
+
+Perform the "is_dir" check on the candidate modpath earlier, so that we
+can fall back to the manual modpath construction if the modpath candidate
+exists, but is wrong.
+
+With this, the original "is_dir" check becomes superfluous (duplicated)
+*except* when the "Not_found" branch is taken. Therefore, hoist the
+original "is_dir" check into that branch.
+
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=2175703
+Reported-by: Vera Wu <vwu@redhat.com>
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+Tested-by: Vera Wu <vwu@redhat.com>
+(ported from libguestfs-common commit 70c10a079a30ff3a84f38596d725a6c5d46e2470)
+Message-Id: <20230405150829.171720-3-lersek@redhat.com>
+Reviewed-by: Richard W.M. Jones <rjones@redhat.com>
+---
+ convert/linux_kernels.ml | 24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
+
+diff --git a/convert/linux_kernels.ml b/convert/linux_kernels.ml
+index 75ab94c4..d0b31643 100644
+--- a/convert/linux_kernels.ml
++++ b/convert/linux_kernels.ml
+@@ -124,7 +124,7 @@ let detect_kernels (g : G.guestfs) inspect family bootloader =
+              let prefix = "/lib/modules/" in
+              let prefix_len = String.length prefix in
+              try
+-               List.find_map (
++               let modpath, version = List.find_map (
+                  fun filename ->
+                    let filename_len = String.length filename in
+                    if filename_len > prefix_len &&
+@@ -134,17 +134,29 @@ let detect_kernels (g : G.guestfs) inspect family bootloader =
+                      Some (filename, version)
+                    ) else
+                      None
+-               ) files
++               ) files in
++               (* Fall back to the version in the vmlinuz file name not only if
++                * a candidate pathname couldn't be found under /lib/modules/,
++                * but also in case the candidate pathname doesn't reference a
++                * directory. See RHBZ#2175703.
++                *
++                * Note that this "is_dir" check is deliberately kept outside of
++                * the "find_map"'s mapper function above: we want the first
++                * candidate *to be* a directory, and not the first candidate
++                * *that is* a directory.
++                *)
++               if not (g#is_dir ~followsymlinks:true modpath) then
++                 raise Not_found;
++               modpath, version
+              with Not_found ->
+                let version =
+                  String.sub vmlinuz 14 (String.length vmlinuz - 14) in
+                let modpath = prefix ^ version in
++               (* Check that the modpath exists. *)
++               if not (g#is_dir ~followsymlinks:true modpath) then
++                 raise Not_found;
+                modpath, version in
+ 
+-           (* Check that the modpath exists. *)
+-           if not (g#is_dir ~followsymlinks:true modpath) then
+-             raise Not_found;
+-
+            (* Find the initramfs which corresponds to the kernel.
+             * Since the initramfs is built at runtime, and doesn't have
+             * to be covered by the RPM file list, this is basically
