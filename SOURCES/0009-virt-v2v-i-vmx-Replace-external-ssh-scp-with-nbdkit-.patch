@@ -1,0 +1,167 @@
+From fb72e059863a60503b6011b8590c25c3a010a58f Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 15 Jan 2024 15:38:30 +0000
+Subject: [PATCH] virt-v2v: -i vmx: Replace external ssh/scp with
+ nbdkit-ssh-plugin
+
+If you use a -i vmx ssh filename containing '*' then it will expand
+the glob at the remote side.  New scp is weird and silently creates a
+directory on the local side.  For example suppose there's a remote
+file literally called "/tmp/test*" (ie. the '*' is part of the
+filename) and you thought you could copy that to local using:
+
+  scp 'remote:/tmp/test*' '/tmp/test*'
+
+scp treats the first parameter (only) as a wildcard and if there are
+multiple files matching the wildcard /tmp/test*, will create a local
+directory literally called "/tmp/test*/" and put the files into it.
+Who expected any of that?
+
+You might think that double quoting (as we used to use) might work,
+but that breaks with spaces and quotes.  I guess scp is using
+different code paths internally for glob versus everything else.
+
+The only way to really make this work is to stop using scp entirely
+and just use sftp directly.  The easiest way to use sftp is to use
+nbdkit-ssh-plugin.  We already depend on nbdkit-ssh-plugin, nbdcopy
+and nbdinfo for other parts of virt-v2v, so might as well use the
+whole lot here.
+
+One advantage of this change is that now the -ip (input password)
+parameter actually works in -i vmx -it ssh mode.
+
+Other approaches that would have been possible:
+
+ - Use the OCaml NBD library instead of nbdcopy/nbdinfo
+
+ - Use 'nbdkit -U - ssh --run ...'
+
+ - Direct binding to libssh.
+
+See also commit e2af12ba69c4463bb73d30db63290a887cdd41eb
+("input: -i vmx: Remove support for openssh scp < 8.8")
+
+See also commit 22c5b98ab78c734b478c26e14ee62e2a065aaa0c
+("-it ssh: Double quote ssh command which tests remote file exists")
+
+See also https://unix.stackexchange.com/a/587710
+
+Reported-by: Ming Xie
+Fixes: https://issues.redhat.com/browse/RHEL-21365
+Reviewed-by: Laszlo Ersek <lersek@redhat.com>
+---
+ input/ssh.ml  | 70 +++++++++++++++++++++++++--------------------------
+ input/ssh.mli |  7 ++++--
+ 2 files changed, 40 insertions(+), 37 deletions(-)
+
+diff --git a/input/ssh.ml b/input/ssh.ml
+index 127e818c..71ebbf2a 100644
+--- a/input/ssh.ml
++++ b/input/ssh.ml
+@@ -18,46 +18,46 @@
+ 
+ open Std_utils
+ open Tools_utils
++open Unix_utils
+ open Common_gettext.Gettext
+ 
+ open Printf
+ 
+-(* 'scp' a remote file into a local file. *)
+-let download_file ~password:_ ?port ~server ?user path output =
+-  let cmd =
+-    sprintf "scp%s%s %s%s:%s %s"
+-            (if verbose () then "" else " -q")
+-            (match port with
+-             | None -> ""
+-             | Some port -> sprintf " -P %s" port)
+-            (match user with
+-             | None -> ""
+-             | Some user -> quote user ^ "@")
+-            (quote server)
+-            (quote path)
+-            (quote output) in
+-  if verbose () then
+-    eprintf "%s\n%!" cmd;
+-  if Sys.command cmd <> 0 then
++let start_nbdkit ~password ?port ~server ?user path =
++  (* Create a random location for the socket used to talk to nbdkit. *)
++  let sockdir = Mkdtemp.temp_dir "v2vssh." in
++  On_exit.rm_rf sockdir;
++  let id = unique () in
++  let socket = sockdir // sprintf "nbdkit%d.sock" id in
++
++  (* Note: Disabling the retry filter helps in the missing file case,
++   * otherwise nbdkit takes ages to time out.  We're not expecting that
++   * the VMX file is large, so using this filter isn't necessary.
++   *)
++  let nbdkit =
++    Nbdkit_ssh.create_ssh ~retry:false ~password ~server ?port ?user path in
++  Nbdkit.set_readonly nbdkit true;
++  let _, pid = Nbdkit.run_unix socket nbdkit in
++  On_exit.kill pid;
++
++  (* Return the URI of nbdkit. *)
++  "nbd+unix://?socket=" ^ socket
++
++(* Download a remote file into a local file. *)
++let download_file ~password ?port ~server ?user path output =
++  let uri = start_nbdkit ~password ?port ~server ?user path in
++
++  let cmd = [ "nbdcopy"; uri; output ] in
++  if run_command cmd <> 0 then
+     error (f_"could not copy the VMX file from the remote server, \
+               see earlier error messages")
+ 
+ (* Test if [path] exists on the remote server. *)
+-let remote_file_exists ~password:_ ?port ~server ?user path =
+-  let cmd =
+-    sprintf "ssh%s %s%s test -f %s"
+-            (match port with
+-             | None -> ""
+-             | Some port -> sprintf " -p %s" port)
+-            (match user with
+-             | None -> ""
+-             | Some user -> quote user ^ "@")
+-            (quote server)
+-            (* Double quoting is necessary for 'ssh', first to protect
+-             * from the local shell, second to protect from the remote
+-             * shell.  https://github.com/libguestfs/virt-v2v/issues/35#issuecomment-1741730963
+-             *)
+-            (quote (quote path)) in
+-  if verbose () then
+-    eprintf "%s\n%!" cmd;
+-  Sys.command cmd = 0
++let remote_file_exists ~password ?port ~server ?user path =
++  let uri = start_nbdkit ~password ?port ~server ?user path in
++
++  (* Testing for remote size using nbdinfo should be sufficient to
++   * prove the remote file exists.
++   *)
++  let cmd = [ "nbdinfo"; "--size"; uri ] in
++  run_command cmd = 0
+diff --git a/input/ssh.mli b/input/ssh.mli
+index 1f39cd1b..40843024 100644
+--- a/input/ssh.mli
++++ b/input/ssh.mli
+@@ -16,7 +16,10 @@
+  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+  *)
+ 
+-(** Wrappers for finding and downloading remote files over ssh. *)
++(** Wrappers for finding and downloading remote files over ssh.
++
++    Internally this uses nbdkit-ssh-plugin (which uses sftp) as
++    that is much more predictable than running external ssh / scp. *)
+ 
+ (** [remote_file_exists password ?port server ?user path]
+     checks that [path] exists on the remote server. *)
+@@ -25,7 +28,7 @@ val remote_file_exists : password:Nbdkit_ssh.password ->
+                          string -> bool
+ 
+ (** [download_file password ?port server ?user path output]
+-    uses scp to copy the single remote file at [path] to
++    downloads the single remote file at [path] to
+     the local file called [output]. *)
+ val download_file : password:Nbdkit_ssh.password ->
+                     ?port:string -> server:string -> ?user:string -> string ->

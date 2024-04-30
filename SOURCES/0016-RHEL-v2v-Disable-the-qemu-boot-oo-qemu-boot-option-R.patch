@@ -1,4 +1,4 @@
-From ebaa8a444b44e93e45ccbc2cddadffd19be6f19d Mon Sep 17 00:00:00 2001
+From f063d97be8f13cc6526d3a4b4ec8be0b1d3c266f Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Tue, 30 Sep 2014 10:50:27 +0100
 Subject: [PATCH] RHEL: v2v: Disable the --qemu-boot / -oo qemu-boot option
@@ -44,10 +44,10 @@ index d2a1c270..0be37f5e 100644
  =item B<-o null>
  
 diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
-index 4d2f241a..de27b795 100644
+index bc946dc1..55545e11 100644
 --- a/docs/virt-v2v.pod
 +++ b/docs/virt-v2v.pod
-@@ -144,11 +144,6 @@ Since F<guest-domain.xml> contains the path(s) to the guest disk
+@@ -146,11 +146,6 @@ Since F<guest-domain.xml> contains the path(s) to the guest disk
  image(s) you do not need to specify the name of the disk image on the
  command line.
  
@@ -59,7 +59,7 @@ index 4d2f241a..de27b795 100644
  =head1 OPTIONS
  
  =over 4
-@@ -517,9 +512,6 @@ This is similar to I<-o local>, except that a shell script is written
+@@ -522,9 +517,6 @@ This is similar to I<-o local>, except that a shell script is written
  which you can use to boot the guest in qemu.  The converted disks and
  shell script are written to the directory specified by I<-os>.
  
@@ -69,7 +69,7 @@ index 4d2f241a..de27b795 100644
  =item B<-o> B<rhev>
  
  This is the same as I<-o rhv>.
-@@ -598,11 +590,6 @@ For I<-o openstack> (L<virt-v2v-output-openstack(1)>) only, set a guest ID
+@@ -603,11 +595,6 @@ For I<-o openstack> (L<virt-v2v-output-openstack(1)>) only, set a guest ID
  which is saved on each Cinder volume in the C<virt_v2v_guest_id>
  volume property.
  
@@ -81,7 +81,7 @@ index 4d2f241a..de27b795 100644
  =item B<-oo verify-server-certificate>
  
  =item B<-oo verify-server-certificate=>C<true|false>
-@@ -773,10 +760,6 @@ Print information about the source guest and stop.  This option is
+@@ -778,10 +765,6 @@ Print information about the source guest and stop.  This option is
  useful when you are setting up network and bridge maps.
  See L</Networks and bridges>.
  
@@ -93,7 +93,7 @@ index 4d2f241a..de27b795 100644
  
  =item B<--quiet>
 diff --git a/output/output_qemu.ml b/output/output_qemu.ml
-index bb6b55c8..ae93fb89 100644
+index 97cf59a8..ad3eb897 100644
 --- a/output/output_qemu.ml
 +++ b/output/output_qemu.ml
 @@ -65,6 +65,9 @@ module QEMU = struct

@@ -1,0 +1,39 @@
+From af68f253d1a11c4abaa30ae348ee3855cdec74e9 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 11 Jan 2024 15:33:08 +0000
+Subject: [PATCH] virt-v2v: -i vmx: Remove scp -T option
+
+This reverts the following commit:
+
+  commit d265639c2ab31418cfdbdedd0cc3e68cf290d834
+  Author: Richard W.M. Jones <rjones@redhat.com>
+  Date:   Thu Jul 25 14:52:42 2019 +0100
+
+    v2v: -i vmx: Use scp -T option if available to unbreak scp (RHBZ#1733168).
+
+See also the referenced bug:
+https://bugzilla.redhat.com/show_bug.cgi?id=1733168
+
+My rationale for removing this option is that since we now require
+OpenSSH 8.8 we must be using sftp for file transfer so we no longer
+need to defeat the check for correct expansion of wildcards.  That
+check was only relevant for OpenSSH <= 8.7 using the old scp protocol.
+
+Reverts: commit d265639c2ab31418cfdbdedd0cc3e68cf290d834
+---
+ input/parse_domain_from_vmx.ml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/input/parse_domain_from_vmx.ml b/input/parse_domain_from_vmx.ml
+index 2e75e785..f24990f8 100644
+--- a/input/parse_domain_from_vmx.ml
++++ b/input/parse_domain_from_vmx.ml
+@@ -68,7 +68,7 @@ let scp_from_remote_to_temporary uri tmpdir filename =
+   let localfile = tmpdir // filename in
+ 
+   let cmd =
+-    sprintf "scp -T%s%s %s%s:%s %s"
++    sprintf "scp%s%s %s%s:%s %s"
+             (if verbose () then "" else " -q")
+             (match port_of_uri uri with
+              | None -> ""

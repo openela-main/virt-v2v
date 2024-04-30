@@ -1,4 +1,4 @@
-From 3447e87d922d9d0bec765ce9ffeb21d13646bec2 Mon Sep 17 00:00:00 2001
+From 5bdd4525570d58e7b712514f1ab57cb04f7cd8d8 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Sun, 28 Sep 2014 19:14:43 +0100
 Subject: [PATCH] RHEL: v2v: Select correct qemu binary for -o qemu mode
@@ -16,7 +16,7 @@ support cases.
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/output/output_qemu.ml b/output/output_qemu.ml
-index 57b1e58d..bb6b55c8 100644
+index 1a5f7f71..97cf59a8 100644
 --- a/output/output_qemu.ml
 +++ b/output/output_qemu.ml
 @@ -142,7 +142,7 @@ module QEMU = struct

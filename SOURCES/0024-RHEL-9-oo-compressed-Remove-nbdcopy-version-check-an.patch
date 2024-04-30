@@ -1,4 +1,4 @@
-From dbf8c50d6d0e157c13e505a22f6f397cb991139c Mon Sep 17 00:00:00 2001
+From aec57da776543ede26a2f751594686ad36b51bad Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Tue, 5 Jul 2022 11:56:54 +0100
 Subject: [PATCH] RHEL 9: -oo compressed: Remove nbdcopy version check and test

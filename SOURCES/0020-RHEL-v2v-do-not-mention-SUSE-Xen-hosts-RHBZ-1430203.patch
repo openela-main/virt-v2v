@@ -1,4 +1,4 @@
-From 71ab7854f53b0b9338de12d7dadb2c4754dfcff6 Mon Sep 17 00:00:00 2001
+From 28e3b929b94e213bc24fa27c58215fe8ccdb9ba1 Mon Sep 17 00:00:00 2001
 From: Pino Toscano <ptoscano@redhat.com>
 Date: Wed, 8 Mar 2017 11:03:40 +0100
 Subject: [PATCH] RHEL: v2v: do not mention SUSE Xen hosts (RHBZ#1430203)
@@ -9,7 +9,7 @@ They are not supported in RHEL.
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/docs/virt-v2v-input-xen.pod b/docs/virt-v2v-input-xen.pod
-index 4a0544f8..9c3981e1 100644
+index 38dc8f7b..05c4e3f5 100644
 --- a/docs/virt-v2v-input-xen.pod
 +++ b/docs/virt-v2v-input-xen.pod
 @@ -11,7 +11,7 @@ virt-v2v-input-xen - Using virt-v2v to convert guests from Xen

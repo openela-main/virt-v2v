@@ -1,0 +1,55 @@
+From 72c9734050f0235c80ff7d685282a57836a70bd5 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 15 Jan 2024 16:21:34 +0000
+Subject: [PATCH] input/nbdkit_ssh: Make retry filter optional
+
+This filter retries a request on failure.  Add a flag to make this
+filter optional, but default to using it if available (so there's no
+change to default behaviour).
+
+The reason we want to make this optional is that the next commit will
+want to use nbdkit-ssh-plugin to probe to see if a remote file is
+present, and we don't want to retry that probe on failure.
+
+Reviewed-by: Laszlo Ersek <lersek@redhat.com>
+---
+ input/nbdkit_ssh.ml  | 6 ++++--
+ input/nbdkit_ssh.mli | 1 +
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/input/nbdkit_ssh.ml b/input/nbdkit_ssh.ml
+index 3f6da9b6..3b72d3ad 100644
+--- a/input/nbdkit_ssh.ml
++++ b/input/nbdkit_ssh.ml
+@@ -44,7 +44,8 @@ let error_unless_nbdkit_min_version config =
+   error_unless_nbdkit_version_ge config nbdkit_min_version
+ 
+ (* Create an nbdkit module specialized for reading from SSH sources. *)
+-let create_ssh ?bandwidth ?cor ~password ?port ~server ?user path =
++let create_ssh ?bandwidth ?cor ?(retry=true)
++      ~password ?port ~server ?user path =
+   if not (Nbdkit.is_installed ()) then
+     error (f_"nbdkit is not installed or not working");
+ 
+@@ -67,7 +68,8 @@ let create_ssh ?bandwidth ?cor ~password ?port ~server ?user path =
+   (* Retry filter (if it exists) can be used to get around brief
+    * interruptions in service.  It must be closest to the plugin.
+    *)
+-  Nbdkit.add_filter_if_available cmd "retry";
++  if retry then
++    Nbdkit.add_filter_if_available cmd "retry";
+ 
+   (* Caching extents speeds up qemu-img, especially its consecutive
+    * block_status requests with req_one=1.
+diff --git a/input/nbdkit_ssh.mli b/input/nbdkit_ssh.mli
+index bc798c5a..daa20bb2 100644
+--- a/input/nbdkit_ssh.mli
++++ b/input/nbdkit_ssh.mli
+@@ -25,6 +25,7 @@ type password =
+ 
+ val create_ssh : ?bandwidth:Types.bandwidth ->
+                  ?cor:string ->
++                 ?retry:bool ->
+                  password:password ->
+                  ?port:string ->
+                  server:string ->

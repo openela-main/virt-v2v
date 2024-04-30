@@ -1,0 +1,104 @@
+From 4f0758a95a4b32a5c837cf86d2fa4442d3e136ec Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 16 Jan 2024 10:31:50 +0000
+Subject: [PATCH] input/ssh: Rearrange parameters specifying ssh server
+
+---
+ input/nbdkit_ssh.ml  |  2 +-
+ input/nbdkit_ssh.mli |  4 ++--
+ input/ssh.ml         | 10 +++++-----
+ input/ssh.mli        | 13 +++++++------
+ 4 files changed, 15 insertions(+), 14 deletions(-)
+
+diff --git a/input/nbdkit_ssh.ml b/input/nbdkit_ssh.ml
+index bc96df13..ae93e4e8 100644
+--- a/input/nbdkit_ssh.ml
++++ b/input/nbdkit_ssh.ml
+@@ -44,7 +44,7 @@ let error_unless_nbdkit_min_version config =
+ 
+ (* Create an nbdkit module specialized for reading from SSH sources. *)
+ let create_ssh ?bandwidth ?cor ?(retry=true)
+-      ?password ?port ~server ?user path =
++      ~server ?port ?user ?password path =
+   if not (Nbdkit.is_installed ()) then
+     error (f_"nbdkit is not installed or not working");
+ 
+diff --git a/input/nbdkit_ssh.mli b/input/nbdkit_ssh.mli
+index 8ea8dea4..c26f539a 100644
+--- a/input/nbdkit_ssh.mli
++++ b/input/nbdkit_ssh.mli
+@@ -25,10 +25,10 @@ type password =                 (** Use [None] for no password *)
+ val create_ssh : ?bandwidth:Types.bandwidth ->
+                  ?cor:string ->
+                  ?retry:bool ->
+-                 ?password:password ->
+-                 ?port:string ->
+                  server:string ->
++                 ?port:string ->
+                  ?user:string ->
++                 ?password:password ->
+                  string -> Nbdkit.cmd
+ (** Create a nbdkit object using the SSH plugin.  The required
+     string parameter is the remote path.
+diff --git a/input/ssh.ml b/input/ssh.ml
+index 10c61bbf..d3b6dc0c 100644
+--- a/input/ssh.ml
++++ b/input/ssh.ml
+@@ -23,7 +23,7 @@ open Common_gettext.Gettext
+ 
+ open Printf
+ 
+-let start_nbdkit ?password ?port ~server ?user path =
++let start_nbdkit ~server ?port ?user ?password path =
+   (* Create a random location for the socket used to talk to nbdkit. *)
+   let sockdir = Mkdtemp.temp_dir "v2vssh." in
+   On_exit.rm_rf sockdir;
+@@ -44,8 +44,8 @@ let start_nbdkit ?password ?port ~server ?user path =
+   "nbd+unix://?socket=" ^ socket
+ 
+ (* Download a remote file into a local file. *)
+-let download_file ?password ?port ~server ?user path output =
+-  let uri = start_nbdkit ?password ?port ~server ?user path in
++let download_file ~server ?port ?user ?password path output =
++  let uri = start_nbdkit ~server ?port ?user ?password path in
+ 
+   let cmd = [ "nbdcopy"; uri; output ] in
+   if run_command cmd <> 0 then
+@@ -53,8 +53,8 @@ let download_file ?password ?port ~server ?user path output =
+               see earlier error messages")
+ 
+ (* Test if [path] exists on the remote server. *)
+-let remote_file_exists ?password ?port ~server ?user path =
+-  let uri = start_nbdkit ?password ?port ~server ?user path in
++let remote_file_exists ~server ?port ?user ?password path =
++  let uri = start_nbdkit ~server ?port ?user ?password path in
+ 
+   (* Testing for remote size using nbdinfo should be sufficient to
+    * prove the remote file exists.
+diff --git a/input/ssh.mli b/input/ssh.mli
+index 6d9f1370..ebce46ff 100644
+--- a/input/ssh.mli
++++ b/input/ssh.mli
+@@ -21,15 +21,16 @@
+     Internally this uses nbdkit-ssh-plugin (which uses sftp) as
+     that is much more predictable than running external ssh / scp. *)
+ 
+-(** [remote_file_exists ?password ?port server ?user path]
++(** [remote_file_exists server ?port ?user ?password path]
+     checks that [path] exists on the remote server. *)
+-val remote_file_exists : ?password:Nbdkit_ssh.password ->
+-                         ?port:string -> server:string -> ?user:string ->
++val remote_file_exists : server:string -> ?port:string ->
++                         ?user:string -> ?password:Nbdkit_ssh.password ->
+                          string -> bool
+ 
+-(** [download_file ?password ?port server ?user path output]
++(** [download_file server ?port ?user ?password path output]
+     downloads the single remote file at [path] to
+     the local file called [output]. *)
+-val download_file : ?password:Nbdkit_ssh.password ->
+-                    ?port:string -> server:string -> ?user:string -> string ->
++val download_file : server:string -> ?port:string ->
++                    ?user:string -> ?password:Nbdkit_ssh.password ->
++                    string ->
+                     string -> unit

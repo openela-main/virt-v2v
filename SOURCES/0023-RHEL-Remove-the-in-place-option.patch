@@ -1,4 +1,4 @@
-From 8eb1f90c3e894da7f528dbc1c54960ebcf0f759b Mon Sep 17 00:00:00 2001
+From cbebfa10e481a664a949ff07dfceca5cb45793df Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Thu, 2 Dec 2021 11:56:05 +0000
 Subject: [PATCH] RHEL: Remove the --in-place option
@@ -12,7 +12,7 @@ wish to support in RHEL.
  3 files changed, 17 deletions(-)
 
 diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
-index e5400ca7..fc7e0d82 100644
+index 8d5d54d3..0738f492 100644
 --- a/docs/virt-v2v.pod
 +++ b/docs/virt-v2v.pod
 @@ -24,9 +24,6 @@ virtualize those machines (physical to virtual, or p2v).
@@ -36,7 +36,7 @@ index e5400ca7..fc7e0d82 100644
  =head2 Other virt-v2v topics
  
  L<virt-v2v-support(1)> — Supported hypervisors, virtualization
-@@ -1622,7 +1615,6 @@ L<https://rwmj.wordpress.com/2015/09/18/importing-kvm-guests-to-ovirt-or-rhev/#c
+@@ -1645,7 +1638,6 @@ L<https://rwmj.wordpress.com/2015/09/18/importing-kvm-guests-to-ovirt-or-rhev/#c
  
  L<virt-p2v(1)>,
  L<virt-v2v-inspector(1)>,

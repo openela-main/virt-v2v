@@ -11,15 +11,15 @@
 %endif
 
 # The source directory.
-%global source_directory 2.3-development
+%global source_directory 2.4-stable
 
 Name:          virt-v2v
 Epoch:         1
-Version:       2.3.4
-Release:       5%{?dist}
+Version:       2.4.0
+Release:       2%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
-License:       GPLv2+
+License:       GPL-2.0-or-later AND LGPL-2.0-or-later
 URL:           https://github.com/libguestfs/virt-v2v
 
 Source0:       http://download.libguestfs.org/virt-v2v/%{source_directory}/%{name}-%{version}.tar.gz
@@ -33,29 +33,35 @@ Source2:       libguestfs.keyring
 Source3:       copy-patches.sh
 
 # Patches are maintained in the following repository:
-# https://github.com/libguestfs/virt-v2v/commits/rhel-9.3
+# https://github.com/libguestfs/virt-v2v/commits/rhel-9.4
 
 # Patches.
-Patch0001:     0001-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
-Patch0002:     0002-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
-Patch0003:     0003-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
-Patch0004:     0004-RHEL-Fixes-for-libguestfs-winsupport.patch
-Patch0005:     0005-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
-Patch0006:     0006-RHEL-v2v-do-not-mention-SUSE-Xen-hosts-RHBZ-1430203.patch
-Patch0007:     0007-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
-Patch0008:     0008-RHEL-Disable-o-glance.patch
-Patch0009:     0009-RHEL-Remove-the-in-place-option.patch
-Patch0010:     0010-RHEL-9-oo-compressed-Remove-nbdcopy-version-check-an.patch
-Patch0011:     0011-RHEL-9-tests-Remove-btrfs-test.patch
-Patch0012:     0012-RHEL-9-Remove-block-driver-option.patch
-Patch0013:     0013-Update-common-submodule.patch
-Patch0014:     0014-update-common-submodule.patch
-Patch0015:     0015-LUKS-on-LVM-conversion-test-rename-VGs-and-LVs.patch
-Patch0016:     0016-LUKS-on-LVM-conversion-test-test-dev-mapper-VG-LV-tr.patch
-Patch0017:     0017-test-data-phony-guests-fix-prerequisite-list-of-fedo.patch
-Patch0018:     0018-lib-utils-fix-typo.patch
-Patch0019:     0019-lib-utils-make-chown_for_libvirt_rhbz_1045069-fail-h.patch
-Patch0020:     0020-docs-virt-v2v-document-libvirt-system-instance-start.patch
+Patch0001:     0001-virt-v2v-i-vmx-Remove-scp-T-option.patch
+Patch0002:     0002-Translated-using-Weblate-Polish.patch
+Patch0003:     0003-Update-translation-files.patch
+Patch0004:     0004-virt-v2v-i-vmx-Refactor-ssh-scp-code-into-a-new-modu.patch
+Patch0005:     0005-virt-v2v-i-vmx-Simplify-scp-wrapper.patch
+Patch0006:     0006-virt-v2v-i-vmx-Add-the-input-password-to-vmx_source.patch
+Patch0007:     0007-virt-v2v-i-vmx-Remove-dependency-of-ssh.ml-on-Xml.ur.patch
+Patch0008:     0008-input-nbdkit_ssh-Make-retry-filter-optional.patch
+Patch0009:     0009-virt-v2v-i-vmx-Replace-external-ssh-scp-with-nbdkit-.patch
+Patch0010:     0010-input-nbdkit_ssh-Make-password-parameter-optional.patch
+Patch0011:     0011-input-ssh-Rearrange-parameters-specifying-ssh-server.patch
+Patch0012:     0012-docs-Remove-paragraph-about-ip-passwords-and-ssh-scp.patch
+Patch0013:     0013-input-ssh-Use-nbdinfo-can-connect-instead-of-size.patch
+Patch0014:     0014-build-Document-that-nbdinfo-and-nbdcopy-are-required.patch
+Patch0015:     0015-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
+Patch0016:     0016-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
+Patch0017:     0017-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
+Patch0018:     0018-RHEL-Fixes-for-libguestfs-winsupport.patch
+Patch0019:     0019-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
+Patch0020:     0020-RHEL-v2v-do-not-mention-SUSE-Xen-hosts-RHBZ-1430203.patch
+Patch0021:     0021-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
+Patch0022:     0022-RHEL-Disable-o-glance.patch
+Patch0023:     0023-RHEL-Remove-the-in-place-option.patch
+Patch0024:     0024-RHEL-9-oo-compressed-Remove-nbdcopy-version-check-an.patch
+Patch0025:     0025-RHEL-9-tests-Remove-btrfs-test.patch
+Patch0026:     0026-RHEL-9-Remove-block-driver-option.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -339,6 +345,7 @@ make -C tests TESTS=test-v2v-fedora-luks-on-lvm-conversion.sh check
 %{_mandir}/man1/virt-v2v-release-notes-1.42.1*
 %{_mandir}/man1/virt-v2v-release-notes-2.0.1*
 %{_mandir}/man1/virt-v2v-release-notes-2.2.1*
+%{_mandir}/man1/virt-v2v-release-notes-2.4.1*
 %{_mandir}/man1/virt-v2v-support.1*
 %{_datadir}/virt-tools
 
@@ -359,6 +366,21 @@ make -C tests TESTS=test-v2v-fedora-luks-on-lvm-conversion.sh check
 
 
 %changelog
+* Mon Jan 22 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.4.0-2
+- Rebase to virt-v2v 2.4.0
+- -it ssh: Double quote ssh command which tests remote file exists
+  resolves: RHEL-12105
+- Implement --key all:...
+  resolves: RHEL-18142
+- Fix off-by-one error causing rare crash
+  resolves: RHEL-19061
+- Improve the error message for -i vmx with a .vmdk file
+  resolves: RHEL-19564
+- Fix -i vmx when remote filename contains literal '*'
+  resolves: RHEL-21365
+- Fix virt-v2v --version output
+  resolves: RHEL-22262
+
 * Mon Jul 03 2023 Laszlo Ersek <lersek@redhat.com> - 1:2.3.4-5
 - improve UX when running as root and we can't chown v2v tmpdir or socks
 - make the appliance kernel UP in %check, for working around RHBZ#2216496

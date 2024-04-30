@@ -1,0 +1,1604 @@
+From 2d227fc060f51cd9b4cdc7713245138c6ed043ae Mon Sep 17 00:00:00 2001
+From: Weblate <noreply@weblate.org>
+Date: Mon, 15 Jan 2024 14:37:14 +0100
+Subject: [PATCH] Update translation files
+
+Updated by "Update PO files to match POT (msgmerge)" hook in Weblate.
+
+Translation: libguestfs/virt-v2v-master
+Translate-URL: https://translate.fedoraproject.org/projects/libguestfs/virt-v2v-master/
+---
+ po/cs.po | 24 ++++++++++++------------
+ po/de.po | 24 ++++++++++++------------
+ po/es.po | 24 ++++++++++++------------
+ po/fi.po | 24 ++++++++++++------------
+ po/fr.po | 24 ++++++++++++------------
+ po/gu.po | 24 ++++++++++++------------
+ po/hi.po | 24 ++++++++++++------------
+ po/ja.po | 24 ++++++++++++------------
+ po/ka.po | 28 ++++++++++++++--------------
+ po/kn.po | 24 ++++++++++++------------
+ po/ml.po | 24 ++++++++++++------------
+ po/mr.po | 24 ++++++++++++------------
+ po/nl.po | 24 ++++++++++++------------
+ po/or.po | 24 ++++++++++++------------
+ po/pa.po | 24 ++++++++++++------------
+ po/pl.po | 28 ++++++++++++++--------------
+ po/si.po | 24 ++++++++++++------------
+ po/uk.po | 24 ++++++++++++------------
+ 18 files changed, 220 insertions(+), 220 deletions(-)
+
+diff --git a/po/cs.po b/po/cs.po
+index aeb55d57..415a9b9b 100644
+--- a/po/cs.po
++++ b/po/cs.po
+@@ -4,7 +4,7 @@ msgstr ""
+ "Project-Id-Version: libguestfs 1.39.12\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2023-04-08 18:20+0000\n"
+ "Last-Translator: Pavel Borecki <pavel.borecki@gmail.com>\n"
+ "Language-Team: Czech <https://translate.fedoraproject.org/projects/"
+@@ -1884,32 +1884,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr "sektor „%s“: chybí identifikátor"
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2231,11 +2231,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2375,17 +2375,17 @@ msgstr "Operační systém: %s\n"
+ msgid "%s mounted on %s\n"
+ msgstr "%s připojeno na %s\n"
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr "Zadejte klíč nebo heslovou frázi („%s“): "
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, c-format
+ msgid "could not read key from user"
+ msgstr "nepodařilo se načíst klíč od uživatele"
+diff --git a/po/de.po b/po/de.po
+index 0916a562..19a55135 100644
+--- a/po/de.po
++++ b/po/de.po
+@@ -11,7 +11,7 @@ msgstr ""
+ "Project-Id-Version: libguestfs 1.39.12\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2015-02-21 10:48+0000\n"
+ "Last-Translator: Copied by Zanata <copied-by-zanata@zanata.org>\n"
+ "Language-Team: German (http://www.transifex.com/projects/p/libguestfs/"
+@@ -1899,32 +1899,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2248,11 +2248,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2390,17 +2390,17 @@ msgstr "Betriebssystem: %s\n"
+ msgid "%s mounted on %s\n"
+ msgstr "%s eingehängt auf %s\n"
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr "Schlüssel oder Passphrase eingeben („%s“): "
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, c-format
+ msgid "could not read key from user"
+ msgstr ""
+diff --git a/po/es.po b/po/es.po
+index 2929430d..065cd2b7 100644
+--- a/po/es.po
++++ b/po/es.po
+@@ -12,7 +12,7 @@ msgstr ""
+ "Project-Id-Version: libguestfs 1.39.12\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2015-03-16 07:04+0000\n"
+ "Last-Translator: Alex Puchades <alex94puchades@gmail.com>\n"
+ "Language-Team: Spanish (http://www.transifex.com/projects/p/libguestfs/"
+@@ -1890,32 +1890,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2233,11 +2233,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2377,17 +2377,17 @@ msgstr "Sistema operativo: %s\n"
+ msgid "%s mounted on %s\n"
+ msgstr "%s montado en %s\n"
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr "Ingrese la llave o la frase de acceso (\"%s\"): "
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, fuzzy, c-format
+ #| msgid "could not parse boot size"
+ msgid "could not read key from user"
+diff --git a/po/fi.po b/po/fi.po
+index 3c382984..787abc74 100644
+--- a/po/fi.po
++++ b/po/fi.po
+@@ -8,7 +8,7 @@ msgstr ""
+ "Project-Id-Version: virt-v2v 1.43.4\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2022-12-23 18:20+0000\n"
+ "Last-Translator: Jan Kuparinen <copper_fin@hotmail.com>\n"
+ "Language-Team: Finnish <https://translate.fedoraproject.org/projects/"
+@@ -1892,32 +1892,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2237,11 +2237,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2414,17 +2414,17 @@ msgstr ""
+ msgid "%s mounted on %s\n"
+ msgstr ""
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr ""
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, c-format
+ msgid "could not read key from user"
+ msgstr ""
+diff --git a/po/fr.po b/po/fr.po
+index ec86539d..7b0864b0 100644
+--- a/po/fr.po
++++ b/po/fr.po
+@@ -12,7 +12,7 @@ msgstr ""
+ "Project-Id-Version: libguestfs 1.39.12\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2023-03-21 09:20+0000\n"
+ "Last-Translator: grimst <grimaitres@gmail.com>\n"
+ "Language-Team: French <https://translate.fedoraproject.org/projects/"
+@@ -1898,32 +1898,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2247,11 +2247,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2390,17 +2390,17 @@ msgstr "Système d'exploitation : %s\n"
+ msgid "%s mounted on %s\n"
+ msgstr "%s monté sur %s\n"
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr "Saisir une phrase de passe (« %s ») : "
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, c-format
+ msgid "could not read key from user"
+ msgstr "Impossible de lire la clé de l'utilisateur"
+diff --git a/po/gu.po b/po/gu.po
+index d06acb3c..02643ec3 100644
+--- a/po/gu.po
++++ b/po/gu.po
+@@ -10,7 +10,7 @@ msgstr ""
+ "Project-Id-Version: libguestfs 1.39.12\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2015-02-21 10:49+0000\n"
+ "Last-Translator: Copied by Zanata <copied-by-zanata@zanata.org>\n"
+ "Language-Team: Gujarati (http://www.transifex.com/projects/p/libguestfs/"
+@@ -1888,32 +1888,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2231,11 +2231,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2373,17 +2373,17 @@ msgstr "ઓપરેટીંગ સિસ્ટમ: %s\n"
+ msgid "%s mounted on %s\n"
+ msgstr ""
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr "કી અથવા પાસફ્રેઝને દાખલ કરો (\"%s\"): "
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, fuzzy, c-format
+ #| msgid "could not parse boot size"
+ msgid "could not read key from user"
+diff --git a/po/hi.po b/po/hi.po
+index 6e2116e5..11f334ce 100644
+--- a/po/hi.po
++++ b/po/hi.po
+@@ -10,7 +10,7 @@ msgstr ""
+ "Project-Id-Version: libguestfs 1.39.12\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2015-02-21 10:49+0000\n"
+ "Last-Translator: Copied by Zanata <copied-by-zanata@zanata.org>\n"
+ "Language-Team: Hindi (http://www.transifex.com/projects/p/libguestfs/"
+@@ -1886,32 +1886,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2229,11 +2229,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2371,17 +2371,17 @@ msgstr ""
+ msgid "%s mounted on %s\n"
+ msgstr ""
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr ""
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, c-format
+ msgid "could not read key from user"
+ msgstr ""
+diff --git a/po/ja.po b/po/ja.po
+index 30cb89c2..7c806c19 100644
+--- a/po/ja.po
++++ b/po/ja.po
+@@ -11,7 +11,7 @@ msgstr ""
+ "Project-Id-Version: libguestfs 1.39.12\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2017-02-24 07:33+0000\n"
+ "Last-Translator: Copied by Zanata <copied-by-zanata@zanata.org>\n"
+ "Language-Team: Japanese (http://www.transifex.com/projects/p/libguestfs/"
+@@ -1897,32 +1897,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2244,11 +2244,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2387,17 +2387,17 @@ msgstr "オペレーティングシステム: %s\n"
+ msgid "%s mounted on %s\n"
+ msgstr "%s を %s にマウントしました\n"
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr "キーかパスフレーズを入力してください。(\"%s\"): "
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, fuzzy, c-format
+ #| msgid "could not parse boot size"
+ msgid "could not read key from user"
+diff --git a/po/ka.po b/po/ka.po
+index 53881487..42ce7c68 100644
+--- a/po/ka.po
++++ b/po/ka.po
+@@ -6,9 +6,9 @@
+ msgid ""
+ msgstr ""
+ "Project-Id-Version: virt-v2v 2.1.1\n"
+-"Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug."
+-"cgi?component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
++"component=libguestfs&product=Virtualization+Tools\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2023-11-26 21:01+0000\n"
+ "Last-Translator: Temuri Doghonadze <temuri.doghonadze@gmail.com>\n"
+ "Language-Team: Georgian <https://translate.fedoraproject.org/projects/"
+@@ -1884,32 +1884,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr "სელექტორი '%s': არასწორი TYPE"
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr "სელექტორი '%s': აკლია FILENAME ან მეტისმეტად ბევრი ველი"
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr "სელექტორი '%s': აკლია ID"
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr "სელექტორი '%s': აკლია KEY_STRING ან მეტისმეტად ბევრი ველი"
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr "სელექტორი '%s': აკლია TYPE"
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr "სელექტორი '%s': მეტისმეტად ბევრი ველი"
+@@ -2227,11 +2227,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2371,17 +2371,17 @@ msgstr "ოპერაციული სისტემა: %s\n"
+ msgid "%s mounted on %s\n"
+ msgstr "%s მიმაგრებულია %s-ზე\n"
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr "შეიყვანეთ გასაღები ან საკვანძო ფრაზა (\"%s\"): "
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr "size_t -ის გადავსება"
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, c-format
+ msgid "could not read key from user"
+ msgstr "მომხმარებლიდან გასაღების წაკითხვის შეცდომა"
+diff --git a/po/kn.po b/po/kn.po
+index 563f50a1..430af051 100644
+--- a/po/kn.po
++++ b/po/kn.po
+@@ -9,7 +9,7 @@ msgstr ""
+ "Project-Id-Version: libguestfs 1.39.12\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2015-02-21 10:50+0000\n"
+ "Last-Translator: Copied by Zanata <copied-by-zanata@zanata.org>\n"
+ "Language-Team: Kannada (http://www.transifex.com/projects/p/libguestfs/"
+@@ -1885,32 +1885,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2226,11 +2226,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2368,17 +2368,17 @@ msgstr ""
+ msgid "%s mounted on %s\n"
+ msgstr ""
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr ""
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, c-format
+ msgid "could not read key from user"
+ msgstr ""
+diff --git a/po/ml.po b/po/ml.po
+index e1a7db7c..172994fb 100644
+--- a/po/ml.po
++++ b/po/ml.po
+@@ -9,7 +9,7 @@ msgstr ""
+ "Project-Id-Version: libguestfs 1.39.12\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2015-02-21 10:50+0000\n"
+ "Last-Translator: Copied by Zanata <copied-by-zanata@zanata.org>\n"
+ "Language-Team: Malayalam (http://www.transifex.com/projects/p/libguestfs/"
+@@ -1885,32 +1885,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2228,11 +2228,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2370,17 +2370,17 @@ msgstr ""
+ msgid "%s mounted on %s\n"
+ msgstr ""
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr ""
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, c-format
+ msgid "could not read key from user"
+ msgstr ""
+diff --git a/po/mr.po b/po/mr.po
+index a9bde2b0..cfa072d6 100644
+--- a/po/mr.po
++++ b/po/mr.po
+@@ -10,7 +10,7 @@ msgstr ""
+ "Project-Id-Version: libguestfs 1.39.12\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2015-02-21 10:51+0000\n"
+ "Last-Translator: Copied by Zanata <copied-by-zanata@zanata.org>\n"
+ "Language-Team: Marathi (http://www.transifex.com/projects/p/libguestfs/"
+@@ -1888,32 +1888,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2231,11 +2231,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2373,17 +2373,17 @@ msgstr "कार्यप्रणाली: %s\n"
+ msgid "%s mounted on %s\n"
+ msgstr "%s ला %s वर माऊंट केले\n"
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr "कि किंवा पासफ्रेज द्या (\"%s\"): "
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, fuzzy, c-format
+ #| msgid "could not parse boot size"
+ msgid "could not read key from user"
+diff --git a/po/nl.po b/po/nl.po
+index 4f2f0e1f..7757ba38 100644
+--- a/po/nl.po
++++ b/po/nl.po
+@@ -11,7 +11,7 @@ msgstr ""
+ "Project-Id-Version: libguestfs 1.39.12\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2015-02-21 10:51+0000\n"
+ "Last-Translator: Copied by Zanata <copied-by-zanata@zanata.org>\n"
+ "Language-Team: Dutch (http://www.transifex.com/projects/p/libguestfs/"
+@@ -1893,32 +1893,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2236,11 +2236,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2379,17 +2379,17 @@ msgstr "Besturingssysteem: %s\n"
+ msgid "%s mounted on %s\n"
+ msgstr "%s aangekoppeld op %s\n"
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr "Vul sleutel of wachtzin in (\"%s\"): "
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, fuzzy, c-format
+ #| msgid "could not parse boot size"
+ msgid "could not read key from user"
+diff --git a/po/or.po b/po/or.po
+index 532d60ff..cb0b6f9a 100644
+--- a/po/or.po
++++ b/po/or.po
+@@ -9,7 +9,7 @@ msgstr ""
+ "Project-Id-Version: libguestfs 1.39.12\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2015-02-21 10:51+0000\n"
+ "Last-Translator: Copied by Zanata <copied-by-zanata@zanata.org>\n"
+ "Language-Team: Oriya (http://www.transifex.com/projects/p/libguestfs/"
+@@ -1885,32 +1885,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2228,11 +2228,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2370,17 +2370,17 @@ msgstr ""
+ msgid "%s mounted on %s\n"
+ msgstr ""
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr ""
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, c-format
+ msgid "could not read key from user"
+ msgstr ""
+diff --git a/po/pa.po b/po/pa.po
+index 4b5fe247..9b4e9bca 100644
+--- a/po/pa.po
++++ b/po/pa.po
+@@ -10,7 +10,7 @@ msgstr ""
+ "Project-Id-Version: libguestfs 1.39.12\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2015-02-21 10:52+0000\n"
+ "Last-Translator: Copied by Zanata <copied-by-zanata@zanata.org>\n"
+ "Language-Team: Panjabi (Punjabi) (http://www.transifex.com/projects/p/"
+@@ -1888,32 +1888,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2231,11 +2231,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2373,17 +2373,17 @@ msgstr "ਓਪਰੇਟਿੰਗ ਸਿਸਟਮ: %s\n"
+ msgid "%s mounted on %s\n"
+ msgstr "%s ਨੂੰ %s ਉੱਪਰ ਮਾਊਂਟ ਕੀਤਾ ਗਿਆ ਹੈ\n"
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr "ਕੁੰਜੀ ਜਾਂ ਗੁਪਤਕੋਡ ਦਿਓ (\"%s\"): "
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, fuzzy, c-format
+ #| msgid "could not parse boot size"
+ msgid "could not read key from user"
+diff --git a/po/pl.po b/po/pl.po
+index e3a5b11d..bb8acef7 100644
+--- a/po/pl.po
++++ b/po/pl.po
+@@ -11,9 +11,9 @@
+ msgid ""
+ msgstr ""
+ "Project-Id-Version: libguestfs 1.39.12\n"
+-"Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug."
+-"cgi?component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
++"component=libguestfs&product=Virtualization+Tools\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2024-01-15 13:36+0000\n"
+ "Last-Translator: Weblate Translation Memory <noreply-mt-weblate-translation-"
+ "memory@weblate.org>\n"
+@@ -1895,32 +1895,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2240,11 +2240,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2382,17 +2382,17 @@ msgstr "System operacyjny: %s\n"
+ msgid "%s mounted on %s\n"
+ msgstr "%s zamontowano w %s\n"
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr "Proszę podać klucz lub hasło („%s”): "
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, c-format
+ msgid "could not read key from user"
+ msgstr "nie można odczytać klucza od użytkownika"
+diff --git a/po/si.po b/po/si.po
+index 0b40cead..62d45590 100644
+--- a/po/si.po
++++ b/po/si.po
+@@ -8,7 +8,7 @@ msgstr ""
+ "Project-Id-Version: virt-v2v 1.43.3\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+ "Last-Translator: Automatically generated\n"
+ "Language-Team: none\n"
+@@ -1882,32 +1882,32 @@ msgid ""
+ "broken in some way.  Please report this as a bug with a full debug log."
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr ""
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr ""
+@@ -2225,11 +2225,11 @@ msgstr ""
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr ""
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr ""
+ 
+@@ -2367,17 +2367,17 @@ msgstr ""
+ msgid "%s mounted on %s\n"
+ msgstr ""
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr ""
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr ""
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, c-format
+ msgid "could not read key from user"
+ msgstr ""
+diff --git a/po/uk.po b/po/uk.po
+index 62b6766d..5a802677 100644
+--- a/po/uk.po
++++ b/po/uk.po
+@@ -14,7 +14,7 @@ msgstr ""
+ "Project-Id-Version: libguestfs 1.39.12\n"
+ "Report-Msgid-Bugs-To: https://bugzilla.redhat.com/enter_bug.cgi?"
+ "component=libguestfs&product=Virtualization+Tools\n"
+-"POT-Creation-Date: 2023-11-02 11:07+0000\n"
++"POT-Creation-Date: 2024-01-04 17:06+0000\n"
+ "PO-Revision-Date: 2023-06-05 07:20+0000\n"
+ "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
+ "Language-Team: Ukrainian <https://translate.fedoraproject.org/projects/"
+@@ -2308,32 +2308,32 @@ msgstr ""
+ "virt-v2v певним чином працюють не так, як належить. Будь ласка, повідомте "
+ "про цю ваду, надавши повний діагностичний журнал."
+ 
+-#: common/mltools/tools_utils.ml:417 common/options/keys.c:258
++#: common/mltools/tools_utils.ml:417 common/options/keys.c:263
+ #, c-format
+ msgid "selector '%s': invalid TYPE"
+ msgstr "вибір «%s»: некоректне значення TYPE"
+ 
+-#: common/mltools/tools_utils.ml:409 common/options/keys.c:248
++#: common/mltools/tools_utils.ml:409 common/options/keys.c:253
+ #, c-format
+ msgid "selector '%s': missing FILENAME, or too many fields"
+ msgstr "вибір «%s»: пропущено FILENAME або забагато полів"
+ 
+-#: common/mltools/tools_utils.ml:399 common/options/keys.c:226
++#: common/mltools/tools_utils.ml:399 common/options/keys.c:231
+ #, c-format
+ msgid "selector '%s': missing ID"
+ msgstr "вибір «%s»: пропущено ідентифікатор"
+ 
+-#: common/mltools/tools_utils.ml:404 common/options/keys.c:239
++#: common/mltools/tools_utils.ml:404 common/options/keys.c:244
+ #, c-format
+ msgid "selector '%s': missing KEY_STRING, or too many fields"
+ msgstr "вибір «%s»: пропущено KEY_STRING або забагато полів"
+ 
+-#: common/mltools/tools_utils.ml:401 common/options/keys.c:233
++#: common/mltools/tools_utils.ml:401 common/options/keys.c:238
+ #, c-format
+ msgid "selector '%s': missing TYPE"
+ msgstr "вибір «%s»: пропущено TYPE"
+ 
+-#: common/mltools/tools_utils.ml:413 common/options/keys.c:256
++#: common/mltools/tools_utils.ml:413 common/options/keys.c:261
+ #, c-format
+ msgid "selector '%s': too many fields"
+ msgstr "вибір «%s»: забагато полів"
+@@ -2744,11 +2744,11 @@ msgstr "пропущено назву віддаленого сервера у 
+ msgid "vmx URI start with ‘ssh://...’"
+ msgstr "адреса vmx починається з «ssh://...»"
+ 
+-#: input/parse_vmx.ml:302
++#: input/parse_vmx.ml:313
+ msgid "vmx parser: cannot parse this line, ignoring: %s"
+ msgstr "обробник vmx: не вдалося обробити цей рядок, проігноровано: %s"
+ 
+-#: input/parse_vmx.ml:335
++#: input/parse_vmx.ml:346
+ msgid "vmx parser: duplicate key '%s' ignored"
+ msgstr "обробник vmx: дублікат ключа «%s» проігноровано"
+ 
+@@ -2937,17 +2937,17 @@ msgstr "Операційна система: %s\n"
+ msgid "%s mounted on %s\n"
+ msgstr "%s змонтовано до %s\n"
+ 
+-#: common/options/keys.c:62
++#: common/options/keys.c:63
+ #, c-format
+ msgid "Enter key or passphrase (\"%s\"): "
+ msgstr "Введіть ключ або пароль («%s»): "
+ 
+-#: common/options/keys.c:144
++#: common/options/keys.c:145
+ #, c-format
+ msgid "size_t overflow"
+ msgstr "переповнення size_t"
+ 
+-#: common/options/keys.c:187
++#: common/options/keys.c:192
+ #, c-format
+ msgid "could not read key from user"
+ msgstr "не вдалося прочитати ключ з запису користувача"

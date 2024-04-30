@@ -1,4 +1,4 @@
-From 9c18f8772f7c8801ef47126f55b0313dc2188b03 Mon Sep 17 00:00:00 2001
+From 3e2962dad1245b8c7d1255faaa6820adc0648d14 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Fri, 28 Apr 2023 12:28:19 +0100
 Subject: [PATCH] RHEL 9: Remove --block-driver option
@@ -37,10 +37,10 @@ index ce57e229..6e1c5363 100644
  
  =item B<--colours>
 diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
-index fc7e0d82..0394b421 100644
+index 0738f492..021ac897 100644
 --- a/docs/virt-v2v.pod
 +++ b/docs/virt-v2v.pod
-@@ -195,16 +195,6 @@ The options are silently ignored for other input methods.
+@@ -197,16 +197,6 @@ The options are silently ignored for other input methods.
  
  See I<--network> below.
  

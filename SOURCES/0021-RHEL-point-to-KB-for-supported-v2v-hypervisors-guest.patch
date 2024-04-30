@@ -1,4 +1,4 @@
-From 134fb5cd6925e8af155d1f84db55d3742f2f256f Mon Sep 17 00:00:00 2001
+From a2e7cf38ee640e9e806a680cf55f78d33a3c0ee8 Mon Sep 17 00:00:00 2001
 From: Pino Toscano <ptoscano@redhat.com>
 Date: Tue, 26 Mar 2019 09:42:25 +0100
 Subject: [PATCH] RHEL: point to KB for supported v2v hypervisors/guests

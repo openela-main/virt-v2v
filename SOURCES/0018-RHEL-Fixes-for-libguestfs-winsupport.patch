@@ -1,4 +1,4 @@
-From c0bb624a151be3291e0c10c1002577615b98e74c Mon Sep 17 00:00:00 2001
+From 7374efa8aecb97a83a1ec6d4d606651a4eb569e4 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Sun, 30 Aug 2015 03:21:57 -0400
 Subject: [PATCH] RHEL: Fixes for libguestfs-winsupport.

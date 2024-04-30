@@ -1,0 +1,43 @@
+From aafcd0d11453d8d58a32e66285f12ec3ba3440de Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 18 Jan 2024 17:32:01 +0000
+Subject: [PATCH] build: Document that nbdinfo and nbdcopy are required, and
+ check
+
+Update README to document that these tools have been needed (ever
+since virt-v2v 2.0), and update ./configure to check it.
+---
+ README              | 2 ++
+ m4/guestfs-progs.m4 | 6 ++++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/README b/README
+index f94bd6de..4354754f 100644
+--- a/README
++++ b/README
+@@ -53,6 +53,8 @@ REQUIREMENTS
+ 
+ * libnbd >= 1.10 (https://gitlab.com/nbdkit/libnbd)
+ 
++* The 'nbdinfo' and 'nbdcopy' programs from libnbd.
++
+ * OCaml bindings for libnbd
+ 
+ * nbdkit >= 1.27.4 (https://gitlab.com/nbdkit/nbdkit)
+diff --git a/m4/guestfs-progs.m4 b/m4/guestfs-progs.m4
+index 7c5f0d81..ae5094ce 100644
+--- a/m4/guestfs-progs.m4
++++ b/m4/guestfs-progs.m4
+@@ -59,6 +59,12 @@ AM_CONDITIONAL([HAVE_ZIP],[test "x$ZIP" != "xno"])
+ AC_PATH_PROGS([UNZIP],[unzip],[no])
+ AC_DEFINE_UNQUOTED([UNZIP],["$UNZIP"],[Name of unzip program.])
+ 
++dnl nbdinfo, nbdcopy, required by virt-v2v
++AC_CHECK_PROG([NBDINFO], [nbdinfo], [nbdinfo], [no])
++AC_CHECK_PROG([NBDCOPY], [nbdcopy], [nbdcopy], [no])
++AS_IF([test "x$NBDINFO" = "xno" || test "x$NBDCOPY" = "xno"],
++      [AC_MSG_ERROR([nbdinfo and nbdcopy (from libnbd) must be installed])])
++
+ dnl Check for valgrind
+ AC_CHECK_PROG([VALGRIND],[valgrind],[valgrind],[no])
+ AS_IF([test "x$VALGRIND" != "xno"],[

@@ -1,0 +1,84 @@
+From a0b22af28782a485cc2241dce55b8f435d8aaefc Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 15 Jan 2024 14:35:57 +0000
+Subject: [PATCH] virt-v2v: -i vmx: Simplify scp wrapper
+
+The existing 'scp_from_remote_to_temporary' wrapper around scp was
+pretty weird (I think from much patching without refactoring).
+Simplify it so it no longer generates the output filename, and rename
+it accordingly to 'download_file' (as we will soon remove the need for
+and dependency on 'scp').
+
+Reviewed-by: Laszlo Ersek <lersek@redhat.com>
+---
+ input/parse_domain_from_vmx.ml |  4 ++--
+ input/ssh.ml                   | 13 ++++---------
+ input/ssh.mli                  |  7 +++----
+ 3 files changed, 9 insertions(+), 15 deletions(-)
+
+diff --git a/input/parse_domain_from_vmx.ml b/input/parse_domain_from_vmx.ml
+index 8cf5893c..e6500da6 100644
+--- a/input/parse_domain_from_vmx.ml
++++ b/input/parse_domain_from_vmx.ml
+@@ -335,8 +335,8 @@ let parse_domain_from_vmx vmx_source =
+     match vmx_source with
+     | File filename -> Parse_vmx.parse_file filename
+     | SSH uri ->
+-       let filename = Ssh.scp_from_remote_to_temporary uri tmpdir
+-                        "source.vmx" in
++       let filename = tmpdir // "source.vmx" in
++       Ssh.download_file uri filename;
+        Parse_vmx.parse_file filename in
+ 
+   let name =
+diff --git a/input/ssh.ml b/input/ssh.ml
+index 5e689d29..63ffeb12 100644
+--- a/input/ssh.ml
++++ b/input/ssh.ml
+@@ -32,12 +32,8 @@ let server_of_uri { Xml.uri_server } =
+ let path_of_uri { Xml.uri_path } =
+   match uri_path with None -> assert false | Some p -> p
+ 
+-(* 'scp' a remote file into a temporary local file, returning the path
+- * of the temporary local file.
+- *)
+-let scp_from_remote_to_temporary uri tmpdir filename =
+-  let localfile = tmpdir // filename in
+-
++(* 'scp' a remote file into a local file. *)
++let download_file uri output =
+   let cmd =
+     sprintf "scp%s%s %s%s:%s %s"
+             (if verbose () then "" else " -q")
+@@ -49,13 +45,12 @@ let scp_from_remote_to_temporary uri tmpdir filename =
+              | Some user -> quote user ^ "@")
+             (quote (server_of_uri uri))
+             (quote (path_of_uri uri))
+-            (quote localfile) in
++            (quote output) in
+   if verbose () then
+     eprintf "%s\n%!" cmd;
+   if Sys.command cmd <> 0 then
+     error (f_"could not copy the VMX file from the remote server, \
+-              see earlier error messages");
+-  localfile
++              see earlier error messages")
+ 
+ (* Test if [path] exists on the remote server. *)
+ let remote_file_exists uri path =
+diff --git a/input/ssh.mli b/input/ssh.mli
+index e9a1a6a8..62e78bd3 100644
+--- a/input/ssh.mli
++++ b/input/ssh.mli
+@@ -27,8 +27,7 @@ val port_of_uri : Xml.uri -> int option
+     is ignored). *)
+ val remote_file_exists : Xml.uri -> string -> bool
+ 
+-(** [scp_from_remote_to_temporary ssh_uri tmpdir filename]
++(** [download_file ssh_uri output]
+     uses scp to copy the single remote file at [ssh_uri] to
+-    the local file called [tmpdir/filename].  It returns the
+-    final path [tmpdir/filename]. *)
+-val scp_from_remote_to_temporary : Xml.uri -> string -> string -> string
++    the local file called [output]. *)
++val download_file : Xml.uri -> string -> unit

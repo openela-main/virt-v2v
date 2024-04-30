@@ -1,4 +1,4 @@
-From e4ffc4800bd8a4bbec56b374cc6d21dff88f15ae Mon Sep 17 00:00:00 2001
+From 29b43856a1429148eece11f0579a01026d583161 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Wed, 30 Jun 2021 11:15:52 +0100
 Subject: [PATCH] RHEL: Disable -o glance
@@ -98,10 +98,10 @@ index cd4862b1..54cd276e 100644
  =head1 AUTHOR
  
 diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
-index de27b795..e5400ca7 100644
+index 55545e11..8d5d54d3 100644
 --- a/docs/virt-v2v.pod
 +++ b/docs/virt-v2v.pod
-@@ -431,14 +431,6 @@ See L</Networks and bridges> below.
+@@ -435,14 +435,6 @@ See L</Networks and bridges> below.
  
  This is the same as I<-o local>.
  
@@ -116,7 +116,7 @@ index de27b795..e5400ca7 100644
  =item B<-o> B<kubevirt>
  
  Set the output method to I<kubevirt>.  B<Note the way this mode works
-@@ -1182,11 +1174,6 @@ and output methods may use disk space, as outlined in the table below.
+@@ -1187,11 +1179,6 @@ and output methods may use disk space, as outlined in the table below.
  This temporarily places a full copy of the uncompressed source disks
  in C<$VIRT_V2V_TMPDIR> (or F</var/tmp>).
  
@@ -128,7 +128,7 @@ index de27b795..e5400ca7 100644
  =item I<-o local>
  
  =item I<-o qemu>
-@@ -1370,13 +1357,6 @@ instance.
+@@ -1377,13 +1364,6 @@ See also L</Starting the libvirt system instance>.
  Because of how Cinder volumes are presented as F</dev> block devices,
  using I<-o openstack> normally requires that virt-v2v is run as root.
  

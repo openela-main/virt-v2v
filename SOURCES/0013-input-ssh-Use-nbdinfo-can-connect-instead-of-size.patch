@@ -1,0 +1,62 @@
+From 970d7123c2025bc148870f4bc6fa75fa9e95905f Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 18 Jan 2024 17:22:26 +0000
+Subject: [PATCH] input/ssh: Use nbdinfo --can connect (instead of --size)
+
+nbdinfo --size prints the size on stdout, causing it to appear in
+virt-v2v output.  Using --can connect instead is silent.
+
+Note that nbdinfo --can connect was added in libnbd 1.9.2 (Jul 2021)
+and our previous minimum version of libnbd was 1.9.3 so we're OK.
+However since neither of these was a stable version I also updated the
+minimum libnbd requirement to 1.10 (Sep 2021), and added a proper
+check in ./configure
+
+Fixes: commit fb72e059863a60503b6011b8590c25c3a010a58f
+---
+ README                  | 2 +-
+ input/ssh.ml            | 4 ++--
+ m4/guestfs-libraries.m4 | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/README b/README
+index 5810f77d..f94bd6de 100644
+--- a/README
++++ b/README
+@@ -51,7 +51,7 @@ REQUIREMENTS
+ 
+ * OCaml bindings for libvirt (https://gitlab.com/libvirt/libvirt-ocaml)
+ 
+-* libnbd >= 1.9.3 (https://gitlab.com/nbdkit/libnbd)
++* libnbd >= 1.10 (https://gitlab.com/nbdkit/libnbd)
+ 
+ * OCaml bindings for libnbd
+ 
+diff --git a/input/ssh.ml b/input/ssh.ml
+index d3b6dc0c..e35a2b5a 100644
+--- a/input/ssh.ml
++++ b/input/ssh.ml
+@@ -56,8 +56,8 @@ let download_file ~server ?port ?user ?password path output =
+ let remote_file_exists ~server ?port ?user ?password path =
+   let uri = start_nbdkit ~server ?port ?user ?password path in
+ 
+-  (* Testing for remote size using nbdinfo should be sufficient to
++  (* Testing that we can connect to the nbdkit server is enough to
+    * prove the remote file exists.
+    *)
+-  let cmd = [ "nbdinfo"; "--size"; uri ] in
++  let cmd = [ "nbdinfo"; "--can"; "connect"; uri ] in
+   run_command cmd = 0
+diff --git a/m4/guestfs-libraries.m4 b/m4/guestfs-libraries.m4
+index 33b5100e..6789a2cb 100644
+--- a/m4/guestfs-libraries.m4
++++ b/m4/guestfs-libraries.m4
+@@ -21,7 +21,7 @@ dnl Of course we need libguestfs.
+ PKG_CHECK_MODULES([LIBGUESTFS], [libguestfs >= 1.44])
+ 
+ dnl And libnbd.
+-PKG_CHECK_MODULES([LIBNBD], [libnbd])
++PKG_CHECK_MODULES([LIBNBD], [libnbd >= 1.10])
+ 
+ dnl Test if it's GNU or XSI strerror_r.
+ AC_FUNC_STRERROR_R
