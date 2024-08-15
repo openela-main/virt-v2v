@@ -16,7 +16,7 @@
 Name:          virt-v2v
 Epoch:         1
 Version:       2.4.0
-Release:       2%{?dist}
+Release:       3%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -62,6 +62,17 @@ Patch0023:     0023-RHEL-Remove-the-in-place-option.patch
 Patch0024:     0024-RHEL-9-oo-compressed-Remove-nbdcopy-version-check-an.patch
 Patch0025:     0025-RHEL-9-tests-Remove-btrfs-test.patch
 Patch0026:     0026-RHEL-9-Remove-block-driver-option.patch
+Patch0027:     0027-Update-common-submodule.patch
+Patch0028:     0028-convert-windows-Install-blnsvr-from-virtio-win.patch
+Patch0029:     0029-Update-common-submodule.patch
+Patch0030:     0030-v2v-mac-Allow-gw-and-len-fields-to-be-empty.patch
+Patch0031:     0031-docs-Note-that-mac-len-field-is-now-optional.patch
+Patch0032:     0032-convert-More-robust-qemu-ga-installation-change-path.patch
+Patch0033:     0033-common-mlcustomize-Inject-qemu-ga-blnsvr-into-firstb.patch
+Patch0034:     0034-docs-Add-a-note-about-removal-of-VMware-Tools-on-Win.patch
+Patch0035:     0035-Update-common-submodule.patch
+Patch0036:     0036-Pull-in-a-fix-to-make-Windows-firstboot-more-reliabl.patch
+Patch0037:     0037-docs-Restate-position-on-removal-of-VMware-Tools.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -366,6 +377,13 @@ make -C tests TESTS=test-v2v-fedora-luks-on-lvm-conversion.sh check
 
 
 %changelog
+* Tue Aug 13 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.4.0-3
+- Fixes to improve installation of QEMU Guest Agent and removal
+  of VMware Tools
+  resolves: RHEL-54150, RHEL-54151
+- Allow --mac gw and len fields to be optional
+  resolves: RHEL-54152
+
 * Mon Jan 22 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.4.0-2
 - Rebase to virt-v2v 2.4.0
 - -it ssh: Double quote ssh command which tests remote file exists
