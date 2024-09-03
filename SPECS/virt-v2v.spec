@@ -16,7 +16,7 @@
 Name:          virt-v2v
 Epoch:         1
 Version:       2.4.0
-Release:       3%{?dist}
+Release:       4%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -73,6 +73,8 @@ Patch0034:     0034-docs-Add-a-note-about-removal-of-VMware-Tools-on-Win.patch
 Patch0035:     0035-Update-common-submodule.patch
 Patch0036:     0036-Pull-in-a-fix-to-make-Windows-firstboot-more-reliabl.patch
 Patch0037:     0037-docs-Restate-position-on-removal-of-VMware-Tools.patch
+Patch0038:     0038-RHEL-Add-warning-about-virt-v2v-in-place-not-being-s.patch
+Patch0039:     0039-convert-windows-Online-all-virtio-disks-at-first-boo.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -286,8 +288,10 @@ ln -sf ../../i686-w64-mingw32/sys-root/mingw/bin/pnp_wait.exe
 popd
 
 %if 0%{?rhel}
-# On RHEL remove virt-v2v-in-place.
-rm $RPM_BUILD_ROOT%{_bindir}/virt-v2v-in-place
+# On RHEL move virt-v2v-in-place to libexec since it is not supported,
+# and remove the documentation.
+mkdir -p $RPM_BUILD_ROOT%{_libexecdir}
+mv $RPM_BUILD_ROOT%{_bindir}/virt-v2v-in-place $RPM_BUILD_ROOT%{_libexecdir}/
 rm $RPM_BUILD_ROOT%{_mandir}/man1/virt-v2v-in-place.1*
 %endif
 
@@ -340,6 +344,8 @@ make -C tests TESTS=test-v2v-fedora-luks-on-lvm-conversion.sh check
 %{_bindir}/virt-v2v
 %if !0%{?rhel}
 %{_bindir}/virt-v2v-in-place
+%else
+%{_libexecdir}/virt-v2v-in-place
 %endif
 %{_bindir}/virt-v2v-inspector
 %{_mandir}/man1/virt-v2v.1*
@@ -377,6 +383,12 @@ make -C tests TESTS=test-v2v-fedora-luks-on-lvm-conversion.sh check
 
 
 %changelog
+* Tue Aug 27 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.4.0-4
+- convert: windows: Online all virtio disks at first boot
+  resolves: RHEL-55837
+- Bundle virt-v2v-in-place for use by MTV
+  resolves: RHEL-55823
+
 * Tue Aug 13 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.4.0-3
 - Fixes to improve installation of QEMU Guest Agent and removal
   of VMware Tools
