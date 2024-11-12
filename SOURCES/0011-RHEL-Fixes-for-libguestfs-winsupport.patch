@@ -1,4 +1,4 @@
-From 7374efa8aecb97a83a1ec6d4d606651a4eb569e4 Mon Sep 17 00:00:00 2001
+From 2039580744223840a09b8aab7ff2fbf94a563a6c Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Sun, 30 Aug 2015 03:21:57 -0400
 Subject: [PATCH] RHEL: Fixes for libguestfs-winsupport.
@@ -12,12 +12,13 @@ https://bugzilla.redhat.com/show_bug.cgi?id=2187961#c1
  convert/convert.ml                         | 1 +
  test-data/phony-guests/make-windows-img.sh | 1 +
  tests/test-v2v-block-driver.sh             | 6 +++++-
+ tests/test-v2v-in-place.sh                 | 8 +++++++-
  tests/test-v2v-virtio-win-iso.sh           | 8 +++++++-
  tests/test-v2v-windows-conversion.sh       | 8 +++++++-
- 5 files changed, 21 insertions(+), 3 deletions(-)
+ 6 files changed, 28 insertions(+), 4 deletions(-)
 
 diff --git a/convert/convert.ml b/convert/convert.ml
-index 9c76f76d..caaa707e 100644
+index 344c5858..ecc48ad4 100644
 --- a/convert/convert.ml
 +++ b/convert/convert.ml
 @@ -52,6 +52,7 @@ let rec convert dir options source =
@@ -57,6 +58,32 @@ index db59a2cf..a0e56bed 100755
          is-dir $virtio_dir
          is-file $virtio_dir/$drv.cat
          is-file $virtio_dir/$drv.inf
+diff --git a/tests/test-v2v-in-place.sh b/tests/test-v2v-in-place.sh
+index 4373f140..2b31b0bb 100755
+--- a/tests/test-v2v-in-place.sh
++++ b/tests/test-v2v-in-place.sh
+@@ -89,6 +89,12 @@ mktest ()
+ :> "$script"
+ :> "$expected"
+ 
++cat >> "$script" <<EOF
++  set-program virt-testing
++  run
++  mount /dev/sda2 /
++EOF
++
+ firstboot_dir="/Program Files/Guestfs/Firstboot"
+ mktest "is-dir \"$firstboot_dir\"" true
+ mktest "is-file \"$firstboot_dir/firstboot.bat\"" true
+@@ -101,7 +107,7 @@ for drv in netkvm vioscsi viostor; do
+     done
+ done
+ 
+-guestfish --ro -a "$img" -i < "$script" > "$response"
++guestfish --ro -a "$img" < "$script" > "$response"
+ diff -u "$expected" "$response"
+ 
+ # Test the base image remained untouched
 diff --git a/tests/test-v2v-virtio-win-iso.sh b/tests/test-v2v-virtio-win-iso.sh
 index 69f6f414..b9b806fb 100755
 --- a/tests/test-v2v-virtio-win-iso.sh

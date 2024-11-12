@@ -1,16 +1,15 @@
-From 919e2fdf65377bc2496a696cb10eac3881324611 Mon Sep 17 00:00:00 2001
+From 1dec94e52974e45fd3962dcbd51882fde7e9c306 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Tue, 9 Jul 2024 11:30:09 +0100
 Subject: [PATCH] RHEL: Add warning about virt-v2v-in-place not being supported
 
 Fixes: https://issues.redhat.com/browse/RHEL-40903
-(cherry picked from commit 1dec94e52974e45fd3962dcbd51882fde7e9c306)
 ---
  in-place/in_place.ml | 3 +++
  1 file changed, 3 insertions(+)
 
 diff --git a/in-place/in_place.ml b/in-place/in_place.ml
-index a61d9795..d55f49a0 100644
+index 1c690a54..a70e812b 100644
 --- a/in-place/in_place.ml
 +++ b/in-place/in_place.ml
 @@ -197,6 +197,9 @@ read the man page virt-v2v-in-place(1).
@@ -21,5 +20,5 @@ index a61d9795..d55f49a0 100644
 +           It is almost always better to use virt-v2v instead of this tool.";
 +
    (* Print the version, easier than asking users to tell us. *)
-   debug "%s: %s %s (%s)"
+   debug "info: %s: %s %s (%s)"
          prog Config.package_name Config.package_version_full

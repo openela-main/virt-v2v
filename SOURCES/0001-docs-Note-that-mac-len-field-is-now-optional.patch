@@ -1,20 +1,19 @@
-From 48c49139b94b1081c6392ab3b14fbb72c024f18d Mon Sep 17 00:00:00 2001
+From 7800049c5612e6ffb30be7f8862d147d82976ae8 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Wed, 31 Jul 2024 10:09:50 +0100
 Subject: [PATCH] docs: Note that --mac len field is now optional
 
 Reported-by: Ming Xie
 Updates: commit 159fda411d2f75b087106e7293d273ae142c9fbe
-(cherry picked from commit 7800049c5612e6ffb30be7f8862d147d82976ae8)
 ---
  docs/virt-v2v.pod | 6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
-index 021ac897..c173563b 100644
+index b53face6..dfe92d77 100644
 --- a/docs/virt-v2v.pod
 +++ b/docs/virt-v2v.pod
-@@ -372,9 +372,9 @@ Force a particular interface (controlled by its MAC address) to have a
+@@ -394,9 +394,9 @@ Force a particular interface (controlled by its MAC address) to have a
  static IP address after boot.
  
  The fields in the parameter are: C<ipaddr> is the IP address.  C<gw>

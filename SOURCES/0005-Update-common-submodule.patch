@@ -1,12 +1,10 @@
-From 03249203b25d946358e73d0e418805f293bb43bb Mon Sep 17 00:00:00 2001
+From 7bc9b115baba6df2969451cd6907e2d7543ef22d Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Mon, 5 Aug 2024 10:18:31 +0100
 Subject: [PATCH] Update common submodule
 
 Richard W.M. Jones (1):
       mlcustomize: Write qemu-ga log file name to log.txt
-
-(cherry picked from commit 7bc9b115baba6df2969451cd6907e2d7543ef22d)
 ---
  common | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

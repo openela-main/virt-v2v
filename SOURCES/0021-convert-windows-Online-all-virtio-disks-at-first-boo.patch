@@ -1,4 +1,4 @@
-From c36ec998cc50124300ae0b31ef844b193b2db00f Mon Sep 17 00:00:00 2001
+From d26ed76801f9d3ce5d3863ca09dfa653b4bcd1b2 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Tue, 27 Aug 2024 12:36:41 +0100
 Subject: [PATCH] convert: windows: Online all virtio disks at first boot
@@ -28,7 +28,7 @@ Acked-by: Martin Necas
  1 file changed, 38 insertions(+), 1 deletion(-)
 
 diff --git a/convert/convert_windows.ml b/convert/convert_windows.ml
-index 2ff60bad..28f81e23 100644
+index 52ca5bbe..352e1218 100644
 --- a/convert/convert_windows.ml
 +++ b/convert/convert_windows.ml
 @@ -38,7 +38,8 @@ module G = Guestfs
@@ -50,7 +50,7 @@ index 2ff60bad..28f81e23 100644
      configure_network_interfaces net_driver;
  
      fix_ntfs_heads ();
-@@ -662,6 +665,40 @@ let convert (g : G.guestfs) _ inspect i_firmware block_driver _ static_ips =
+@@ -668,6 +671,40 @@ let convert (g : G.guestfs) _ inspect i_firmware block_driver _ static_ips =
         warning (f_"could not find registry key \
                     HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion")
  

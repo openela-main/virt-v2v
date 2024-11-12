@@ -1,4 +1,4 @@
-From 692354df0bf2915955d8c66705685f66f5f44844 Mon Sep 17 00:00:00 2001
+From 168eacf977ca49e96bc63ddc4109c27515ac0277 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Thu, 1 Aug 2024 10:36:52 +0100
 Subject: [PATCH] common: mlcustomize: Inject qemu-ga & blnsvr into
@@ -11,8 +11,6 @@ themselves).
 
 Richard W.M. Jones (1):
       mlcustomize: Inject qemu-ga & blnsvr into <firstboot_dir>/Temp
-
-(cherry picked from commit 168eacf977ca49e96bc63ddc4109c27515ac0277)
 ---
  common | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

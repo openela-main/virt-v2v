@@ -1,4 +1,4 @@
-From 6cee48bde007be6c8242c9e1a3b83bc153c566d9 Mon Sep 17 00:00:00 2001
+From abab56cf74a5005b33e962bb3d42db3d5b39e6d3 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Fri, 24 Apr 2015 09:45:41 -0400
 Subject: [PATCH] RHEL: Fix list of supported sound cards to match RHEL qemu
@@ -9,7 +9,7 @@ Subject: [PATCH] RHEL: Fix list of supported sound cards to match RHEL qemu
  1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/lib/utils.ml b/lib/utils.ml
-index 19c5ba91..7b3aa2e2 100644
+index bf010a0a..4c9b7415 100644
 --- a/lib/utils.ml
 +++ b/lib/utils.ml
 @@ -60,13 +60,14 @@ let kvm_arch = function

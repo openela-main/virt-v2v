@@ -1,0 +1,43 @@
+From 94619ded353081255409eb3ffae51061adcbf9a4 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 29 Aug 2024 13:17:13 +0100
+Subject: [PATCH] mlcustomize: Ignore sriov drivers on virtio-win disk
+
+Fixes: https://issues.redhat.com/browse/RHEL-56383
+Thanks: Vadim Rozenfeld
+---
+ common/mlcustomize/inject_virtio_win.ml | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/common/mlcustomize/inject_virtio_win.ml b/common/mlcustomize/inject_virtio_win.ml
+index afec1e4..88c1c8c 100644
+--- a/common/mlcustomize/inject_virtio_win.ml
++++ b/common/mlcustomize/inject_virtio_win.ml
+@@ -478,7 +478,10 @@ and virtio_iso_path_matches_guest_os t path =
+      * "./drivers/amd64/Win2012R2/netkvm.sys".
+      * Note we check lowercase paths.
+      *)
+-    let pathelem elem = String.find lc_path ("/" ^ elem ^ "/") >= 0 in
++    let pathelem elem =
++      String.find lc_path ("/" ^ elem ^ "/") >= 0 ||
++      String.is_prefix lc_path (elem ^ "/")
++    in
+     let p_arch =
+       if pathelem "x86" || pathelem "i386" then "i386"
+       else if pathelem "amd64" then "x86_64"
+@@ -522,7 +525,11 @@ and virtio_iso_path_matches_guest_os t path =
+       else
+         raise Not_found in
+ 
+-    arch = p_arch && os_major = p_os_major && os_minor = p_os_minor &&
++    let p_sriov = pathelem "sriov" in
++
++    arch = p_arch &&
++    not p_sriov && (* always ignored, see RHEL-56383 *)
++    os_major = p_os_major && os_minor = p_os_minor &&
+     match_os_variant os_variant &&
+     match_osinfo osinfo
+ 
+-- 
+2.43.0
+

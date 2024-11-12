@@ -1,4 +1,4 @@
-From a6b8794cd8b90b7f100964ff8534eb24a1b32d4b Mon Sep 17 00:00:00 2001
+From 50f005f8b7034916588855c15b10a0195bf54b23 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Thu, 8 Aug 2024 10:40:24 +0100
 Subject: [PATCH] Pull in a fix to make Windows firstboot more reliable.
@@ -10,8 +10,6 @@ Richard W.M. Jones (2):
       mlcustomize: Reboot Windows between each firstboot script
 
 Document that Windows may now reboot several times after conversion.
-
-(cherry picked from commit 50f005f8b7034916588855c15b10a0195bf54b23)
 ---
  common            | 2 +-
  docs/virt-v2v.pod | 9 ++++++---
@@ -59,10 +57,10 @@ index 3bbba714..52e76401 100644
  \"%%firstboot%%\\%s\" -s firstboot uninstall
  " firstboot_dir_win srvany in
 diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
-index 6df9d88b..7912c6b1 100644
+index 92941026..587b4604 100644
 --- a/docs/virt-v2v.pod
 +++ b/docs/virt-v2v.pod
-@@ -1244,9 +1244,12 @@ The guest will be bootable after the offline conversion stage, but
+@@ -1295,9 +1295,12 @@ The guest will be bootable after the offline conversion stage, but
  will not yet have all necessary drivers installed to work correctly.
  These will be installed automatically the first time the guest boots.
  

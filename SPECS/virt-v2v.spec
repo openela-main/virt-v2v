@@ -2,21 +2,13 @@
 # If we should verify tarball signature with GPGv2.
 %global verify_tarball_signature 1
 
-# If there are patches which touch autotools files, set this to 1.
-%if !0%{?rhel}
-%global patches_touch_autotools %{nil}
-%else
-# On RHEL the downstream patches always touch autotools files.
-%global patches_touch_autotools 1
-%endif
-
 # The source directory.
-%global source_directory 2.4-stable
+%global source_directory 2.5-development
 
 Name:          virt-v2v
 Epoch:         1
-Version:       2.4.0
-Release:       4%{?dist}
+Version:       2.5.6
+Release:       7%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -33,48 +25,31 @@ Source2:       libguestfs.keyring
 Source3:       copy-patches.sh
 
 # Patches are maintained in the following repository:
-# https://github.com/libguestfs/virt-v2v/commits/rhel-9.4
+# https://github.com/libguestfs/virt-v2v/commits/rhel-9.5
 
 # Patches.
-Patch0001:     0001-virt-v2v-i-vmx-Remove-scp-T-option.patch
-Patch0002:     0002-Translated-using-Weblate-Polish.patch
-Patch0003:     0003-Update-translation-files.patch
-Patch0004:     0004-virt-v2v-i-vmx-Refactor-ssh-scp-code-into-a-new-modu.patch
-Patch0005:     0005-virt-v2v-i-vmx-Simplify-scp-wrapper.patch
-Patch0006:     0006-virt-v2v-i-vmx-Add-the-input-password-to-vmx_source.patch
-Patch0007:     0007-virt-v2v-i-vmx-Remove-dependency-of-ssh.ml-on-Xml.ur.patch
-Patch0008:     0008-input-nbdkit_ssh-Make-retry-filter-optional.patch
-Patch0009:     0009-virt-v2v-i-vmx-Replace-external-ssh-scp-with-nbdkit-.patch
-Patch0010:     0010-input-nbdkit_ssh-Make-password-parameter-optional.patch
-Patch0011:     0011-input-ssh-Rearrange-parameters-specifying-ssh-server.patch
-Patch0012:     0012-docs-Remove-paragraph-about-ip-passwords-and-ssh-scp.patch
-Patch0013:     0013-input-ssh-Use-nbdinfo-can-connect-instead-of-size.patch
-Patch0014:     0014-build-Document-that-nbdinfo-and-nbdcopy-are-required.patch
-Patch0015:     0015-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
-Patch0016:     0016-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
-Patch0017:     0017-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
-Patch0018:     0018-RHEL-Fixes-for-libguestfs-winsupport.patch
-Patch0019:     0019-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
-Patch0020:     0020-RHEL-v2v-do-not-mention-SUSE-Xen-hosts-RHBZ-1430203.patch
-Patch0021:     0021-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
-Patch0022:     0022-RHEL-Disable-o-glance.patch
-Patch0023:     0023-RHEL-Remove-the-in-place-option.patch
-Patch0024:     0024-RHEL-9-oo-compressed-Remove-nbdcopy-version-check-an.patch
-Patch0025:     0025-RHEL-9-tests-Remove-btrfs-test.patch
-Patch0026:     0026-RHEL-9-Remove-block-driver-option.patch
-Patch0027:     0027-Update-common-submodule.patch
-Patch0028:     0028-convert-windows-Install-blnsvr-from-virtio-win.patch
-Patch0029:     0029-Update-common-submodule.patch
-Patch0030:     0030-v2v-mac-Allow-gw-and-len-fields-to-be-empty.patch
-Patch0031:     0031-docs-Note-that-mac-len-field-is-now-optional.patch
-Patch0032:     0032-convert-More-robust-qemu-ga-installation-change-path.patch
-Patch0033:     0033-common-mlcustomize-Inject-qemu-ga-blnsvr-into-firstb.patch
-Patch0034:     0034-docs-Add-a-note-about-removal-of-VMware-Tools-on-Win.patch
-Patch0035:     0035-Update-common-submodule.patch
-Patch0036:     0036-Pull-in-a-fix-to-make-Windows-firstboot-more-reliabl.patch
-Patch0037:     0037-docs-Restate-position-on-removal-of-VMware-Tools.patch
-Patch0038:     0038-RHEL-Add-warning-about-virt-v2v-in-place-not-being-s.patch
-Patch0039:     0039-convert-windows-Online-all-virtio-disks-at-first-boo.patch
+Patch0001:     0001-docs-Note-that-mac-len-field-is-now-optional.patch
+Patch0002:     0002-convert-More-robust-qemu-ga-installation-change-path.patch
+Patch0003:     0003-common-mlcustomize-Inject-qemu-ga-blnsvr-into-firstb.patch
+Patch0004:     0004-docs-Add-a-note-about-removal-of-VMware-Tools-on-Win.patch
+Patch0005:     0005-Update-common-submodule.patch
+Patch0006:     0006-Pull-in-a-fix-to-make-Windows-firstboot-more-reliabl.patch
+Patch0007:     0007-docs-Restate-position-on-removal-of-VMware-Tools.patch
+Patch0008:     0008-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
+Patch0009:     0009-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
+Patch0010:     0010-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
+Patch0011:     0011-RHEL-Fixes-for-libguestfs-winsupport.patch
+Patch0012:     0012-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
+Patch0013:     0013-RHEL-v2v-do-not-mention-SUSE-Xen-hosts-RHBZ-1430203.patch
+Patch0014:     0014-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
+Patch0015:     0015-RHEL-Disable-o-glance.patch
+Patch0016:     0016-RHEL-Remove-the-in-place-option.patch
+Patch0017:     0017-RHEL-9-oo-compressed-Remove-nbdcopy-version-check-an.patch
+Patch0018:     0018-RHEL-9-tests-Remove-btrfs-test.patch
+Patch0019:     0019-RHEL-9-Remove-block-driver-option.patch
+Patch0020:     0020-RHEL-Add-warning-about-virt-v2v-in-place-not-being-s.patch
+Patch0021:     0021-convert-windows-Online-all-virtio-disks-at-first-boo.patch
+Patch0022:     0022-convert-windows-Ignore-sriov-drivers-on-virtio-win-d.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -93,10 +68,7 @@ ExcludeArch:   %{ix86}
 ExclusiveArch: x86_64
 %endif
 
-%if 0%{patches_touch_autotools}
 BuildRequires: autoconf, automake, libtool
-%endif
-
 BuildRequires: make
 BuildRequires: /usr/bin/pod2man
 BuildRequires: gcc
@@ -256,9 +228,7 @@ for %{name}.
 %endif
 %autosetup -p1
 
-%if 0%{patches_touch_autotools}
-autoreconf -i
-%endif
+autoreconf -fiv
 
 
 %build
@@ -383,18 +353,64 @@ make -C tests TESTS=test-v2v-fedora-luks-on-lvm-conversion.sh check
 
 
 %changelog
-* Tue Aug 27 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.4.0-4
-- convert: windows: Online all virtio disks at first boot
-  resolves: RHEL-55837
-- Bundle virt-v2v-in-place for use by MTV
-  resolves: RHEL-55823
+* Thu Sep 12 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-7
+- Bump and rebuild to resolve rhel-9.5.0 branch issue
+  related: RHEL-56383
 
-* Tue Aug 13 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.4.0-3
-- Fixes to improve installation of QEMU Guest Agent and removal
-  of VMware Tools
-  resolves: RHEL-54150, RHEL-54151
-- Allow --mac gw and len fields to be optional
-  resolves: RHEL-54152
+* Fri Sep 06 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-6
+- convert: windows: Ignore sriov drivers on virtio-win disk
+  resolves: RHEL-56383
+
+* Tue Aug 27 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-4
+- convert: windows: Online all virtio disks at first boot
+  resolves: RHEL-55763
+
+* Thu Aug 08 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-3
+- Further fixes for QEMU Guest Agent install & VMware Tools removal
+  resolves: RHEL-49761, RHEL-51169
+
+* Mon Aug 05 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-2
+- Document uninstallation of VMware Tools on Windows
+  resolves: RHEL-51169
+
+* Thu Aug 01 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-1
+- Further fixes for QEMU Guest Agent
+  resolves: RHEL-49761
+- Place Windows firstboot files under C:\Program Files\Guestfs\Firstboot
+- Improve debugging output
+
+* Sun Jul 28 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.5-3
+- Allow virt-v2v --mac gw and len fields to be optional
+  resolves: RHEL-50731
+
+* Thu Jul 25 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.5-2
+- Fix installation of QEMU Guest Agent
+  resolves: RHEL-49761
+
+* Thu Jul 11 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.5-1
+- Rebase to virt-v2v 2.5.5
+- Enhance -o kubevirt output
+  resolves: RHEL-45992
+
+* Tue Jul 09 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.4-2
+- Package virt-v2v-in-place in libexec as unsupported tool
+- Add warning about virt-v2v-in-place not being supported
+  resolves: RHEL-40903
+- Add more fields to virt-inspector output
+  related: MTV-1079
+- Revert "docs: Remove paragraph about -ip passwords and ssh/scp"
+  resolves: RHEL-45527
+
+* Thu May 16 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.4-1
+- Rebase to virt-v2v 2.5.4
+- Add missing firmware types and enhance -o kubevirt
+  resolves: RHEL-28197
+- Fix RHV JSON transfer bug
+  resolves: RHEL-32105
+- docs: Add VDDK prereq that server must not be in maintenance mode
+  resolves: RHEL-33699
+- convert: windows: Install blnsvr from virtio-win
+  resolves: RHEL-36591
 
 * Mon Jan 22 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.4.0-2
 - Rebase to virt-v2v 2.4.0

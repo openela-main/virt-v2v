@@ -1,4 +1,4 @@
-From 696060ba5e89da4d60a7ee1187c8cfd298d50031 Mon Sep 17 00:00:00 2001
+From c952f310c902e438a8b0b5240a4b486b698bede8 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Mon, 5 Aug 2024 10:08:34 +0100
 Subject: [PATCH] docs: Add a note about removal of VMware Tools on Windows
@@ -13,16 +13,15 @@ user if they want to try the risky method.
 Fixes: https://issues.redhat.com/browse/RHEL-51169
 Thanks: Yan Vugenfirer
 Reported-by: Ming Xie
-(cherry picked from commit c952f310c902e438a8b0b5240a4b486b698bede8)
 ---
  docs/virt-v2v.pod | 15 +++++++++++++++
  1 file changed, 15 insertions(+)
 
 diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
-index c173563b..6df9d88b 100644
+index dfe92d77..92941026 100644
 --- a/docs/virt-v2v.pod
 +++ b/docs/virt-v2v.pod
-@@ -1248,6 +1248,21 @@ B<N.B.> Take care not to interrupt the automatic driver installation
+@@ -1299,6 +1299,21 @@ B<N.B.> Take care not to interrupt the automatic driver installation
  process when logging in to the guest for the first time, as this may
  prevent the guest from subsequently booting correctly.
  
