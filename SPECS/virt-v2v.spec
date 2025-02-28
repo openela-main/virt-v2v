@@ -8,7 +8,7 @@
 Name:          virt-v2v
 Epoch:         1
 Version:       2.5.6
-Release:       7%{?dist}
+Release:       8%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -50,6 +50,8 @@ Patch0019:     0019-RHEL-9-Remove-block-driver-option.patch
 Patch0020:     0020-RHEL-Add-warning-about-virt-v2v-in-place-not-being-s.patch
 Patch0021:     0021-convert-windows-Online-all-virtio-disks-at-first-boo.patch
 Patch0022:     0022-convert-windows-Ignore-sriov-drivers-on-virtio-win-d.patch
+Patch0023:     0023-Update-common-submodule.patch
+Patch0024:     0024-convert-Use-yum-apt-.-for-package-removals-not-rpm-d.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -353,6 +355,12 @@ make -C tests TESTS=test-v2v-fedora-luks-on-lvm-conversion.sh check
 
 
 %changelog
+* Tue Feb 11 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-8
+- mldrivers/linux_bootloaders.ml: Don't overwrite EFI grub2 wrapper
+  resolves: RHEL-78844
+- convert: Use yum/apt/... for package removals
+  resolves: RHEL-78842
+
 * Thu Sep 12 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-7
 - Bump and rebuild to resolve rhel-9.5.0 branch issue
   related: RHEL-56383
