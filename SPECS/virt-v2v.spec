@@ -8,7 +8,7 @@
 Name:          virt-v2v
 Epoch:         1
 Version:       2.5.6
-Release:       8%{?dist}
+Release:       9%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -52,6 +52,8 @@ Patch0021:     0021-convert-windows-Online-all-virtio-disks-at-first-boo.patch
 Patch0022:     0022-convert-windows-Ignore-sriov-drivers-on-virtio-win-d.patch
 Patch0023:     0023-Update-common-submodule.patch
 Patch0024:     0024-convert-Use-yum-apt-.-for-package-removals-not-rpm-d.patch
+Patch0025:     0025-test-data-phony-fedora-Add-simple-static-bin-sh.patch
+Patch0026:     0026-convert-Handle-large-output-from-rpm-ql-command.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -76,7 +78,7 @@ BuildRequires: /usr/bin/pod2man
 BuildRequires: gcc
 BuildRequires: ocaml >= 4.04
 
-BuildRequires: libguestfs-devel >= 1:1.49.8-1
+BuildRequires: libguestfs-devel >= 1:1.50.2-2.el9_5
 BuildRequires: augeas-devel
 BuildRequires: bash-completion
 BuildRequires: file-devel
@@ -120,7 +122,7 @@ BuildRequires: sqlite
 BuildRequires: gnupg2
 %endif
 
-Requires:      libguestfs%{?_isa} >= 1:1.49.8-1
+Requires:      libguestfs%{?_isa} >= 1:1.50.2-2.el9_5
 Requires:      guestfs-tools >= 1.49.7-1
 
 # XFS is the default filesystem in Fedora and RHEL.
@@ -355,6 +357,10 @@ make -C tests TESTS=test-v2v-fedora-luks-on-lvm-conversion.sh check
 
 
 %changelog
+* Thu Feb 27 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-9
+- Fix failure if the kernel-source package is installed in the source VM
+  resolves: RHEL-81083
+
 * Tue Feb 11 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-8
 - mldrivers/linux_bootloaders.ml: Don't overwrite EFI grub2 wrapper
   resolves: RHEL-78844
