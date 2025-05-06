@@ -1,0 +1,129 @@
+From 6e2a9bd1a9362ae84a2e9d8d56bd2f5e5eb1acef Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 2 Dec 2024 13:25:49 +0000
+Subject: [PATCH] build: Remove --with-virt-v2v-nbdkit-python-plugin=...
+
+In theory, ./configure --with-virt-v2v-nbdkit-python-plugin=<name>
+allowed you to override the default nbdkit-python-plugin name (usually
+"python").  However:
+
+ (a) nbdkit no longer provides a Python version 2 plugin and hasn't
+ since nbdkit 1.16 (2019),
+
+ (b) we no longer support older RHEL where there were parallel Python
+ 2 & 3 plugins and this was an issue, and
+
+ (c) the result wasn't actually used in the code (it used to be, but I
+ think I replaced it with "python" and forgot about this ./configure
+ parameter).
+
+(cherry picked from commit 9e25b211a48804b27228e17d8e123b5f1d44df8b)
+(cherry picked from commit d42726148753250e741b030a1aff09310fb9938a)
+---
+ config.sh.in                   |  1 -
+ configure.ac                   |  4 ----
+ lib/config.ml.in               |  1 -
+ lib/config.mli                 |  9 ---------
+ m4/guestfs-v2v.m4              | 28 ----------------------------
+ tests/test-v2v-o-rhv-upload.sh |  2 +-
+ 6 files changed, 1 insertion(+), 44 deletions(-)
+ delete mode 100644 m4/guestfs-v2v.m4
+
+diff --git a/config.sh.in b/config.sh.in
+index be304b39..8f590853 100644
+--- a/config.sh.in
++++ b/config.sh.in
+@@ -19,5 +19,4 @@
+ # This shell script contains the results of some configure checks,
+ # mostly used in other shell scripts.
+ 
+-export VIRT_V2V_NBDKIT_PYTHON_PLUGIN="@VIRT_V2V_NBDKIT_PYTHON_PLUGIN@"
+ export PYCODESTYLE="@PYCODESTYLE@"
+diff --git a/configure.ac b/configure.ac
+index e04a2f3a..36ee7d27 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -97,10 +97,6 @@ dnl Perl, used for running mllibvirt generator, and man pages.
+ HEADING([Checking for Perl])
+ m4_include([m4/guestfs-perl.m4])
+ 
+-dnl virt-v2v.
+-HEADING([Checking the virt-v2v dependencies])
+-m4_include([m4/guestfs-v2v.m4])
+-
+ dnl Bash completion.
+ HEADING([Checking for bash completion])
+ m4_include([m4/guestfs-bash-completion.m4])
+diff --git a/lib/config.ml.in b/lib/config.ml.in
+index 74606d1b..be3bdfa2 100644
+--- a/lib/config.ml.in
++++ b/lib/config.ml.in
+@@ -23,4 +23,3 @@ let package_version_full = "@PACKAGE_VERSION_FULL@"
+ let prefix = "@prefix@"
+ let datadir = prefix ^ "/share"
+ let host_cpu = "@host_cpu@"
+-let nbdkit_python_plugin = "@VIRT_V2V_NBDKIT_PYTHON_PLUGIN@"
+diff --git a/lib/config.mli b/lib/config.mli
+index fe71e57c..a02864fa 100644
+--- a/lib/config.mli
++++ b/lib/config.mli
+@@ -33,12 +33,3 @@ val datadir : string
+ 
+ val host_cpu : string
+ (** The configure value [@host_cpu@] *)
+-
+-val nbdkit_python_plugin : string
+-(** Return the name of the nbdkit python plugin used by
+-    [virt-v2v -o rhv-upload].
+-
+-    As above this must also be the Python 3 version of the plugin,
+-    unless you change it.  The configure command to change this is:
+-
+-    [./configure --with-virt-v2v-nbdkit-python-plugin=...] *)
+diff --git a/m4/guestfs-v2v.m4 b/m4/guestfs-v2v.m4
+deleted file mode 100644
+index 787864d3..00000000
+--- a/m4/guestfs-v2v.m4
++++ /dev/null
+@@ -1,28 +0,0 @@
+-# virt-v2v
+-# Copyright (C) 2009-2020 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License
+-# along with this program; if not, write to the Free Software
+-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-dnl Virt-v2v.
+-
+-dnl nbdkit python plugin.
+-AC_MSG_CHECKING([for the nbdkit python plugin name])
+-AC_ARG_WITH([virt-v2v-nbdkit-python-plugin],
+-    [AS_HELP_STRING([--with-virt-v2v-nbdkit-python-plugin="python|..."],
+-        [set nbdkit python plugin name used by virt-v2v @<:@default=python@:>@])],
+-    [VIRT_V2V_NBDKIT_PYTHON_PLUGIN="$withval"],
+-    [VIRT_V2V_NBDKIT_PYTHON_PLUGIN=python])
+-AC_MSG_RESULT([$VIRT_V2V_NBDKIT_PYTHON_PLUGIN])
+-AC_SUBST([VIRT_V2V_NBDKIT_PYTHON_PLUGIN])
+diff --git a/tests/test-v2v-o-rhv-upload.sh b/tests/test-v2v-o-rhv-upload.sh
+index 15d5d028..9ce9c3e3 100755
+--- a/tests/test-v2v-o-rhv-upload.sh
++++ b/tests/test-v2v-o-rhv-upload.sh
+@@ -31,7 +31,7 @@ set -x
+ 
+ skip_if_skipped
+ requires python3 --version
+-requires nbdkit $VIRT_V2V_NBDKIT_PYTHON_PLUGIN --version
++requires nbdkit python --version
+ requires test -f ../test-data/phony-guests/windows.img
+ 
+ libvirt_uri="test://$abs_top_builddir/test-data/phony-guests/guests.xml"

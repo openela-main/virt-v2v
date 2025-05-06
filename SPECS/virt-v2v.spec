@@ -8,7 +8,7 @@
 Name:          virt-v2v
 Epoch:         1
 Version:       2.5.6
-Release:       9%{?dist}
+Release:       10%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -54,6 +54,9 @@ Patch0023:     0023-Update-common-submodule.patch
 Patch0024:     0024-convert-Use-yum-apt-.-for-package-removals-not-rpm-d.patch
 Patch0025:     0025-test-data-phony-fedora-Add-simple-static-bin-sh.patch
 Patch0026:     0026-convert-Handle-large-output-from-rpm-ql-command.patch
+Patch0027:     0027-build-Remove-with-virt-v2v-nbdkit-python-plugin.patch
+Patch0028:     0028-build-Use-nbdcopy-and-nbdinfo-from-.-configure.patch
+Patch0029:     0029-v2v-Use-nbdcopy-blkhash-in-verbose-mode.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -357,6 +360,10 @@ make -C tests TESTS=test-v2v-fedora-luks-on-lvm-conversion.sh check
 
 
 %changelog
+* Wed Apr 02 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-10
+- Print blkhash of converted image in virt-v2v debugging output
+  resolves: RHEL-85832
+
 * Thu Feb 27 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-9
 - Fix failure if the kernel-source package is installed in the source VM
   resolves: RHEL-81083
