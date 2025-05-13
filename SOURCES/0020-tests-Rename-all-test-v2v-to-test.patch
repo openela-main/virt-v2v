@@ -1,0 +1,2145 @@
+From d368bd7024994b0486ce8026965498f9316b91b2 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 5 Dec 2024 14:40:39 +0000
+Subject: [PATCH] tests: Rename all test-v2v-* to test-*
+
+When virt-v2v was part of libguestfs, before it was a separate
+component, we prefixed all test names with 'test-v2v-*' in order to
+distinguish them from tests for other components.  Since virt-v2v is
+now separate, we no longer need to do this.  Thus we can remove the
+'-v2v-' part of every test name, which reduces typing and makes the
+names nicer.
+
+Note that we cannot remove the 'test-' prefix.  This is because
+automake reserves an unspecified list of words (eg. "compile") and
+tests using those names will fail.  Keeping the 'test-' prefix avoids
+this.
+
+(cherry picked from commit 67d6fd45f3f9521523aac5650dcdd7b756dc3547)
+---
+ .gitignore                                    |  14 +-
+ configure.ac                                  |  12 +-
+ docs/Makefile.am                              |   4 +-
+ docs/{test-v2v-docs.sh => test-docs.sh}       |   0
+ output/Makefile.am                            |   4 +-
+ ...python-syntax.sh => test-python-syntax.sh} |   0
+ tests/Makefile.am                             | 354 +++++++++---------
+ ...es.sh => test-bad-networks-and-bridges.sh} |   2 +-
+ ...v-block-driver.sh => test-block-driver.sh} |   2 +-
+ ...v2v-cdrom.expected => test-cdrom.expected} |   0
+ tests/{test-v2v-cdrom.sh => test-cdrom.sh}    |   6 +-
+ ...est-v2v-cdrom.xml.in => test-cdrom.xml.in} |   0
+ ...conversion-of.sh => test-conversion-of.sh} |   0
+ ...est-v2v-customize.sh => test-customize.sh} |   2 +-
+ ...ion.sh => test-fedora-btrfs-conversion.sh} |   0
+ ...onversion.sh => test-fedora-conversion.sh} |   0
+ ... => test-fedora-luks-on-lvm-conversion.sh} |   0
+ ... => test-fedora-lvm-on-luks-conversion.sh} |   0
+ ...ersion.sh => test-fedora-md-conversion.sh} |   0
+ ...v-floppy.expected => test-floppy.expected} |   0
+ tests/{test-v2v-floppy.sh => test-floppy.sh}  |   6 +-
+ ...t-v2v-floppy.xml.in => test-floppy.xml.in} |   0
+ ...sk-parallel.sh => test-i-disk-parallel.sh} |   2 +-
+ tests/{test-v2v-i-disk.sh => test-i-disk.sh}  |   2 +-
+ ...ova-as-root.ovf => test-i-ova-as-root.ovf} |   0
+ ...i-ova-as-root.sh => test-i-ova-as-root.sh} |   4 +-
+ ...ova-bad-sha1.sh => test-i-ova-bad-sha1.sh} |   4 +-
+ ...bad-sha256.sh => test-i-ova-bad-sha256.sh} |   4 +-
+ ...checksums.ovf => test-i-ova-checksums.ovf} |   0
+ ...a-directory.sh => test-i-ova-directory.sh} |   4 +-
+ ...s.expected => test-i-ova-formats.expected} |   0
+ ...ova-formats.ovf => test-i-ova-formats.ovf} |   0
+ ...i-ova-formats.sh => test-i-ova-formats.sh} |  12 +-
+ ...cksums.sh => test-i-ova-good-checksums.sh} |   4 +-
+ ...ova-gz.expected => test-i-ova-gz.expected} |   0
+ ...est-v2v-i-ova-gz.ovf => test-i-ova-gz.ovf} |   0
+ ...{test-v2v-i-ova-gz.sh => test-i-ova-gz.sh} |   8 +-
+ ...st1.sh => test-i-ova-invalid-manifest1.sh} |   4 +-
+ ...st2.sh => test-i-ova-invalid-manifest2.sh} |   4 +-
+ ...expected => test-i-ova-snapshots.expected} |   0
+ ...pected2 => test-i-ova-snapshots.expected2} |   0
+ ...snapshots.ovf => test-i-ova-snapshots.ovf} |   0
+ ...a-snapshots.sh => test-i-ova-snapshots.sh} |  10 +-
+ ...xpected => test-i-ova-subfolders.expected} |   0
+ ...ected2 => test-i-ova-subfolders.expected2} |   0
+ ...bfolders.ovf => test-i-ova-subfolders.ovf} |   0
+ ...subfolders.sh => test-i-ova-subfolders.sh} |   8 +-
+ ...a-tar.expected => test-i-ova-tar.expected} |   0
+ ...tar.expected2 => test-i-ova-tar.expected2} |   0
+ ...t-v2v-i-ova-tar.ovf => test-i-ova-tar.ovf} |   0
+ ...est-v2v-i-ova-tar.sh => test-i-ova-tar.sh} |  10 +-
+ ...expected => test-i-ova-two-disks.expected} |   0
+ ...pected2 => test-i-ova-two-disks.expected2} |   0
+ ...two-disks.ovf => test-i-ova-two-disks.ovf} |   0
+ ...a-two-disks.sh => test-i-ova-two-disks.sh} |  10 +-
+ tests/{test-v2v-i-ova.ovf => test-i-ova.ovf}  |   0
+ tests/{test-v2v-i-ova.sh => test-i-ova.sh}    |   6 +-
+ tests/{test-v2v-i-ova.xml => test-i-ova.xml}  |   0
+ ...i-vmx-1.expected => test-i-vmx-1.expected} |   0
+ ...{test-v2v-i-vmx-1.vmx => test-i-vmx-1.vmx} |   0
+ ...i-vmx-2.expected => test-i-vmx-2.expected} |   0
+ ...{test-v2v-i-vmx-2.vmx => test-i-vmx-2.vmx} |   0
+ ...i-vmx-3.expected => test-i-vmx-3.expected} |   0
+ ...{test-v2v-i-vmx-3.vmx => test-i-vmx-3.vmx} |   0
+ ...i-vmx-4.expected => test-i-vmx-4.expected} |   0
+ ...{test-v2v-i-vmx-4.vmx => test-i-vmx-4.vmx} |   0
+ ...i-vmx-5.expected => test-i-vmx-5.expected} |   0
+ ...{test-v2v-i-vmx-5.vmx => test-i-vmx-5.vmx} |   0
+ ...i-vmx-6.expected => test-i-vmx-6.expected} |   0
+ ...{test-v2v-i-vmx-6.vmx => test-i-vmx-6.vmx} |   0
+ ...i-vmx-7.expected => test-i-vmx-7.expected} |   0
+ ...{test-v2v-i-vmx-7.vmx => test-i-vmx-7.vmx} |   0
+ tests/{test-v2v-i-vmx.sh => test-i-vmx.sh}    |  16 +-
+ ...{test-v2v-in-place.sh => test-in-place.sh} |   2 +-
+ ...est-v2v-inspector.sh => test-inspector.sh} |   2 +-
+ ...k-io-query.sh => test-it-vddk-io-query.sh} |   2 +-
+ ...mac-expected.xml => test-mac-expected.xml} |   0
+ tests/{test-v2v-mac.sh => test-mac.sh}        |   6 +-
+ .../{test-v2v-mac.xml.in => test-mac.xml.in}  |   0
+ ...e-readable.sh => test-machine-readable.sh} |   8 +-
+ ...=> test-networks-and-bridges-expected.xml} |   0
+ ...ridges.sh => test-networks-and-bridges.sh} |   6 +-
+ ...ml.in => test-networks-and-bridges.xml.in} |   0
+ ...{test-v2v-o-glance.sh => test-o-glance.sh} |   0
+ ...rt-fedora.sh => test-o-kubevirt-fedora.sh} |   4 +-
+ ...d => test-o-kubevirt-fedora.yaml.expected} |   0
+ ...-windows.sh => test-o-kubevirt-windows.sh} |   4 +-
+ ... => test-o-kubevirt-windows.yaml.expected} |   0
+ ...est-v2v-o-libvirt.sh => test-o-libvirt.sh} |   2 +-
+ ...ed.sh => test-o-local-qcow2-compressed.sh} |   2 +-
+ tests/{test-v2v-o-null.sh => test-o-null.sh}  |   0
+ ...v2v-o-openstack.sh => test-o-openstack.sh} |   4 +-
+ tests/{test-v2v-o-qemu.sh => test-o-qemu.sh}  |   2 +-
+ .../imageio.py                                |   2 +-
+ .../ovirtsdk4/__init__.py                     |   2 +-
+ .../ovirtsdk4/types.py                        |   2 +-
+ ...query.sh => test-o-rhv-upload-oo-query.sh} |   2 +-
+ ...v-o-rhv-upload.sh => test-o-rhv-upload.sh} |   8 +-
+ ...v.ovf.expected => test-o-rhv.ovf.expected} |   0
+ tests/{test-v2v-o-rhv.sh => test-o-rhv.sh}    |   4 +-
+ ...sm-oo-query.sh => test-o-vdsm-oo-query.sh} |   2 +-
+ ...ected => test-o-vdsm-options.ovf.expected} |   0
+ ...vdsm-options.sh => test-o-vdsm-options.sh} |   4 +-
+ ...ption-qcow2.sh => test-oa-option-qcow2.sh} |   2 +-
+ ...oa-option-raw.sh => test-oa-option-raw.sh} |   2 +-
+ ...est-v2v-of-option.sh => test-of-option.sh} |   2 +-
+ ...est-v2v-on-option.sh => test-on-option.sh} |   2 +-
+ ...ce.expected => test-print-source.expected} |   0
+ ...v-print-source.sh => test-print-source.sh} |   6 +-
+ ...source.xml.in => test-print-source.xml.in} |   0
+ tests/{test-v2v-sound.sh => test-sound.sh}    |   4 +-
+ ...est-v2v-sound.xml.in => test-sound.xml.in} |   0
+ tests/{test-v2v-trim.sh => test-trim.sh}      |   2 +-
+ ...rtio-win-iso.sh => test-virtio-win-iso.sh} |   2 +-
+ ...nversion.sh => test-windows-conversion.sh} |   2 +-
+ 115 files changed, 307 insertions(+), 305 deletions(-)
+ rename docs/{test-v2v-docs.sh => test-docs.sh} (100%)
+ rename output/{test-v2v-python-syntax.sh => test-python-syntax.sh} (100%)
+ rename tests/{test-v2v-bad-networks-and-bridges.sh => test-bad-networks-and-bridges.sh} (97%)
+ rename tests/{test-v2v-block-driver.sh => test-block-driver.sh} (99%)
+ rename tests/{test-v2v-cdrom.expected => test-cdrom.expected} (100%)
+ rename tests/{test-v2v-cdrom.sh => test-cdrom.sh} (92%)
+ rename tests/{test-v2v-cdrom.xml.in => test-cdrom.xml.in} (100%)
+ rename tests/{test-v2v-conversion-of.sh => test-conversion-of.sh} (100%)
+ rename tests/{test-v2v-customize.sh => test-customize.sh} (98%)
+ rename tests/{test-v2v-fedora-btrfs-conversion.sh => test-fedora-btrfs-conversion.sh} (100%)
+ rename tests/{test-v2v-fedora-conversion.sh => test-fedora-conversion.sh} (100%)
+ rename tests/{test-v2v-fedora-luks-on-lvm-conversion.sh => test-fedora-luks-on-lvm-conversion.sh} (100%)
+ rename tests/{test-v2v-fedora-lvm-on-luks-conversion.sh => test-fedora-lvm-on-luks-conversion.sh} (100%)
+ rename tests/{test-v2v-fedora-md-conversion.sh => test-fedora-md-conversion.sh} (100%)
+ rename tests/{test-v2v-floppy.expected => test-floppy.expected} (100%)
+ rename tests/{test-v2v-floppy.sh => test-floppy.sh} (92%)
+ rename tests/{test-v2v-floppy.xml.in => test-floppy.xml.in} (100%)
+ rename tests/{test-v2v-i-disk-parallel.sh => test-i-disk-parallel.sh} (98%)
+ rename tests/{test-v2v-i-disk.sh => test-i-disk.sh} (98%)
+ rename tests/{test-v2v-i-ova-as-root.ovf => test-i-ova-as-root.ovf} (100%)
+ rename tests/{test-v2v-i-ova-as-root.sh => test-i-ova-as-root.sh} (96%)
+ rename tests/{test-v2v-i-ova-bad-sha1.sh => test-i-ova-bad-sha1.sh} (95%)
+ rename tests/{test-v2v-i-ova-bad-sha256.sh => test-i-ova-bad-sha256.sh} (95%)
+ rename tests/{test-v2v-i-ova-checksums.ovf => test-i-ova-checksums.ovf} (100%)
+ rename tests/{test-v2v-i-ova-directory.sh => test-i-ova-directory.sh} (96%)
+ rename tests/{test-v2v-i-ova-formats.expected => test-i-ova-formats.expected} (100%)
+ rename tests/{test-v2v-i-ova-formats.ovf => test-i-ova-formats.ovf} (100%)
+ rename tests/{test-v2v-i-ova-formats.sh => test-i-ova-formats.sh} (83%)
+ rename tests/{test-v2v-i-ova-good-checksums.sh => test-i-ova-good-checksums.sh} (95%)
+ rename tests/{test-v2v-i-ova-gz.expected => test-i-ova-gz.expected} (100%)
+ rename tests/{test-v2v-i-ova-gz.ovf => test-i-ova-gz.ovf} (100%)
+ rename tests/{test-v2v-i-ova-gz.sh => test-i-ova-gz.sh} (88%)
+ rename tests/{test-v2v-i-ova-invalid-manifest1.sh => test-i-ova-invalid-manifest1.sh} (95%)
+ rename tests/{test-v2v-i-ova-invalid-manifest2.sh => test-i-ova-invalid-manifest2.sh} (95%)
+ rename tests/{test-v2v-i-ova-snapshots.expected => test-i-ova-snapshots.expected} (100%)
+ rename tests/{test-v2v-i-ova-snapshots.expected2 => test-i-ova-snapshots.expected2} (100%)
+ rename tests/{test-v2v-i-ova-snapshots.ovf => test-i-ova-snapshots.ovf} (100%)
+ rename tests/{test-v2v-i-ova-snapshots.sh => test-i-ova-snapshots.sh} (89%)
+ rename tests/{test-v2v-i-ova-subfolders.expected => test-i-ova-subfolders.expected} (100%)
+ rename tests/{test-v2v-i-ova-subfolders.expected2 => test-i-ova-subfolders.expected2} (100%)
+ rename tests/{test-v2v-i-ova-subfolders.ovf => test-i-ova-subfolders.ovf} (100%)
+ rename tests/{test-v2v-i-ova-subfolders.sh => test-i-ova-subfolders.sh} (88%)
+ rename tests/{test-v2v-i-ova-tar.expected => test-i-ova-tar.expected} (100%)
+ rename tests/{test-v2v-i-ova-tar.expected2 => test-i-ova-tar.expected2} (100%)
+ rename tests/{test-v2v-i-ova-tar.ovf => test-i-ova-tar.ovf} (100%)
+ rename tests/{test-v2v-i-ova-tar.sh => test-i-ova-tar.sh} (88%)
+ rename tests/{test-v2v-i-ova-two-disks.expected => test-i-ova-two-disks.expected} (100%)
+ rename tests/{test-v2v-i-ova-two-disks.expected2 => test-i-ova-two-disks.expected2} (100%)
+ rename tests/{test-v2v-i-ova-two-disks.ovf => test-i-ova-two-disks.ovf} (100%)
+ rename tests/{test-v2v-i-ova-two-disks.sh => test-i-ova-two-disks.sh} (87%)
+ rename tests/{test-v2v-i-ova.ovf => test-i-ova.ovf} (100%)
+ rename tests/{test-v2v-i-ova.sh => test-i-ova.sh} (95%)
+ rename tests/{test-v2v-i-ova.xml => test-i-ova.xml} (100%)
+ rename tests/{test-v2v-i-vmx-1.expected => test-i-vmx-1.expected} (100%)
+ rename tests/{test-v2v-i-vmx-1.vmx => test-i-vmx-1.vmx} (100%)
+ rename tests/{test-v2v-i-vmx-2.expected => test-i-vmx-2.expected} (100%)
+ rename tests/{test-v2v-i-vmx-2.vmx => test-i-vmx-2.vmx} (100%)
+ rename tests/{test-v2v-i-vmx-3.expected => test-i-vmx-3.expected} (100%)
+ rename tests/{test-v2v-i-vmx-3.vmx => test-i-vmx-3.vmx} (100%)
+ rename tests/{test-v2v-i-vmx-4.expected => test-i-vmx-4.expected} (100%)
+ rename tests/{test-v2v-i-vmx-4.vmx => test-i-vmx-4.vmx} (100%)
+ rename tests/{test-v2v-i-vmx-5.expected => test-i-vmx-5.expected} (100%)
+ rename tests/{test-v2v-i-vmx-5.vmx => test-i-vmx-5.vmx} (100%)
+ rename tests/{test-v2v-i-vmx-6.expected => test-i-vmx-6.expected} (100%)
+ rename tests/{test-v2v-i-vmx-6.vmx => test-i-vmx-6.vmx} (100%)
+ rename tests/{test-v2v-i-vmx-7.expected => test-i-vmx-7.expected} (100%)
+ rename tests/{test-v2v-i-vmx-7.vmx => test-i-vmx-7.vmx} (100%)
+ rename tests/{test-v2v-i-vmx.sh => test-i-vmx.sh} (83%)
+ rename tests/{test-v2v-in-place.sh => test-in-place.sh} (99%)
+ rename tests/{test-v2v-inspector.sh => test-inspector.sh} (98%)
+ rename tests/{test-v2v-it-vddk-io-query.sh => test-it-vddk-io-query.sh} (97%)
+ rename tests/{test-v2v-mac-expected.xml => test-mac-expected.xml} (100%)
+ rename tests/{test-v2v-mac.sh => test-mac.sh} (93%)
+ rename tests/{test-v2v-mac.xml.in => test-mac.xml.in} (100%)
+ rename tests/{test-v2v-machine-readable.sh => test-machine-readable.sh} (81%)
+ rename tests/{test-v2v-networks-and-bridges-expected.xml => test-networks-and-bridges-expected.xml} (100%)
+ rename tests/{test-v2v-networks-and-bridges.sh => test-networks-and-bridges.sh} (90%)
+ rename tests/{test-v2v-networks-and-bridges.xml.in => test-networks-and-bridges.xml.in} (100%)
+ rename tests/{test-v2v-o-glance.sh => test-o-glance.sh} (100%)
+ rename tests/{test-v2v-o-kubevirt-fedora.sh => test-o-kubevirt-fedora.sh} (94%)
+ rename tests/{test-v2v-o-kubevirt-fedora.yaml.expected => test-o-kubevirt-fedora.yaml.expected} (100%)
+ rename tests/{test-v2v-o-kubevirt-windows.sh => test-o-kubevirt-windows.sh} (94%)
+ rename tests/{test-v2v-o-kubevirt-windows.yaml.expected => test-o-kubevirt-windows.yaml.expected} (100%)
+ rename tests/{test-v2v-o-libvirt.sh => test-o-libvirt.sh} (98%)
+ rename tests/{test-v2v-o-local-qcow2-compressed.sh => test-o-local-qcow2-compressed.sh} (97%)
+ rename tests/{test-v2v-o-null.sh => test-o-null.sh} (100%)
+ rename tests/{test-v2v-o-openstack.sh => test-o-openstack.sh} (97%)
+ rename tests/{test-v2v-o-qemu.sh => test-o-qemu.sh} (98%)
+ rename tests/{test-v2v-o-rhv-upload-module => test-o-rhv-upload-module}/imageio.py (98%)
+ rename tests/{test-v2v-o-rhv-upload-module => test-o-rhv-upload-module}/ovirtsdk4/__init__.py (98%)
+ rename tests/{test-v2v-o-rhv-upload-module => test-o-rhv-upload-module}/ovirtsdk4/types.py (99%)
+ rename tests/{test-v2v-o-rhv-upload-oo-query.sh => test-o-rhv-upload-oo-query.sh} (96%)
+ rename tests/{test-v2v-o-rhv-upload.sh => test-o-rhv-upload.sh} (89%)
+ rename tests/{test-v2v-o-rhv.ovf.expected => test-o-rhv.ovf.expected} (100%)
+ rename tests/{test-v2v-o-rhv.sh => test-o-rhv.sh} (97%)
+ rename tests/{test-v2v-o-vdsm-oo-query.sh => test-o-vdsm-oo-query.sh} (97%)
+ rename tests/{test-v2v-o-vdsm-options.ovf.expected => test-o-vdsm-options.ovf.expected} (100%)
+ rename tests/{test-v2v-o-vdsm-options.sh => test-o-vdsm-options.sh} (97%)
+ rename tests/{test-v2v-oa-option-qcow2.sh => test-oa-option-qcow2.sh} (98%)
+ rename tests/{test-v2v-oa-option-raw.sh => test-oa-option-raw.sh} (98%)
+ rename tests/{test-v2v-of-option.sh => test-of-option.sh} (98%)
+ rename tests/{test-v2v-on-option.sh => test-on-option.sh} (98%)
+ rename tests/{test-v2v-print-source.expected => test-print-source.expected} (100%)
+ rename tests/{test-v2v-print-source.sh => test-print-source.sh} (90%)
+ rename tests/{test-v2v-print-source.xml.in => test-print-source.xml.in} (100%)
+ rename tests/{test-v2v-sound.sh => test-sound.sh} (94%)
+ rename tests/{test-v2v-sound.xml.in => test-sound.xml.in} (100%)
+ rename tests/{test-v2v-trim.sh => test-trim.sh} (99%)
+ rename tests/{test-v2v-virtio-win-iso.sh => test-virtio-win-iso.sh} (99%)
+ rename tests/{test-v2v-windows-conversion.sh => test-windows-conversion.sh} (98%)
+
+diff --git a/.gitignore b/.gitignore
+index 9d2f1d07..b8abc3f8 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -122,13 +122,13 @@ Makefile.in
+ /tests/functions.sh
+ /tests/libvirt-is-version
+ /tests/rhbz1232192.xml
+-/tests/test-v2v-cdrom.xml
+-/tests/test-v2v-conversion-of-*.sh
+-/tests/test-v2v-floppy.xml
+-/tests/test-v2v-mac.xml
+-/tests/test-v2v-networks-and-bridges.xml
+-/tests/test-v2v-print-source.xml
+-/tests/test-v2v-sound.xml
++/tests/test-cdrom.xml
++/tests/test-conversion-of-*.sh
++/tests/test-floppy.xml
++/tests/test-mac.xml
++/tests/test-networks-and-bridges.xml
++/tests/test-print-source.xml
++/tests/test-sound.xml
+ /tests/windows.vmdk
+ /v2v/.depend
+ /v2v/oUnit-virt-v2v.cache
+diff --git a/configure.ac b/configure.ac
+index 8d6a506b..300b421e 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -164,12 +164,12 @@ AC_CONFIG_FILES([Makefile
+                  tests/functions.sh
+                  tests/Makefile
+                  tests/rhbz1232192.xml
+-                 tests/test-v2v-cdrom.xml
+-                 tests/test-v2v-floppy.xml
+-                 tests/test-v2v-mac.xml
+-                 tests/test-v2v-networks-and-bridges.xml
+-                 tests/test-v2v-print-source.xml
+-                 tests/test-v2v-sound.xml
++                 tests/test-cdrom.xml
++                 tests/test-floppy.xml
++                 tests/test-mac.xml
++                 tests/test-networks-and-bridges.xml
++                 tests/test-print-source.xml
++                 tests/test-sound.xml
+                  v2v/Makefile])
+ 
+ AC_OUTPUT
+diff --git a/docs/Makefile.am b/docs/Makefile.am
+index 0f6a3e21..d86349f4 100644
+--- a/docs/Makefile.am
++++ b/docs/Makefile.am
+@@ -18,7 +18,7 @@
+ include $(top_srcdir)/subdir-rules.mk
+ 
+ EXTRA_DIST = \
+-	test-v2v-docs.sh \
++	test-docs.sh \
+ 	virt-v2v.pod \
+ 	virt-v2v-hacking.pod \
+ 	virt-v2v-in-place.pod \
+@@ -242,4 +242,4 @@ stamp-virt-v2v-support.pod: virt-v2v-support.pod
+ 	touch $@
+ 
+ TESTS_ENVIRONMENT = $(top_builddir)/run --test
+-TESTS = test-v2v-docs.sh
++TESTS = test-docs.sh
+diff --git a/docs/test-v2v-docs.sh b/docs/test-docs.sh
+similarity index 100%
+rename from docs/test-v2v-docs.sh
+rename to docs/test-docs.sh
+diff --git a/output/Makefile.am b/output/Makefile.am
+index f736d52d..d5bab9a0 100644
+--- a/output/Makefile.am
++++ b/output/Makefile.am
+@@ -39,7 +39,7 @@ EXTRA_DIST = \
+ 	rhv-upload-precheck.py \
+ 	rhv-upload-transfer.py \
+ 	rhv-upload-vmcheck.py \
+-	test-v2v-python-syntax.sh
++	test-python-syntax.sh
+ 
+ SOURCES_MLI = \
+ 	changeuid.mli \
+@@ -199,7 +199,7 @@ $(MLOUTPUT_CMA): $(OBJECTS) libmloutput.a
+ 
+ # Unit tests.
+ TESTS_ENVIRONMENT = $(top_builddir)/run --test
+-TESTS = test-v2v-python-syntax.sh
++TESTS = test-python-syntax.sh
+ 
+ # Dependencies.
+ .depend: \
+diff --git a/output/test-v2v-python-syntax.sh b/output/test-python-syntax.sh
+similarity index 100%
+rename from output/test-v2v-python-syntax.sh
+rename to output/test-python-syntax.sh
+diff --git a/tests/Makefile.am b/tests/Makefile.am
+index fa5bb4f1..4c4a8e55 100644
+--- a/tests/Makefile.am
++++ b/tests/Makefile.am
+@@ -56,55 +56,58 @@ libvirt_is_version_CFLAGS = \
+ TESTS_ENVIRONMENT = $(top_builddir)/run --test
+ 
+ TESTS = \
+-	test-v2v-i-ova-bad-sha1.sh \
+-	test-v2v-i-ova-bad-sha256.sh \
+-	test-v2v-i-ova-directory.sh \
+-	test-v2v-i-ova-formats.sh \
+-	test-v2v-i-ova-good-checksums.sh \
+-	test-v2v-i-ova-gz.sh \
+-	test-v2v-i-ova-invalid-manifest1.sh \
+-	test-v2v-i-ova-invalid-manifest2.sh \
+-	test-v2v-i-ova-snapshots.sh \
+-	test-v2v-i-ova-subfolders.sh \
+-	test-v2v-i-ova-tar.sh \
+-	test-v2v-i-ova-two-disks.sh \
+-	test-v2v-i-vmx.sh \
+-	test-v2v-it-vddk-io-query.sh \
+-	test-v2v-o-rhv-upload-oo-query.sh \
+-	test-v2v-o-vdsm-oo-query.sh \
+-	test-v2v-bad-networks-and-bridges.sh \
+-	test-v2v-cdrom.sh \
+-	test-v2v-floppy.sh \
+-	test-v2v-i-disk.sh \
+-	test-v2v-i-disk-parallel.sh \
+-	test-v2v-i-ova.sh \
+-	test-v2v-inspector.sh \
+-	test-v2v-mac.sh \
+-	test-v2v-machine-readable.sh \
+-	test-v2v-networks-and-bridges.sh \
+-	test-v2v-o-glance.sh \
+-	test-v2v-o-kubevirt-fedora.sh \
+-	test-v2v-o-kubevirt-windows.sh \
+-	test-v2v-o-libvirt.sh \
+-	test-v2v-o-null.sh \
+-	test-v2v-o-openstack.sh \
+-	test-v2v-o-qemu.sh \
+-	test-v2v-o-rhv.sh \
+-	test-v2v-o-rhv-upload.sh \
+-	test-v2v-o-vdsm-options.sh \
+-	test-v2v-oa-option-qcow2.sh \
+-	test-v2v-oa-option-raw.sh \
+-	test-v2v-of-option.sh \
+-	test-v2v-on-option.sh \
+-	test-v2v-print-source.sh \
+-	test-v2v-sound.sh \
+-	test-v2v-virtio-win-iso.sh \
+-	test-v2v-fedora-conversion.sh \
+-	test-v2v-fedora-luks-on-lvm-conversion.sh \
+-	test-v2v-fedora-lvm-on-luks-conversion.sh \
+-	test-v2v-fedora-md-conversion.sh \
+-	test-v2v-windows-conversion.sh \
+-	test-v2v-customize.sh \
++	test-i-ova-bad-sha1.sh \
++	test-i-ova-bad-sha256.sh \
++	test-i-ova-directory.sh \
++	test-i-ova-formats.sh \
++	test-i-ova-good-checksums.sh \
++	test-i-ova-gz.sh \
++	test-i-ova-invalid-manifest1.sh \
++	test-i-ova-invalid-manifest2.sh \
++	test-i-ova-snapshots.sh \
++	test-i-ova-subfolders.sh \
++	test-i-ova-tar.sh \
++	test-i-ova-two-disks.sh \
++	test-i-vmx.sh \
++	test-it-vddk-io-query.sh \
++	test-o-rhv-upload-oo-query.sh \
++	test-o-vdsm-oo-query.sh \
++	test-bad-networks-and-bridges.sh \
++	test-cdrom.sh \
++	test-floppy.sh \
++	test-i-disk.sh \
++	test-i-disk-parallel.sh \
++	test-i-ova.sh \
++	test-in-place.sh \
++	test-inspector.sh \
++	test-mac.sh \
++	test-machine-readable.sh \
++	test-networks-and-bridges.sh \
++	test-o-glance.sh \
++	test-o-kubevirt-fedora.sh \
++	test-o-kubevirt-windows.sh \
++	test-o-libvirt.sh \
++	test-o-local-qcow2-compressed.sh \
++	test-o-null.sh \
++	test-o-openstack.sh \
++	test-o-qemu.sh \
++	test-o-rhv.sh \
++	test-o-rhv-upload.sh \
++	test-o-vdsm-options.sh \
++	test-oa-option-qcow2.sh \
++	test-oa-option-raw.sh \
++	test-of-option.sh \
++	test-on-option.sh \
++	test-print-source.sh \
++	test-sound.sh \
++	test-virtio-win-iso.sh \
++	test-fedora-conversion.sh \
++	test-fedora-btrfs-conversion.sh \
++	test-fedora-luks-on-lvm-conversion.sh \
++	test-fedora-lvm-on-luks-conversion.sh \
++	test-fedora-md-conversion.sh \
++	test-windows-conversion.sh \
++	test-customize.sh \
+ 	rhbz1232192.sh \
+ 	$(SLOW_TESTS) \
+ 	$(ROOT_TESTS)
+@@ -128,45 +131,45 @@ check-valgrind:
+ 
+ SLOW_TESTS = \
+ 	$(real_guests_scripts) \
+-	test-v2v-trim.sh
++	test-trim.sh
+ 
+ check-slow:
+ 	$(MAKE) check TESTS="$(SLOW_TESTS)" SLOW=1
+ 
+ ROOT_TESTS = \
+-	test-v2v-i-ova-as-root.sh
++	test-i-ova-as-root.sh
+ 
+ check-root:
+ 	$(MAKE) check TESTS="$(ROOT_TESTS)"
+ 
+-# A selection of real guests that test-v2v-conversion-of.sh will
++# A selection of real guests that test-conversion-of.sh will
+ # try to convert.  This is only used by 'make check-slow'.
+ 
+ real_guests_scripts = \
+-	test-v2v-conversion-of-centos-7.0.sh \
+-	test-v2v-conversion-of-debian-6.sh \
+-	test-v2v-conversion-of-debian-7.sh \
+-	test-v2v-conversion-of-debian-8.sh \
+-	test-v2v-conversion-of-debian-9.sh \
+-	test-v2v-conversion-of-fedora-37.sh \
+-	test-v2v-conversion-of-opensuse-13.1.sh \
+-	test-v2v-conversion-of-opensuse-13.2.sh \
+-	test-v2v-conversion-of-opensuse-42.1.sh \
+-	test-v2v-conversion-of-rhel-5.11.sh \
+-	test-v2v-conversion-of-rhel-6.10.sh \
+-	test-v2v-conversion-of-rhel-7.9.sh \
+-	test-v2v-conversion-of-rhel-8.7.sh \
+-	test-v2v-conversion-of-ubuntu-16.04.sh \
+-	test-v2v-conversion-of-ubuntu-18.04.sh \
+-	test-v2v-conversion-of-ubuntu-20.04.sh \
+-	test-v2v-conversion-of-windows-6.2-server.sh \
+-	test-v2v-conversion-of-windows-6.3-server.sh \
+-	test-v2v-conversion-of-windows-10.0-server.sh
++	test-conversion-of-centos-7.0.sh \
++	test-conversion-of-debian-6.sh \
++	test-conversion-of-debian-7.sh \
++	test-conversion-of-debian-8.sh \
++	test-conversion-of-debian-9.sh \
++	test-conversion-of-fedora-37.sh \
++	test-conversion-of-opensuse-13.1.sh \
++	test-conversion-of-opensuse-13.2.sh \
++	test-conversion-of-opensuse-42.1.sh \
++	test-conversion-of-rhel-5.11.sh \
++	test-conversion-of-rhel-6.10.sh \
++	test-conversion-of-rhel-7.9.sh \
++	test-conversion-of-rhel-8.7.sh \
++	test-conversion-of-ubuntu-16.04.sh \
++	test-conversion-of-ubuntu-18.04.sh \
++	test-conversion-of-ubuntu-20.04.sh \
++	test-conversion-of-windows-6.2-server.sh \
++	test-conversion-of-windows-6.3-server.sh \
++	test-conversion-of-windows-10.0-server.sh
+ 
+-test-v2v-conversion-of-%.sh:
++test-conversion-of-%.sh:
+ 	rm -f $@ $@-t
+-	f=`echo "$@" | $(SED) 's/test-v2v-conversion-of-\(.*\).sh/\1/'`; \
+-	echo 'script=$@ exec $$srcdir/test-v2v-conversion-of.sh' "$$f" > $@-t
++	f=`echo "$@" | $(SED) 's/test-conversion-of-\(.*\).sh/\1/'`; \
++	echo 'script=$@ exec $$srcdir/test-conversion-of.sh' "$$f" > $@-t
+ 	chmod 0755 $@-t
+ 	mv $@-t $@
+ 
+@@ -178,106 +181,105 @@ CLEANFILES += \
+ 	real-*.xml
+ 
+ EXTRA_DIST += \
+-	test-v2v-bad-networks-and-bridges.sh \
+-	test-v2v-cdrom.expected \
+-	test-v2v-cdrom.sh \
+-	test-v2v-customize.sh \
+-	test-v2v-fedora-conversion.sh \
+-	test-v2v-fedora-btrfs-conversion.sh \
+-	test-v2v-fedora-luks-on-lvm-conversion.sh \
+-	test-v2v-fedora-lvm-on-luks-conversion.sh \
+-	test-v2v-fedora-md-conversion.sh \
+-	test-v2v-floppy.expected \
+-	test-v2v-floppy.sh \
+-	test-v2v-i-disk.sh \
+-	test-v2v-i-disk-parallel.sh \
+-	test-v2v-i-ova-as-root.ovf \
+-	test-v2v-i-ova-as-root.sh \
+-	test-v2v-i-ova-bad-sha1.sh \
+-	test-v2v-i-ova-bad-sha256.sh \
+-	test-v2v-i-ova-checksums.ovf \
+-	test-v2v-i-ova-directory.sh \
+-	test-v2v-i-ova-formats.expected \
+-	test-v2v-i-ova-formats.ovf \
+-	test-v2v-i-ova-formats.sh \
+-	test-v2v-i-ova-good-checksums.sh \
+-	test-v2v-i-ova-gz.expected \
+-	test-v2v-i-ova-gz.ovf \
+-	test-v2v-i-ova-gz.sh \
+-	test-v2v-i-ova-invalid-manifest1.sh \
+-	test-v2v-i-ova-invalid-manifest2.sh \
+-	test-v2v-i-ova-snapshots.expected \
+-	test-v2v-i-ova-snapshots.expected2 \
+-	test-v2v-i-ova-snapshots.ovf \
+-	test-v2v-i-ova-snapshots.sh \
+-	test-v2v-i-ova-subfolders.expected \
+-	test-v2v-i-ova-subfolders.expected2 \
+-	test-v2v-i-ova-subfolders.ovf \
+-	test-v2v-i-ova-subfolders.sh \
+-	test-v2v-i-ova-tar.expected \
+-	test-v2v-i-ova-tar.expected2 \
+-	test-v2v-i-ova-tar.ovf \
+-	test-v2v-i-ova-tar.sh \
+-	test-v2v-i-ova-two-disks.expected \
+-	test-v2v-i-ova-two-disks.expected2 \
+-	test-v2v-i-ova-two-disks.ovf \
+-	test-v2v-i-ova-two-disks.sh \
+-	test-v2v-i-ova.ovf \
+-	test-v2v-i-ova.sh \
+-	test-v2v-i-ova.xml \
+-	test-v2v-i-vmx.sh \
+-	test-v2v-i-vmx-1.expected \
+-	test-v2v-i-vmx-2.expected \
+-	test-v2v-i-vmx-3.expected \
+-	test-v2v-i-vmx-4.expected \
+-	test-v2v-i-vmx-5.expected \
+-	test-v2v-i-vmx-6.expected \
+-	test-v2v-i-vmx-7.expected \
+-	test-v2v-i-vmx-1.vmx \
+-	test-v2v-i-vmx-2.vmx \
+-	test-v2v-i-vmx-3.vmx \
+-	test-v2v-i-vmx-4.vmx \
+-	test-v2v-i-vmx-5.vmx \
+-	test-v2v-i-vmx-6.vmx \
+-	test-v2v-i-vmx-7.vmx \
+-	test-v2v-in-place.sh \
+-	test-v2v-block-driver.sh \
+-	test-v2v-inspector.sh \
+-	test-v2v-it-vddk-io-query.sh \
+-	test-v2v-machine-readable.sh \
+-	test-v2v-mac-expected.xml \
+-	test-v2v-mac.sh \
+-	test-v2v-networks-and-bridges.sh \
+-	test-v2v-networks-and-bridges-expected.xml \
+-	test-v2v-o-glance.sh \
+-	test-v2v-o-kubevirt-fedora.sh \
+-	test-v2v-o-kubevirt-windows.sh \
+-	test-v2v-o-kubevirt-fedora.yaml.expected \
+-	test-v2v-o-kubevirt-windows.yaml.expected \
+-	test-v2v-o-libvirt.sh \
+-	test-v2v-o-local-qcow2-compressed.sh \
+-	test-v2v-o-null.sh \
+-	test-v2v-o-openstack.sh \
+-	test-v2v-o-qemu.sh \
+-	test-v2v-o-rhv.ovf.expected \
+-	test-v2v-o-rhv.sh \
+-	test-v2v-o-rhv-upload.sh \
+-	test-v2v-o-rhv-upload-module/imageio.py \
+-	test-v2v-o-rhv-upload-module/ovirtsdk4/__init__.py \
+-	test-v2v-o-rhv-upload-module/ovirtsdk4/types.py \
+-	test-v2v-o-rhv-upload-oo-query.sh \
+-	test-v2v-o-vdsm-oo-query.sh \
+-	test-v2v-o-vdsm-options.ovf.expected \
+-	test-v2v-o-vdsm-options.sh \
+-	test-v2v-oa-option-qcow2.sh \
+-	test-v2v-oa-option-raw.sh \
+-	test-v2v-of-option.sh \
+-	test-v2v-on-option.sh \
+-	test-v2v-print-source.expected \
+-	test-v2v-print-source.sh \
+-	test-v2v-conversion-of.sh \
+-	test-v2v-sound.sh \
+-	test-v2v-trim.sh \
+-	test-v2v-virtio-win-iso.sh \
+-	test-v2v-windows-conversion.sh \
++	test-bad-networks-and-bridges.sh \
++	test-cdrom.expected \
++	test-cdrom.sh \
++	test-customize.sh \
++	test-fedora-conversion.sh \
++	test-fedora-btrfs-conversion.sh \
++	test-fedora-luks-on-lvm-conversion.sh \
++	test-fedora-lvm-on-luks-conversion.sh \
++	test-fedora-md-conversion.sh \
++	test-floppy.expected \
++	test-floppy.sh \
++	test-i-disk.sh \
++	test-i-disk-parallel.sh \
++	test-i-ova-as-root.ovf \
++	test-i-ova-as-root.sh \
++	test-i-ova-bad-sha1.sh \
++	test-i-ova-bad-sha256.sh \
++	test-i-ova-checksums.ovf \
++	test-i-ova-directory.sh \
++	test-i-ova-formats.expected \
++	test-i-ova-formats.ovf \
++	test-i-ova-formats.sh \
++	test-i-ova-good-checksums.sh \
++	test-i-ova-gz.expected \
++	test-i-ova-gz.ovf \
++	test-i-ova-gz.sh \
++	test-i-ova-invalid-manifest1.sh \
++	test-i-ova-invalid-manifest2.sh \
++	test-i-ova-snapshots.expected \
++	test-i-ova-snapshots.expected2 \
++	test-i-ova-snapshots.ovf \
++	test-i-ova-snapshots.sh \
++	test-i-ova-subfolders.expected \
++	test-i-ova-subfolders.expected2 \
++	test-i-ova-subfolders.ovf \
++	test-i-ova-subfolders.sh \
++	test-i-ova-tar.expected \
++	test-i-ova-tar.expected2 \
++	test-i-ova-tar.ovf \
++	test-i-ova-tar.sh \
++	test-i-ova-two-disks.expected \
++	test-i-ova-two-disks.expected2 \
++	test-i-ova-two-disks.ovf \
++	test-i-ova-two-disks.sh \
++	test-i-ova.ovf \
++	test-i-ova.sh \
++	test-i-ova.xml \
++	test-i-vmx.sh \
++	test-i-vmx-1.expected \
++	test-i-vmx-2.expected \
++	test-i-vmx-3.expected \
++	test-i-vmx-4.expected \
++	test-i-vmx-5.expected \
++	test-i-vmx-6.expected \
++	test-i-vmx-7.expected \
++	test-i-vmx-1.vmx \
++	test-i-vmx-2.vmx \
++	test-i-vmx-3.vmx \
++	test-i-vmx-4.vmx \
++	test-i-vmx-5.vmx \
++	test-i-vmx-6.vmx \
++	test-i-vmx-7.vmx \
++	test-in-place.sh \
++	test-inspector.sh \
++	test-it-vddk-io-query.sh \
++	test-machine-readable.sh \
++	test-mac-expected.xml \
++	test-mac.sh \
++	test-networks-and-bridges.sh \
++	test-networks-and-bridges-expected.xml \
++	test-o-glance.sh \
++	test-o-kubevirt-fedora.sh \
++	test-o-kubevirt-windows.sh \
++	test-o-kubevirt-fedora.yaml.expected \
++	test-o-kubevirt-windows.yaml.expected \
++	test-o-libvirt.sh \
++	test-o-local-qcow2-compressed.sh \
++	test-o-null.sh \
++	test-o-openstack.sh \
++	test-o-qemu.sh \
++	test-o-rhv.ovf.expected \
++	test-o-rhv.sh \
++	test-o-rhv-upload.sh \
++	test-o-rhv-upload-module/imageio.py \
++	test-o-rhv-upload-module/ovirtsdk4/__init__.py \
++	test-o-rhv-upload-module/ovirtsdk4/types.py \
++	test-o-rhv-upload-oo-query.sh \
++	test-o-vdsm-oo-query.sh \
++	test-o-vdsm-options.ovf.expected \
++	test-o-vdsm-options.sh \
++	test-oa-option-qcow2.sh \
++	test-oa-option-raw.sh \
++	test-of-option.sh \
++	test-on-option.sh \
++	test-print-source.expected \
++	test-print-source.sh \
++	test-conversion-of.sh \
++	test-sound.sh \
++	test-trim.sh \
++	test-virtio-win-iso.sh \
++	test-windows-conversion.sh \
+ 	rhbz1232192.sh
+diff --git a/tests/test-v2v-bad-networks-and-bridges.sh b/tests/test-bad-networks-and-bridges.sh
+similarity index 97%
+rename from tests/test-v2v-bad-networks-and-bridges.sh
+rename to tests/test-bad-networks-and-bridges.sh
+index f6bcfc8c..7dadead1 100755
+--- a/tests/test-v2v-bad-networks-and-bridges.sh
++++ b/tests/test-bad-networks-and-bridges.sh
+@@ -29,7 +29,7 @@ skip_if_skipped
+ 
+ # We expect all of these to print an error.  NB: LANG=C is set.
+ 
+-file=test-v2v-bad-networks-and-bridges.img
++file=test-bad-networks-and-bridges.img
+ touch $file
+ 
+ cmd="virt-v2v -i disk -o null $file"
+diff --git a/tests/test-v2v-block-driver.sh b/tests/test-block-driver.sh
+similarity index 99%
+rename from tests/test-v2v-block-driver.sh
+rename to tests/test-block-driver.sh
+index a0e56bed..ec9b8ea3 100755
+--- a/tests/test-v2v-block-driver.sh
++++ b/tests/test-block-driver.sh
+@@ -31,7 +31,7 @@ requires test -f $img_base
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+ 
+-d=$PWD/test-v2v-block-driver.d
++d=$PWD/test-block-driver.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+diff --git a/tests/test-v2v-cdrom.expected b/tests/test-cdrom.expected
+similarity index 100%
+rename from tests/test-v2v-cdrom.expected
+rename to tests/test-cdrom.expected
+diff --git a/tests/test-v2v-cdrom.sh b/tests/test-cdrom.sh
+similarity index 92%
+rename from tests/test-v2v-cdrom.sh
+rename to tests/test-cdrom.sh
+index d512e038..8f04b00c 100755
+--- a/tests/test-v2v-cdrom.sh
++++ b/tests/test-cdrom.sh
+@@ -29,11 +29,11 @@ skip_if_skipped
+ requires test -f ../test-data/phony-guests/windows.img
+ requires test -f ../test-data/phony-guests/blank-disk.img
+ 
+-libvirt_uri="test://$abs_builddir/test-v2v-cdrom.xml"
++libvirt_uri="test://$abs_builddir/test-cdrom.xml"
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+ 
+-d=test-v2v-cdrom.d
++d=test-cdrom.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+@@ -51,7 +51,7 @@ awk '/<disk /{p=1;print;next} p&&/<\/disk>/{p=0;print;next} ;p' \
+     $d/windows.xml |
+     grep -v '<source file' > $d/disks
+ 
+-if ! diff -u "$srcdir/test-v2v-cdrom.expected" $d/disks; then
++if ! diff -u "$srcdir/test-cdrom.expected" $d/disks; then
+     echo "$0: unexpected disk assignments"
+     cat $d/disks
+     exit 1
+diff --git a/tests/test-v2v-cdrom.xml.in b/tests/test-cdrom.xml.in
+similarity index 100%
+rename from tests/test-v2v-cdrom.xml.in
+rename to tests/test-cdrom.xml.in
+diff --git a/tests/test-v2v-conversion-of.sh b/tests/test-conversion-of.sh
+similarity index 100%
+rename from tests/test-v2v-conversion-of.sh
+rename to tests/test-conversion-of.sh
+diff --git a/tests/test-v2v-customize.sh b/tests/test-customize.sh
+similarity index 98%
+rename from tests/test-v2v-customize.sh
+rename to tests/test-customize.sh
+index 89ab5b42..51584141 100755
+--- a/tests/test-v2v-customize.sh
++++ b/tests/test-customize.sh
+@@ -28,7 +28,7 @@ skip_if_skipped
+ fedora=../test-data/phony-guests/fedora.img
+ requires test -f $fedora
+ 
+-d=test-v2v-customize.d
++d=test-customize.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+diff --git a/tests/test-v2v-fedora-btrfs-conversion.sh b/tests/test-fedora-btrfs-conversion.sh
+similarity index 100%
+rename from tests/test-v2v-fedora-btrfs-conversion.sh
+rename to tests/test-fedora-btrfs-conversion.sh
+diff --git a/tests/test-v2v-fedora-conversion.sh b/tests/test-fedora-conversion.sh
+similarity index 100%
+rename from tests/test-v2v-fedora-conversion.sh
+rename to tests/test-fedora-conversion.sh
+diff --git a/tests/test-v2v-fedora-luks-on-lvm-conversion.sh b/tests/test-fedora-luks-on-lvm-conversion.sh
+similarity index 100%
+rename from tests/test-v2v-fedora-luks-on-lvm-conversion.sh
+rename to tests/test-fedora-luks-on-lvm-conversion.sh
+diff --git a/tests/test-v2v-fedora-lvm-on-luks-conversion.sh b/tests/test-fedora-lvm-on-luks-conversion.sh
+similarity index 100%
+rename from tests/test-v2v-fedora-lvm-on-luks-conversion.sh
+rename to tests/test-fedora-lvm-on-luks-conversion.sh
+diff --git a/tests/test-v2v-fedora-md-conversion.sh b/tests/test-fedora-md-conversion.sh
+similarity index 100%
+rename from tests/test-v2v-fedora-md-conversion.sh
+rename to tests/test-fedora-md-conversion.sh
+diff --git a/tests/test-v2v-floppy.expected b/tests/test-floppy.expected
+similarity index 100%
+rename from tests/test-v2v-floppy.expected
+rename to tests/test-floppy.expected
+diff --git a/tests/test-v2v-floppy.sh b/tests/test-floppy.sh
+similarity index 92%
+rename from tests/test-v2v-floppy.sh
+rename to tests/test-floppy.sh
+index 6f9e297d..96b60836 100755
+--- a/tests/test-v2v-floppy.sh
++++ b/tests/test-floppy.sh
+@@ -29,12 +29,12 @@ skip_if_skipped
+ requires test -f ../test-data/phony-guests/windows.img
+ requires test -f ../test-data/phony-guests/blank-disk.img
+ 
+-libvirt_uri="test://$abs_builddir/test-v2v-floppy.xml"
++libvirt_uri="test://$abs_builddir/test-floppy.xml"
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+ 
+-d=test-v2v-floppy.d
++d=test-floppy.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+@@ -52,7 +52,7 @@ awk '/<disk /{p=1;print;next} p&&/<\/disk>/{p=0;print;next} ;p' \
+     $d/windows.xml |
+     grep -v '<source file' > $d/disks
+ 
+-if ! diff -u "$srcdir/test-v2v-floppy.expected" $d/disks; then
++if ! diff -u "$srcdir/test-floppy.expected" $d/disks; then
+     echo "$0: unexpected disk assignments"
+     cat $d/disks
+     exit 1
+diff --git a/tests/test-v2v-floppy.xml.in b/tests/test-floppy.xml.in
+similarity index 100%
+rename from tests/test-v2v-floppy.xml.in
+rename to tests/test-floppy.xml.in
+diff --git a/tests/test-v2v-i-disk-parallel.sh b/tests/test-i-disk-parallel.sh
+similarity index 98%
+rename from tests/test-v2v-i-disk-parallel.sh
+rename to tests/test-i-disk-parallel.sh
+index a6470fdd..9779722c 100755
+--- a/tests/test-v2v-i-disk-parallel.sh
++++ b/tests/test-i-disk-parallel.sh
+@@ -30,7 +30,7 @@ requires test -f $windows
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-i-disk-parallel.d
++d=test-i-disk-parallel.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+diff --git a/tests/test-v2v-i-disk.sh b/tests/test-i-disk.sh
+similarity index 98%
+rename from tests/test-v2v-i-disk.sh
+rename to tests/test-i-disk.sh
+index c96b0535..21593977 100755
+--- a/tests/test-v2v-i-disk.sh
++++ b/tests/test-i-disk.sh
+@@ -29,7 +29,7 @@ requires test -f ../test-data/phony-guests/windows.img
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-i-disk.d
++d=test-i-disk.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+diff --git a/tests/test-v2v-i-ova-as-root.ovf b/tests/test-i-ova-as-root.ovf
+similarity index 100%
+rename from tests/test-v2v-i-ova-as-root.ovf
+rename to tests/test-i-ova-as-root.ovf
+diff --git a/tests/test-v2v-i-ova-as-root.sh b/tests/test-i-ova-as-root.sh
+similarity index 96%
+rename from tests/test-v2v-i-ova-as-root.sh
+rename to tests/test-i-ova-as-root.sh
+index 81a90ccd..4f35fc25 100755
+--- a/tests/test-v2v-i-ova-as-root.sh
++++ b/tests/test-i-ova-as-root.sh
+@@ -43,7 +43,7 @@ fi
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-i-ova-as-root.d
++d=test-i-ova-as-root.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+@@ -51,7 +51,7 @@ mkdir $d
+ pushd $d
+ 
+ # Create the test OVA.
+-cp "$abs_srcdir/test-v2v-i-ova-as-root.ovf" test.ovf
++cp "$abs_srcdir/test-i-ova-as-root.ovf" test.ovf
+ cp ../windows.vmdk disk.vmdk
+ 
+ echo "SHA1(test.ovf)=" `do_sha1 test.ovf` > test.mf
+diff --git a/tests/test-v2v-i-ova-bad-sha1.sh b/tests/test-i-ova-bad-sha1.sh
+similarity index 95%
+rename from tests/test-v2v-i-ova-bad-sha1.sh
+rename to tests/test-i-ova-bad-sha1.sh
+index cbe1db7a..614142c3 100755
+--- a/tests/test-v2v-i-ova-bad-sha1.sh
++++ b/tests/test-i-ova-bad-sha1.sh
+@@ -34,7 +34,7 @@ fi
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-i-ova-bad-sha1.d
++d=test-i-ova-bad-sha1.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+@@ -42,7 +42,7 @@ mkdir $d
+ pushd $d
+ 
+ # Create the test OVA.
+-cp "$abs_srcdir/test-v2v-i-ova-checksums.ovf" test.ovf
++cp "$abs_srcdir/test-i-ova-checksums.ovf" test.ovf
+ cp ../windows.vmdk disk.vmdk
+ echo "SHA1(test.ovf)=" `do_sha1 test.ovf` > test.mf
+ sha1=`do_sha1 disk.vmdk | tr '0-5a-f6789' 'a-f0-58967'`
+diff --git a/tests/test-v2v-i-ova-bad-sha256.sh b/tests/test-i-ova-bad-sha256.sh
+similarity index 95%
+rename from tests/test-v2v-i-ova-bad-sha256.sh
+rename to tests/test-i-ova-bad-sha256.sh
+index 234ab58c..c68aa100 100755
+--- a/tests/test-v2v-i-ova-bad-sha256.sh
++++ b/tests/test-i-ova-bad-sha256.sh
+@@ -34,7 +34,7 @@ fi
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-i-ova-bad-sha256.d
++d=test-i-ova-bad-sha256.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+@@ -42,7 +42,7 @@ mkdir $d
+ pushd $d
+ 
+ # Create the test OVA.
+-cp "$abs_srcdir/test-v2v-i-ova-checksums.ovf" test.ovf
++cp "$abs_srcdir/test-i-ova-checksums.ovf" test.ovf
+ cp ../windows.vmdk disk.vmdk
+ echo "SHA256(test.ovf)=" `do_sha256 test.ovf` > test.mf
+ sha256=`do_sha256 disk.vmdk | tr '0-5a-f6789' 'a-f0-58967'`
+diff --git a/tests/test-v2v-i-ova-checksums.ovf b/tests/test-i-ova-checksums.ovf
+similarity index 100%
+rename from tests/test-v2v-i-ova-checksums.ovf
+rename to tests/test-i-ova-checksums.ovf
+diff --git a/tests/test-v2v-i-ova-directory.sh b/tests/test-i-ova-directory.sh
+similarity index 96%
+rename from tests/test-v2v-i-ova-directory.sh
+rename to tests/test-i-ova-directory.sh
+index ec858464..4f7d39ef 100755
+--- a/tests/test-v2v-i-ova-directory.sh
++++ b/tests/test-i-ova-directory.sh
+@@ -32,13 +32,13 @@ requires test -s $f
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+ 
+-d=test-v2v-i-ova-directory.d
++d=test-i-ova-directory.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+ 
+ vmdk=test-ova.vmdk
+-ovf=test-v2v-i-ova.ovf
++ovf=test-i-ova.ovf
+ mf=test-ova.mf
+ 
+ qemu-img convert $f -O vmdk $d/$vmdk
+diff --git a/tests/test-v2v-i-ova-formats.expected b/tests/test-i-ova-formats.expected
+similarity index 100%
+rename from tests/test-v2v-i-ova-formats.expected
+rename to tests/test-i-ova-formats.expected
+diff --git a/tests/test-v2v-i-ova-formats.ovf b/tests/test-i-ova-formats.ovf
+similarity index 100%
+rename from tests/test-v2v-i-ova-formats.ovf
+rename to tests/test-i-ova-formats.ovf
+diff --git a/tests/test-v2v-i-ova-formats.sh b/tests/test-i-ova-formats.sh
+similarity index 83%
+rename from tests/test-v2v-i-ova-formats.sh
+rename to tests/test-i-ova-formats.sh
+index 483ce1b9..9e5e1cb7 100755
+--- a/tests/test-v2v-i-ova-formats.sh
++++ b/tests/test-i-ova-formats.sh
+@@ -32,7 +32,7 @@ formats="zip tar-gz tar-xz"
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-i-ova-formats.d
++d=test-i-ova-formats.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+@@ -44,19 +44,19 @@ pushd $d
+ guestfish disk-create disk1.vmdk raw 10K
+ sha=`do_sha1 disk1.vmdk`
+ echo -e "SHA1(disk1.vmdk)= $sha\r" > disk1.mf
+-cp "$abs_srcdir/test-v2v-i-ova-formats.ovf" .
++cp "$abs_srcdir/test-i-ova-formats.ovf" .
+ 
+ for format in $formats; do
+     case "$format" in
+         zip)
+-            zip -r test test-v2v-i-ova-formats.ovf disk1.vmdk disk1.mf
++            zip -r test test-i-ova-formats.ovf disk1.vmdk disk1.mf
+             mv test.zip test-$format.ova
+             ;;
+         tar-gz)
+-            tar -czf test-$format.ova test-v2v-i-ova-formats.ovf disk1.vmdk disk1.mf
++            tar -czf test-$format.ova test-i-ova-formats.ovf disk1.vmdk disk1.mf
+             ;;
+         tar-xz)
+-            tar -cJf test-$format.ova test-v2v-i-ova-formats.ovf disk1.vmdk disk1.mf
++            tar -cJf test-$format.ova test-i-ova-formats.ovf disk1.vmdk disk1.mf
+             ;;
+         *)
+             echo "Unhandled format '$format'"
+@@ -75,5 +75,5 @@ for format in $formats; do
+     sed 's,[^ \t]*\(disk.*.vmdk\),\1,' > $d/source
+ 
+     # Check the parsed source is what we expect.
+-    diff -u "$srcdir/test-v2v-i-ova-formats.expected" $d/source
++    diff -u "$srcdir/test-i-ova-formats.expected" $d/source
+ done
+diff --git a/tests/test-v2v-i-ova-good-checksums.sh b/tests/test-i-ova-good-checksums.sh
+similarity index 95%
+rename from tests/test-v2v-i-ova-good-checksums.sh
+rename to tests/test-i-ova-good-checksums.sh
+index 76c7097e..bb5a53f8 100755
+--- a/tests/test-v2v-i-ova-good-checksums.sh
++++ b/tests/test-i-ova-good-checksums.sh
+@@ -34,7 +34,7 @@ fi
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-i-ova-good-checksums.d
++d=test-i-ova-good-checksums.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+@@ -42,7 +42,7 @@ mkdir $d
+ pushd $d
+ 
+ # Create the test OVA.
+-cp "$abs_srcdir/test-v2v-i-ova-checksums.ovf" test.ovf
++cp "$abs_srcdir/test-i-ova-checksums.ovf" test.ovf
+ cp ../windows.vmdk disk.vmdk
+ 
+ # Test all types of checksum supported by the OVA format.
+diff --git a/tests/test-v2v-i-ova-gz.expected b/tests/test-i-ova-gz.expected
+similarity index 100%
+rename from tests/test-v2v-i-ova-gz.expected
+rename to tests/test-i-ova-gz.expected
+diff --git a/tests/test-v2v-i-ova-gz.ovf b/tests/test-i-ova-gz.ovf
+similarity index 100%
+rename from tests/test-v2v-i-ova-gz.ovf
+rename to tests/test-i-ova-gz.ovf
+diff --git a/tests/test-v2v-i-ova-gz.sh b/tests/test-i-ova-gz.sh
+similarity index 88%
+rename from tests/test-v2v-i-ova-gz.sh
+rename to tests/test-i-ova-gz.sh
+index ba90d331..702b2592 100755
+--- a/tests/test-v2v-i-ova-gz.sh
++++ b/tests/test-i-ova-gz.sh
+@@ -30,7 +30,7 @@ skip_if_skipped
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-i-ova-gz.d
++d=test-i-ova-gz.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+@@ -41,9 +41,9 @@ guestfish disk-create disk1.vmdk raw 10K
+ gzip disk1.vmdk
+ sha=`do_sha1 disk1.vmdk.gz`
+ echo -e "SHA1(disk1.vmdk.gz)= $sha\r" > disk1.mf
+-cp "$abs_srcdir/test-v2v-i-ova-gz.ovf" .
++cp "$abs_srcdir/test-i-ova-gz.ovf" .
+ 
+-tar -cf test.ova test-v2v-i-ova-gz.ovf disk1.vmdk.gz disk1.mf
++tar -cf test.ova test-i-ova-gz.ovf disk1.vmdk.gz disk1.mf
+ popd
+ 
+ # Run virt-v2v but only as far as the --print-source stage, and
+@@ -54,4 +54,4 @@ $VG virt-v2v --debug-gc --quiet \
+ sed 's,[^ \t]*\(\.vmdk\),\1,' > $d/source
+ 
+ # Check the parsed source is what we expect.
+-diff -u "$srcdir/test-v2v-i-ova-gz.expected" $d/source
++diff -u "$srcdir/test-i-ova-gz.expected" $d/source
+diff --git a/tests/test-v2v-i-ova-invalid-manifest1.sh b/tests/test-i-ova-invalid-manifest1.sh
+similarity index 95%
+rename from tests/test-v2v-i-ova-invalid-manifest1.sh
+rename to tests/test-i-ova-invalid-manifest1.sh
+index 0b4b4151..4297bda0 100755
+--- a/tests/test-v2v-i-ova-invalid-manifest1.sh
++++ b/tests/test-i-ova-invalid-manifest1.sh
+@@ -34,7 +34,7 @@ fi
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-i-ova-invalid-manifest1.d
++d=test-i-ova-invalid-manifest1.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+@@ -42,7 +42,7 @@ mkdir $d
+ pushd $d
+ 
+ # Create the test OVA.
+-cp "$abs_srcdir/test-v2v-i-ova-checksums.ovf" test.ovf
++cp "$abs_srcdir/test-i-ova-checksums.ovf" test.ovf
+ cp ../windows.vmdk disk.vmdk
+ echo "SHA1(test.ovf)=" `do_sha1 test.ovf` > test.mf
+ echo "SHA1(disk.vmdk)=" `do_sha1 disk.vmdk` >> test.mf
+diff --git a/tests/test-v2v-i-ova-invalid-manifest2.sh b/tests/test-i-ova-invalid-manifest2.sh
+similarity index 95%
+rename from tests/test-v2v-i-ova-invalid-manifest2.sh
+rename to tests/test-i-ova-invalid-manifest2.sh
+index 37cf8f63..0be2558e 100755
+--- a/tests/test-v2v-i-ova-invalid-manifest2.sh
++++ b/tests/test-i-ova-invalid-manifest2.sh
+@@ -34,7 +34,7 @@ fi
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-i-ova-invalid-manifest2.d
++d=test-i-ova-invalid-manifest2.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+@@ -42,7 +42,7 @@ mkdir $d
+ pushd $d
+ 
+ # Create the test OVA.
+-cp "$abs_srcdir/test-v2v-i-ova-checksums.ovf" test.ovf
++cp "$abs_srcdir/test-i-ova-checksums.ovf" test.ovf
+ cp ../windows.vmdk disk.vmdk
+ echo "SHA1(test.ovf)=" `do_sha1 test.ovf` > test.mf
+ echo "SHA1(disk.vmdk)=$(do_sha1 disk.vmdk)" >> test.mf
+diff --git a/tests/test-v2v-i-ova-snapshots.expected b/tests/test-i-ova-snapshots.expected
+similarity index 100%
+rename from tests/test-v2v-i-ova-snapshots.expected
+rename to tests/test-i-ova-snapshots.expected
+diff --git a/tests/test-v2v-i-ova-snapshots.expected2 b/tests/test-i-ova-snapshots.expected2
+similarity index 100%
+rename from tests/test-v2v-i-ova-snapshots.expected2
+rename to tests/test-i-ova-snapshots.expected2
+diff --git a/tests/test-v2v-i-ova-snapshots.ovf b/tests/test-i-ova-snapshots.ovf
+similarity index 100%
+rename from tests/test-v2v-i-ova-snapshots.ovf
+rename to tests/test-i-ova-snapshots.ovf
+diff --git a/tests/test-v2v-i-ova-snapshots.sh b/tests/test-i-ova-snapshots.sh
+similarity index 89%
+rename from tests/test-v2v-i-ova-snapshots.sh
+rename to tests/test-i-ova-snapshots.sh
+index fb1a35eb..fae5c1f3 100755
+--- a/tests/test-v2v-i-ova-snapshots.sh
++++ b/tests/test-i-ova-snapshots.sh
+@@ -31,7 +31,7 @@ skip_if_skipped
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-i-ova-snapshots.d
++d=test-i-ova-snapshots.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+@@ -54,8 +54,8 @@ sha=`do_sha1 disk1.vmdk.000000001`
+ echo -e "SHA1(disk1.vmdk.000000001)= $sha\r" > disk1.mf
+ sha=`do_sha1 disk1.vmdk.000000002`
+ echo -e "SHA1(disk1.vmdk.000000002)= $sha\r" > disk1.mf
+-cp "$abs_srcdir/test-v2v-i-ova-snapshots.ovf" .
+-tar -cf test-snapshots.ova test-v2v-i-ova-snapshots.ovf disk1.vmdk.00000000? disk1.mf
++cp "$abs_srcdir/test-i-ova-snapshots.ovf" .
++tar -cf test-snapshots.ova test-i-ova-snapshots.ovf disk1.vmdk.00000000? disk1.mf
+ 
+ popd
+ 
+@@ -71,9 +71,9 @@ if grep -sq json: $d/source ; then
+     # Exact offset will vary because of tar.
+     sed -i -e "s,\"[^\"]*/$d/,\"," \
+            -e "s|\"offset\": [0-9]*,|\"offset\": x,|" $d/source
+-    diff -u "$srcdir/test-v2v-i-ova-snapshots.expected2" $d/source
++    diff -u "$srcdir/test-i-ova-snapshots.expected2" $d/source
+ else
+     # normalize the output
+     sed -i -e 's,[^ \t]*\(disk.*.vmdk\),\1,' $d/source
+-    diff -u "$srcdir/test-v2v-i-ova-snapshots.expected" $d/source
++    diff -u "$srcdir/test-i-ova-snapshots.expected" $d/source
+ fi
+diff --git a/tests/test-v2v-i-ova-subfolders.expected b/tests/test-i-ova-subfolders.expected
+similarity index 100%
+rename from tests/test-v2v-i-ova-subfolders.expected
+rename to tests/test-i-ova-subfolders.expected
+diff --git a/tests/test-v2v-i-ova-subfolders.expected2 b/tests/test-i-ova-subfolders.expected2
+similarity index 100%
+rename from tests/test-v2v-i-ova-subfolders.expected2
+rename to tests/test-i-ova-subfolders.expected2
+diff --git a/tests/test-v2v-i-ova-subfolders.ovf b/tests/test-i-ova-subfolders.ovf
+similarity index 100%
+rename from tests/test-v2v-i-ova-subfolders.ovf
+rename to tests/test-i-ova-subfolders.ovf
+diff --git a/tests/test-v2v-i-ova-subfolders.sh b/tests/test-i-ova-subfolders.sh
+similarity index 88%
+rename from tests/test-v2v-i-ova-subfolders.sh
+rename to tests/test-i-ova-subfolders.sh
+index a64c60b3..b204433c 100755
+--- a/tests/test-v2v-i-ova-subfolders.sh
++++ b/tests/test-i-ova-subfolders.sh
+@@ -30,12 +30,12 @@ skip_if_skipped
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-i-ova-subfolders.d
++d=test-i-ova-subfolders.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir -p $d/subfolder
+ 
+-cp "$srcdir/test-v2v-i-ova-subfolders.ovf" $d/subfolder/
++cp "$srcdir/test-i-ova-subfolders.ovf" $d/subfolder/
+ 
+ pushd $d/subfolder
+ 
+@@ -60,9 +60,9 @@ if grep -sq json: $d/source ; then
+     # Exact offset will vary because of tar.
+     sed -i -e "s,\"[^\"]*/$d/,\"," \
+            -e "s|\"offset\": [0-9]*,|\"offset\": x,|" $d/source
+-    diff -u "$srcdir/test-v2v-i-ova-subfolders.expected2" $d/source
++    diff -u "$srcdir/test-i-ova-subfolders.expected2" $d/source
+ else
+     # normalize the output
+     sed -i -e 's,[^ \t]*\(subfolder/disk.*\.vmdk\),\1,' $d/source
+-    diff -u "$srcdir/test-v2v-i-ova-subfolders.expected" $d/source
++    diff -u "$srcdir/test-i-ova-subfolders.expected" $d/source
+ fi
+diff --git a/tests/test-v2v-i-ova-tar.expected b/tests/test-i-ova-tar.expected
+similarity index 100%
+rename from tests/test-v2v-i-ova-tar.expected
+rename to tests/test-i-ova-tar.expected
+diff --git a/tests/test-v2v-i-ova-tar.expected2 b/tests/test-i-ova-tar.expected2
+similarity index 100%
+rename from tests/test-v2v-i-ova-tar.expected2
+rename to tests/test-i-ova-tar.expected2
+diff --git a/tests/test-v2v-i-ova-tar.ovf b/tests/test-i-ova-tar.ovf
+similarity index 100%
+rename from tests/test-v2v-i-ova-tar.ovf
+rename to tests/test-i-ova-tar.ovf
+diff --git a/tests/test-v2v-i-ova-tar.sh b/tests/test-i-ova-tar.sh
+similarity index 88%
+rename from tests/test-v2v-i-ova-tar.sh
+rename to tests/test-i-ova-tar.sh
+index a311e0e8..403541c4 100755
+--- a/tests/test-v2v-i-ova-tar.sh
++++ b/tests/test-i-ova-tar.sh
+@@ -30,7 +30,7 @@ skip_if_skipped
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-i-ova-tar.d
++d=test-i-ova-tar.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+@@ -42,8 +42,8 @@ pushd $d
+ guestfish disk-create disk1.vmdk raw 10k
+ sha=`do_sha1 disk1.vmdk`
+ echo -e "SHA1(disk1.vmdk)= $sha\r" > disk1.mf
+-cp "$abs_srcdir/test-v2v-i-ova-tar.ovf" .
+-tar -cf test-tar.ova test-v2v-i-ova-tar.ovf disk1.vmdk disk1.mf
++cp "$abs_srcdir/test-i-ova-tar.ovf" .
++tar -cf test-tar.ova test-i-ova-tar.ovf disk1.vmdk disk1.mf
+ 
+ popd
+ 
+@@ -59,9 +59,9 @@ if grep -sq json: $d/source ; then
+     # Exact offset will vary because of tar.
+     sed -i -e "s,\"[^\"]*/$d/,\"," \
+            -e "s|\"offset\": [0-9]*,|\"offset\": x,|" $d/source
+-    diff -u "$srcdir/test-v2v-i-ova-tar.expected2" $d/source
++    diff -u "$srcdir/test-i-ova-tar.expected2" $d/source
+ else
+     # normalize the output
+     sed -i -e 's,[^ \t]*\(disk.*.vmdk\),\1,' $d/source
+-    diff -u "$srcdir/test-v2v-i-ova-tar.expected" $d/source
++    diff -u "$srcdir/test-i-ova-tar.expected" $d/source
+ fi
+diff --git a/tests/test-v2v-i-ova-two-disks.expected b/tests/test-i-ova-two-disks.expected
+similarity index 100%
+rename from tests/test-v2v-i-ova-two-disks.expected
+rename to tests/test-i-ova-two-disks.expected
+diff --git a/tests/test-v2v-i-ova-two-disks.expected2 b/tests/test-i-ova-two-disks.expected2
+similarity index 100%
+rename from tests/test-v2v-i-ova-two-disks.expected2
+rename to tests/test-i-ova-two-disks.expected2
+diff --git a/tests/test-v2v-i-ova-two-disks.ovf b/tests/test-i-ova-two-disks.ovf
+similarity index 100%
+rename from tests/test-v2v-i-ova-two-disks.ovf
+rename to tests/test-i-ova-two-disks.ovf
+diff --git a/tests/test-v2v-i-ova-two-disks.sh b/tests/test-i-ova-two-disks.sh
+similarity index 87%
+rename from tests/test-v2v-i-ova-two-disks.sh
+rename to tests/test-i-ova-two-disks.sh
+index 9879946e..07155441 100755
+--- a/tests/test-v2v-i-ova-two-disks.sh
++++ b/tests/test-i-ova-two-disks.sh
+@@ -31,7 +31,7 @@ skip_if_skipped
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+ 
+-d=test-v2v-i-ova-two-disks.d
++d=test-i-ova-two-disks.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+@@ -46,9 +46,9 @@ echo -e "SHA1(disk1.vmdk)= $sha\r" > disk1.mf
+ guestfish disk-create disk2.vmdk raw 100K
+ sha=`do_sha1 disk2.vmdk`
+ echo -e "SHA1(disk2.vmdk)= $sha\r" > disk2.mf
+-cp "$abs_srcdir/test-v2v-i-ova-two-disks.ovf" .
++cp "$abs_srcdir/test-i-ova-two-disks.ovf" .
+ 
+-tar -cf test.ova test-v2v-i-ova-two-disks.ovf disk1.vmdk disk1.mf disk2.vmdk disk2.mf
++tar -cf test.ova test-i-ova-two-disks.ovf disk1.vmdk disk1.mf disk2.vmdk disk2.mf
+ popd
+ 
+ # Run virt-v2v but only as far as the --print-source stage, and
+@@ -64,9 +64,9 @@ if grep -sq json: $d/source ; then
+     # Exact offset will vary because of tar.
+     sed -i -e "s,\"[^\"]*/$d/,\"," \
+            -e "s|\"offset\": [0-9]*,|\"offset\": x,|" $d/source
+-    diff -u "$srcdir/test-v2v-i-ova-two-disks.expected2" $d/source
++    diff -u "$srcdir/test-i-ova-two-disks.expected2" $d/source
+ else
+     # normalize the output
+     sed -i -e 's,[^ \t]*\(disk.*.vmdk\),\1,' $d/source
+-    diff -u "$srcdir/test-v2v-i-ova-two-disks.expected" $d/source
++    diff -u "$srcdir/test-i-ova-two-disks.expected" $d/source
+ fi
+diff --git a/tests/test-v2v-i-ova.ovf b/tests/test-i-ova.ovf
+similarity index 100%
+rename from tests/test-v2v-i-ova.ovf
+rename to tests/test-i-ova.ovf
+diff --git a/tests/test-v2v-i-ova.sh b/tests/test-i-ova.sh
+similarity index 95%
+rename from tests/test-v2v-i-ova.sh
+rename to tests/test-i-ova.sh
+index 7d988330..35c23e4f 100755
+--- a/tests/test-v2v-i-ova.sh
++++ b/tests/test-i-ova.sh
+@@ -32,13 +32,13 @@ requires test -s $f
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+ 
+-d=test-v2v-i-ova.d
++d=test-i-ova.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+ 
+ vmdk=test-ova.vmdk
+-ovf=test-v2v-i-ova.ovf
++ovf=test-i-ova.ovf
+ mf=test-ova.mf
+ ova=test-ova.ova
+ raw=TestOva-sda
+@@ -72,4 +72,4 @@ sed \
+     < $d/TestOva.xml.old > $d/TestOva.xml
+ 
+ # Check the libvirt XML output.
+-diff -u "$srcdir/test-v2v-i-ova.xml" $d/TestOva.xml
++diff -u "$srcdir/test-i-ova.xml" $d/TestOva.xml
+diff --git a/tests/test-v2v-i-ova.xml b/tests/test-i-ova.xml
+similarity index 100%
+rename from tests/test-v2v-i-ova.xml
+rename to tests/test-i-ova.xml
+diff --git a/tests/test-v2v-i-vmx-1.expected b/tests/test-i-vmx-1.expected
+similarity index 100%
+rename from tests/test-v2v-i-vmx-1.expected
+rename to tests/test-i-vmx-1.expected
+diff --git a/tests/test-v2v-i-vmx-1.vmx b/tests/test-i-vmx-1.vmx
+similarity index 100%
+rename from tests/test-v2v-i-vmx-1.vmx
+rename to tests/test-i-vmx-1.vmx
+diff --git a/tests/test-v2v-i-vmx-2.expected b/tests/test-i-vmx-2.expected
+similarity index 100%
+rename from tests/test-v2v-i-vmx-2.expected
+rename to tests/test-i-vmx-2.expected
+diff --git a/tests/test-v2v-i-vmx-2.vmx b/tests/test-i-vmx-2.vmx
+similarity index 100%
+rename from tests/test-v2v-i-vmx-2.vmx
+rename to tests/test-i-vmx-2.vmx
+diff --git a/tests/test-v2v-i-vmx-3.expected b/tests/test-i-vmx-3.expected
+similarity index 100%
+rename from tests/test-v2v-i-vmx-3.expected
+rename to tests/test-i-vmx-3.expected
+diff --git a/tests/test-v2v-i-vmx-3.vmx b/tests/test-i-vmx-3.vmx
+similarity index 100%
+rename from tests/test-v2v-i-vmx-3.vmx
+rename to tests/test-i-vmx-3.vmx
+diff --git a/tests/test-v2v-i-vmx-4.expected b/tests/test-i-vmx-4.expected
+similarity index 100%
+rename from tests/test-v2v-i-vmx-4.expected
+rename to tests/test-i-vmx-4.expected
+diff --git a/tests/test-v2v-i-vmx-4.vmx b/tests/test-i-vmx-4.vmx
+similarity index 100%
+rename from tests/test-v2v-i-vmx-4.vmx
+rename to tests/test-i-vmx-4.vmx
+diff --git a/tests/test-v2v-i-vmx-5.expected b/tests/test-i-vmx-5.expected
+similarity index 100%
+rename from tests/test-v2v-i-vmx-5.expected
+rename to tests/test-i-vmx-5.expected
+diff --git a/tests/test-v2v-i-vmx-5.vmx b/tests/test-i-vmx-5.vmx
+similarity index 100%
+rename from tests/test-v2v-i-vmx-5.vmx
+rename to tests/test-i-vmx-5.vmx
+diff --git a/tests/test-v2v-i-vmx-6.expected b/tests/test-i-vmx-6.expected
+similarity index 100%
+rename from tests/test-v2v-i-vmx-6.expected
+rename to tests/test-i-vmx-6.expected
+diff --git a/tests/test-v2v-i-vmx-6.vmx b/tests/test-i-vmx-6.vmx
+similarity index 100%
+rename from tests/test-v2v-i-vmx-6.vmx
+rename to tests/test-i-vmx-6.vmx
+diff --git a/tests/test-v2v-i-vmx-7.expected b/tests/test-i-vmx-7.expected
+similarity index 100%
+rename from tests/test-v2v-i-vmx-7.expected
+rename to tests/test-i-vmx-7.expected
+diff --git a/tests/test-v2v-i-vmx-7.vmx b/tests/test-i-vmx-7.vmx
+similarity index 100%
+rename from tests/test-v2v-i-vmx-7.vmx
+rename to tests/test-i-vmx-7.vmx
+diff --git a/tests/test-v2v-i-vmx.sh b/tests/test-i-vmx.sh
+similarity index 83%
+rename from tests/test-v2v-i-vmx.sh
+rename to tests/test-i-vmx.sh
+index eff27e3d..1f36c938 100755
+--- a/tests/test-v2v-i-vmx.sh
++++ b/tests/test-i-vmx.sh
+@@ -34,7 +34,7 @@ export LANG=C
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+ 
+-rm -f test-v2v-i-vmx-*.actual
++rm -f test-i-vmx-*.actual
+ 
+ # For the tests to succeed we need at least the fileName (VMDK input
+ # files) to exist.
+@@ -49,21 +49,21 @@ for fn in $fns; do qemu-img create -f vmdk $fn 512; done
+ 
+ for i in 1 2 3 4 5 6 7; do
+     $VG virt-v2v --debug-gc \
+-        -i vmx test-v2v-i-vmx-$i.vmx \
+-        --print-source > test-v2v-i-vmx-$i.actual
++        -i vmx test-i-vmx-$i.vmx \
++        --print-source > test-i-vmx-$i.actual
+ 
+     # Normalize the print-source output.
+-    mv test-v2v-i-vmx-$i.actual test-v2v-i-vmx-$i.actual.old
++    mv test-i-vmx-$i.actual test-i-vmx-$i.actual.old
+     sed \
+         -e "s,.*Setting up the source.*,," \
+         -e "s,.*Opening the source.*,," \
+         -e "s,$(pwd),," \
+-        < test-v2v-i-vmx-$i.actual.old > test-v2v-i-vmx-$i.actual
+-    rm test-v2v-i-vmx-$i.actual.old
++        < test-i-vmx-$i.actual.old > test-i-vmx-$i.actual
++    rm test-i-vmx-$i.actual.old
+ 
+     # Check the output.
+-    diff -u "$srcdir/test-v2v-i-vmx-$i.expected" test-v2v-i-vmx-$i.actual
++    diff -u "$srcdir/test-i-vmx-$i.expected" test-i-vmx-$i.actual
+ done
+ 
+-rm test-v2v-i-vmx-*.actual
++rm test-i-vmx-*.actual
+ for fn in $fns; do rm $fn; done
+diff --git a/tests/test-v2v-in-place.sh b/tests/test-in-place.sh
+similarity index 99%
+rename from tests/test-v2v-in-place.sh
+rename to tests/test-in-place.sh
+index 2b31b0bb..f58f8c38 100755
+--- a/tests/test-v2v-in-place.sh
++++ b/tests/test-in-place.sh
+@@ -35,7 +35,7 @@ img_base="$abs_top_builddir/test-data/phony-guests/windows.img"
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+ 
+-d=$PWD/test-v2v-in-place.d
++d=$PWD/test-in-place.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+diff --git a/tests/test-v2v-inspector.sh b/tests/test-inspector.sh
+similarity index 98%
+rename from tests/test-v2v-inspector.sh
+rename to tests/test-inspector.sh
+index 05c2607e..55df7a3f 100755
+--- a/tests/test-v2v-inspector.sh
++++ b/tests/test-inspector.sh
+@@ -34,7 +34,7 @@ img="$abs_top_builddir/test-data/phony-guests/windows.img"
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+ 
+-d=$PWD/test-v2v-inspector.d
++d=$PWD/test-inspector.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+diff --git a/tests/test-v2v-it-vddk-io-query.sh b/tests/test-it-vddk-io-query.sh
+similarity index 97%
+rename from tests/test-v2v-it-vddk-io-query.sh
+rename to tests/test-it-vddk-io-query.sh
+index c3fb8eb2..54a8bb15 100755
+--- a/tests/test-v2v-it-vddk-io-query.sh
++++ b/tests/test-it-vddk-io-query.sh
+@@ -29,7 +29,7 @@ skip_if_skipped
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+ 
+-f=test-v2v-it-vddk-io-query.actual
++f=test-it-vddk-io-query.actual
+ rm -f $f
+ 
+ $VG virt-v2v --debug-gc \
+diff --git a/tests/test-v2v-mac-expected.xml b/tests/test-mac-expected.xml
+similarity index 100%
+rename from tests/test-v2v-mac-expected.xml
+rename to tests/test-mac-expected.xml
+diff --git a/tests/test-v2v-mac.sh b/tests/test-mac.sh
+similarity index 93%
+rename from tests/test-v2v-mac.sh
+rename to tests/test-mac.sh
+index dae571d7..f880a4ea 100755
+--- a/tests/test-v2v-mac.sh
++++ b/tests/test-mac.sh
+@@ -27,12 +27,12 @@ set -x
+ skip_if_skipped
+ requires test -f ../test-data/phony-guests/windows.img
+ 
+-libvirt_uri="test://$abs_builddir/test-v2v-mac.xml"
++libvirt_uri="test://$abs_builddir/test-mac.xml"
+ f=../test-data/phony-guests/windows.img
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-mac.d
++d=test-mac.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+@@ -54,4 +54,4 @@ sed -n '/interface/,/\/interface/p' $d/windows.xml |
+   grep -v 'model type=' > $d/networks
+ 
+ # Test that the output has mapped the networks and bridges correctly.
+-diff -ur "$srcdir/test-v2v-mac-expected.xml" $d/networks
++diff -ur "$srcdir/test-mac-expected.xml" $d/networks
+diff --git a/tests/test-v2v-mac.xml.in b/tests/test-mac.xml.in
+similarity index 100%
+rename from tests/test-v2v-mac.xml.in
+rename to tests/test-mac.xml.in
+diff --git a/tests/test-v2v-machine-readable.sh b/tests/test-machine-readable.sh
+similarity index 81%
+rename from tests/test-v2v-machine-readable.sh
+rename to tests/test-machine-readable.sh
+index 4fdedff2..e176c037 100755
+--- a/tests/test-v2v-machine-readable.sh
++++ b/tests/test-machine-readable.sh
+@@ -26,8 +26,8 @@ set -x
+ 
+ skip_if_skipped
+ 
+-$VG virt-v2v --debug-gc --machine-readable > test-v2v-machine-readable.out
+-grep virt-v2v test-v2v-machine-readable.out
+-grep libguestfs-rewrite test-v2v-machine-readable.out
++$VG virt-v2v --debug-gc --machine-readable > test-machine-readable.out
++grep virt-v2v test-machine-readable.out
++grep libguestfs-rewrite test-machine-readable.out
+ 
+-rm test-v2v-machine-readable.out
++rm test-machine-readable.out
+diff --git a/tests/test-v2v-networks-and-bridges-expected.xml b/tests/test-networks-and-bridges-expected.xml
+similarity index 100%
+rename from tests/test-v2v-networks-and-bridges-expected.xml
+rename to tests/test-networks-and-bridges-expected.xml
+diff --git a/tests/test-v2v-networks-and-bridges.sh b/tests/test-networks-and-bridges.sh
+similarity index 90%
+rename from tests/test-v2v-networks-and-bridges.sh
+rename to tests/test-networks-and-bridges.sh
+index c50711ca..94d3d24a 100755
+--- a/tests/test-v2v-networks-and-bridges.sh
++++ b/tests/test-networks-and-bridges.sh
+@@ -27,12 +27,12 @@ set -x
+ skip_if_skipped
+ requires test -f ../test-data/phony-guests/windows.img
+ 
+-libvirt_uri="test://$abs_builddir/test-v2v-networks-and-bridges.xml"
++libvirt_uri="test://$abs_builddir/test-networks-and-bridges.xml"
+ f=../test-data/phony-guests/windows.img
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-networks-and-bridges.d
++d=test-networks-and-bridges.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+@@ -57,4 +57,4 @@ sed -n '/interface/,/\/interface/p' $d/windows.xml |
+   grep -v 'model type=' > $d/networks
+ 
+ # Test that the output has mapped the networks and bridges correctly.
+-diff -ur "$srcdir/test-v2v-networks-and-bridges-expected.xml" $d/networks
++diff -ur "$srcdir/test-networks-and-bridges-expected.xml" $d/networks
+diff --git a/tests/test-v2v-networks-and-bridges.xml.in b/tests/test-networks-and-bridges.xml.in
+similarity index 100%
+rename from tests/test-v2v-networks-and-bridges.xml.in
+rename to tests/test-networks-and-bridges.xml.in
+diff --git a/tests/test-v2v-o-glance.sh b/tests/test-o-glance.sh
+similarity index 100%
+rename from tests/test-v2v-o-glance.sh
+rename to tests/test-o-glance.sh
+diff --git a/tests/test-v2v-o-kubevirt-fedora.sh b/tests/test-o-kubevirt-fedora.sh
+similarity index 94%
+rename from tests/test-v2v-o-kubevirt-fedora.sh
+rename to tests/test-o-kubevirt-fedora.sh
+index 959b37ba..2d4113ce 100755
+--- a/tests/test-v2v-o-kubevirt-fedora.sh
++++ b/tests/test-o-kubevirt-fedora.sh
+@@ -31,7 +31,7 @@ requires test -f ../test-data/phony-guests/fedora.img
+ libvirt_uri="test://$abs_top_builddir/test-data/phony-guests/guests.xml"
+ fedora=../test-data/phony-guests/fedora.img
+ 
+-d=test-v2v-o-kubevirt-fedora.d
++d=test-o-kubevirt-fedora.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+@@ -54,4 +54,4 @@ sed -i \
+     $d/test.yaml
+ 
+ # Compare yaml to the expected output.
+-diff -u test-v2v-o-kubevirt-fedora.yaml.expected $d/test.yaml
++diff -u test-o-kubevirt-fedora.yaml.expected $d/test.yaml
+diff --git a/tests/test-v2v-o-kubevirt-fedora.yaml.expected b/tests/test-o-kubevirt-fedora.yaml.expected
+similarity index 100%
+rename from tests/test-v2v-o-kubevirt-fedora.yaml.expected
+rename to tests/test-o-kubevirt-fedora.yaml.expected
+diff --git a/tests/test-v2v-o-kubevirt-windows.sh b/tests/test-o-kubevirt-windows.sh
+similarity index 94%
+rename from tests/test-v2v-o-kubevirt-windows.sh
+rename to tests/test-o-kubevirt-windows.sh
+index 4c82f1d0..ed9b84f0 100755
+--- a/tests/test-v2v-o-kubevirt-windows.sh
++++ b/tests/test-o-kubevirt-windows.sh
+@@ -34,7 +34,7 @@ windows=../test-data/phony-guests/windows.img
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+ 
+-d=test-v2v-o-kubevirt-windows.d
++d=test-o-kubevirt-windows.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+@@ -57,4 +57,4 @@ sed -i \
+     $d/test.yaml
+ 
+ # Compare yaml to the expected output.
+-diff -u test-v2v-o-kubevirt-windows.yaml.expected $d/test.yaml
++diff -u test-o-kubevirt-windows.yaml.expected $d/test.yaml
+diff --git a/tests/test-v2v-o-kubevirt-windows.yaml.expected b/tests/test-o-kubevirt-windows.yaml.expected
+similarity index 100%
+rename from tests/test-v2v-o-kubevirt-windows.yaml.expected
+rename to tests/test-o-kubevirt-windows.yaml.expected
+diff --git a/tests/test-v2v-o-libvirt.sh b/tests/test-o-libvirt.sh
+similarity index 98%
+rename from tests/test-v2v-o-libvirt.sh
+rename to tests/test-o-libvirt.sh
+index d44f55dd..49f8c8da 100755
+--- a/tests/test-v2v-o-libvirt.sh
++++ b/tests/test-o-libvirt.sh
+@@ -49,7 +49,7 @@ guestname=tmp-$(tr -cd 'a-f0-9' < /dev/urandom | head -c 8)
+ # Generate a random pool name.
+ poolname=tmp-$(tr -cd 'a-f0-9' < /dev/urandom | head -c 8)
+ 
+-d=test-v2v-o-libvirt.d
++d=test-o-libvirt.d
+ rm -rf $d
+ 
+ # Clean up.
+diff --git a/tests/test-v2v-o-local-qcow2-compressed.sh b/tests/test-o-local-qcow2-compressed.sh
+similarity index 97%
+rename from tests/test-v2v-o-local-qcow2-compressed.sh
+rename to tests/test-o-local-qcow2-compressed.sh
+index 32c9ebbe..f5a7ac6c 100755
+--- a/tests/test-v2v-o-local-qcow2-compressed.sh
++++ b/tests/test-o-local-qcow2-compressed.sh
+@@ -38,7 +38,7 @@ nbdcopy --version | {
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-o-local-qcow2-compressed.d
++d=test-o-local-qcow2-compressed.d
+ rm -rf $d
+ cleanup_fn rm -rf $d
+ mkdir $d
+diff --git a/tests/test-v2v-o-null.sh b/tests/test-o-null.sh
+similarity index 100%
+rename from tests/test-v2v-o-null.sh
+rename to tests/test-o-null.sh
+diff --git a/tests/test-v2v-o-openstack.sh b/tests/test-o-openstack.sh
+similarity index 97%
+rename from tests/test-v2v-o-openstack.sh
+rename to tests/test-o-openstack.sh
+index fdad4c21..aea5be8c 100755
+--- a/tests/test-v2v-o-openstack.sh
++++ b/tests/test-o-openstack.sh
+@@ -33,7 +33,7 @@ windows=../test-data/phony-guests/windows.img
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-o-openstack.d
++d=test-o-openstack.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+@@ -43,7 +43,7 @@ mkdir $d
+ # JSON output where required.
+ cat > $d/openstack <<'EOF'
+ #!/bin/bash -
+-echo "$@" >> test-v2v-o-openstack.d/log
++echo "$@" >> test-o-openstack.d/log
+ echo "$@" | grep -sq -- "-f json" && \
+   echo '{ "id": "dummy-vol-id", "status": "available" }'
+ exit 0
+diff --git a/tests/test-v2v-o-qemu.sh b/tests/test-o-qemu.sh
+similarity index 98%
+rename from tests/test-v2v-o-qemu.sh
+rename to tests/test-o-qemu.sh
+index 2f36261d..539fac3d 100755
+--- a/tests/test-v2v-o-qemu.sh
++++ b/tests/test-o-qemu.sh
+@@ -32,7 +32,7 @@ f=../test-data/phony-guests/windows.img
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-o-qemu.d
++d=test-o-qemu.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+diff --git a/tests/test-v2v-o-rhv-upload-module/imageio.py b/tests/test-o-rhv-upload-module/imageio.py
+similarity index 98%
+rename from tests/test-v2v-o-rhv-upload-module/imageio.py
+rename to tests/test-o-rhv-upload-module/imageio.py
+index b9a491d7..5cf0e06e 100755
+--- a/tests/test-v2v-o-rhv-upload-module/imageio.py
++++ b/tests/test-o-rhv-upload-module/imageio.py
+@@ -17,7 +17,7 @@
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ 
+ # Fake imageio web server used as a test harness.
+-# See v2v/test-v2v-o-rhv-upload.sh
++# See v2v/test-o-rhv-upload.sh
+ 
+ import sys
+ import threading
+diff --git a/tests/test-v2v-o-rhv-upload-module/ovirtsdk4/__init__.py b/tests/test-o-rhv-upload-module/ovirtsdk4/__init__.py
+similarity index 98%
+rename from tests/test-v2v-o-rhv-upload-module/ovirtsdk4/__init__.py
+rename to tests/test-o-rhv-upload-module/ovirtsdk4/__init__.py
+index e33d0714..fefc9821 100644
+--- a/tests/test-v2v-o-rhv-upload-module/ovirtsdk4/__init__.py
++++ b/tests/test-o-rhv-upload-module/ovirtsdk4/__init__.py
+@@ -16,7 +16,7 @@
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ 
+ # Fake ovirtsdk4 module used as a test harness.
+-# See v2v/test-v2v-o-rhv-upload.sh
++# See v2v/test-o-rhv-upload.sh
+ 
+ class Error(Exception):
+     pass
+diff --git a/tests/test-v2v-o-rhv-upload-module/ovirtsdk4/types.py b/tests/test-o-rhv-upload-module/ovirtsdk4/types.py
+similarity index 99%
+rename from tests/test-v2v-o-rhv-upload-module/ovirtsdk4/types.py
+rename to tests/test-o-rhv-upload-module/ovirtsdk4/types.py
+index 38d89573..397432f1 100644
+--- a/tests/test-v2v-o-rhv-upload-module/ovirtsdk4/types.py
++++ b/tests/test-o-rhv-upload-module/ovirtsdk4/types.py
+@@ -16,7 +16,7 @@
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ 
+ # Fake ovirtsdk4 module used as a test harness.
+-# See v2v/test-v2v-o-rhv-upload.sh
++# See v2v/test-o-rhv-upload.sh
+ 
+ import os
+ from enum import Enum
+diff --git a/tests/test-v2v-o-rhv-upload-oo-query.sh b/tests/test-o-rhv-upload-oo-query.sh
+similarity index 96%
+rename from tests/test-v2v-o-rhv-upload-oo-query.sh
+rename to tests/test-o-rhv-upload-oo-query.sh
+index 5ef56b90..f3e86dc3 100755
+--- a/tests/test-v2v-o-rhv-upload-oo-query.sh
++++ b/tests/test-o-rhv-upload-oo-query.sh
+@@ -29,7 +29,7 @@ skip_if_skipped
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+ 
+-f=test-v2v-o-rhv-upload-oo-query.actual
++f=test-o-rhv-upload-oo-query.actual
+ rm -f $f
+ 
+ $VG virt-v2v --debug-gc \
+diff --git a/tests/test-v2v-o-rhv-upload.sh b/tests/test-o-rhv-upload.sh
+similarity index 89%
+rename from tests/test-v2v-o-rhv-upload.sh
+rename to tests/test-o-rhv-upload.sh
+index 15d5d028..51307f80 100755
+--- a/tests/test-v2v-o-rhv-upload.sh
++++ b/tests/test-o-rhv-upload.sh
+@@ -19,7 +19,7 @@
+ # Test -o rhv-upload.
+ #
+ # These uses a test harness (see
+-# tests/test-v2v-o-rhv-upload-module/ovirtsdk4) to fake responses from
++# tests/test-o-rhv-upload-module/ovirtsdk4) to fake responses from
+ # oVirt.
+ 
+ set -e
+@@ -39,13 +39,13 @@ f=../test-data/phony-guests/windows.img
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+-export PYTHONPATH=$srcdir/test-v2v-o-rhv-upload-module:$PYTHONPATH
++export PYTHONPATH=$srcdir/test-o-rhv-upload-module:$PYTHONPATH
+ 
+ # Run the imageio process and get the port number.
+-log=test-v2v-o-rhv-upload.webserver.log
++log=test-o-rhv-upload.webserver.log
+ rm -f $log
+ cleanup_fn rm -f $log
+-$srcdir/test-v2v-o-rhv-upload-module/imageio.py >$log 2>&1 &
++$srcdir/test-o-rhv-upload-module/imageio.py >$log 2>&1 &
+ pid=$!
+ cleanup_fn kill $pid
+ export IMAGEIO_PORT=
+diff --git a/tests/test-v2v-o-rhv.ovf.expected b/tests/test-o-rhv.ovf.expected
+similarity index 100%
+rename from tests/test-v2v-o-rhv.ovf.expected
+rename to tests/test-o-rhv.ovf.expected
+diff --git a/tests/test-v2v-o-rhv.sh b/tests/test-o-rhv.sh
+similarity index 97%
+rename from tests/test-v2v-o-rhv.sh
+rename to tests/test-o-rhv.sh
+index e6ec7c61..86c37734 100755
+--- a/tests/test-v2v-o-rhv.sh
++++ b/tests/test-o-rhv.sh
+@@ -33,7 +33,7 @@ f=../test-data/phony-guests/windows.img
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+ 
+-d=test-v2v-o-rhv.d
++d=test-o-rhv.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+@@ -84,4 +84,4 @@ sed -i \
+   -e 's/\<ovf:vm_snapshot_id='"'$RE_UUID'/ovf:vm_snapshot_id='#UUID#'/g" \
+   "$OVF"
+ 
+-diff -u "$srcdir/test-v2v-o-rhv.ovf.expected" "$OVF"
++diff -u "$srcdir/test-o-rhv.ovf.expected" "$OVF"
+diff --git a/tests/test-v2v-o-vdsm-oo-query.sh b/tests/test-o-vdsm-oo-query.sh
+similarity index 97%
+rename from tests/test-v2v-o-vdsm-oo-query.sh
+rename to tests/test-o-vdsm-oo-query.sh
+index 7d4cae4e..e0e99fbc 100755
+--- a/tests/test-v2v-o-vdsm-oo-query.sh
++++ b/tests/test-o-vdsm-oo-query.sh
+@@ -29,7 +29,7 @@ skip_if_skipped
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+ 
+-f=test-v2v-o-vdsm-oo-query.actual
++f=test-o-vdsm-oo-query.actual
+ rm -f $f
+ 
+ $VG virt-v2v --debug-gc \
+diff --git a/tests/test-v2v-o-vdsm-options.ovf.expected b/tests/test-o-vdsm-options.ovf.expected
+similarity index 100%
+rename from tests/test-v2v-o-vdsm-options.ovf.expected
+rename to tests/test-o-vdsm-options.ovf.expected
+diff --git a/tests/test-v2v-o-vdsm-options.sh b/tests/test-o-vdsm-options.sh
+similarity index 97%
+rename from tests/test-v2v-o-vdsm-options.sh
+rename to tests/test-o-vdsm-options.sh
+index e8f8c538..da43940e 100755
+--- a/tests/test-v2v-o-vdsm-options.sh
++++ b/tests/test-o-vdsm-options.sh
+@@ -34,7 +34,7 @@ f=../test-data/phony-guests/windows.img
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+ 
+-d=test-v2v-o-vdsm-options.d
++d=test-o-vdsm-options.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+@@ -92,5 +92,5 @@ sed -i \
+   -e 's/\<ovf:vm_snapshot_id='"'$RE_UUID'/ovf:vm_snapshot_id='#UUID#'/g" \
+   "$OVF"
+ 
+-diff -u "$srcdir/test-v2v-o-vdsm-options.ovf.expected" \
++diff -u "$srcdir/test-o-vdsm-options.ovf.expected" \
+   "$OVF"
+diff --git a/tests/test-v2v-oa-option-qcow2.sh b/tests/test-oa-option-qcow2.sh
+similarity index 98%
+rename from tests/test-v2v-oa-option-qcow2.sh
+rename to tests/test-oa-option-qcow2.sh
+index 3fdd9ce5..cd9c8f05 100755
+--- a/tests/test-v2v-oa-option-qcow2.sh
++++ b/tests/test-oa-option-qcow2.sh
+@@ -33,7 +33,7 @@ f=../test-data/phony-guests/windows.img
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-oa-option-qcow2.d
++d=test-oa-option-qcow2.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+diff --git a/tests/test-v2v-oa-option-raw.sh b/tests/test-oa-option-raw.sh
+similarity index 98%
+rename from tests/test-v2v-oa-option-raw.sh
+rename to tests/test-oa-option-raw.sh
+index 994d54fc..52b58f34 100755
+--- a/tests/test-v2v-oa-option-raw.sh
++++ b/tests/test-oa-option-raw.sh
+@@ -33,7 +33,7 @@ f=../test-data/phony-guests/windows.img
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-oa-option-raw.d
++d=test-oa-option-raw.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+diff --git a/tests/test-v2v-of-option.sh b/tests/test-of-option.sh
+similarity index 98%
+rename from tests/test-v2v-of-option.sh
+rename to tests/test-of-option.sh
+index 6c5f5938..0a37e9b0 100755
+--- a/tests/test-v2v-of-option.sh
++++ b/tests/test-of-option.sh
+@@ -33,7 +33,7 @@ f=../test-data/phony-guests/windows.img
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-of-option.d
++d=test-of-option.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+diff --git a/tests/test-v2v-on-option.sh b/tests/test-on-option.sh
+similarity index 98%
+rename from tests/test-v2v-on-option.sh
+rename to tests/test-on-option.sh
+index 47893294..985b3575 100755
+--- a/tests/test-v2v-on-option.sh
++++ b/tests/test-on-option.sh
+@@ -32,7 +32,7 @@ f=../test-data/phony-guests/windows.img
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-on-option.d
++d=test-on-option.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+diff --git a/tests/test-v2v-print-source.expected b/tests/test-print-source.expected
+similarity index 100%
+rename from tests/test-v2v-print-source.expected
+rename to tests/test-print-source.expected
+diff --git a/tests/test-v2v-print-source.sh b/tests/test-print-source.sh
+similarity index 90%
+rename from tests/test-v2v-print-source.sh
+rename to tests/test-print-source.sh
+index e46fd126..17d6a851 100755
+--- a/tests/test-v2v-print-source.sh
++++ b/tests/test-print-source.sh
+@@ -29,13 +29,13 @@ requires test -f ../test-data/phony-guests/windows.img
+ 
+ export LANG=C
+ 
+-d=test-v2v-print-source.d
++d=test-print-source.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+ 
+ $VG virt-v2v --debug-gc \
+-    -i libvirtxml test-v2v-print-source.xml \
++    -i libvirtxml test-print-source.xml \
+     -o local -os $d \
+     --print-source > $d/output
+ 
+@@ -48,4 +48,4 @@ sed -e 's,/.*/windows.img,windows.img,' |
+ grep -v '^$' \
+ > $d/output
+ 
+-diff -u "$srcdir/test-v2v-print-source.expected" $d/output
++diff -u "$srcdir/test-print-source.expected" $d/output
+diff --git a/tests/test-v2v-print-source.xml.in b/tests/test-print-source.xml.in
+similarity index 100%
+rename from tests/test-v2v-print-source.xml.in
+rename to tests/test-print-source.xml.in
+diff --git a/tests/test-v2v-sound.sh b/tests/test-sound.sh
+similarity index 94%
+rename from tests/test-v2v-sound.sh
+rename to tests/test-sound.sh
+index 16f8d720..0205bc82 100755
+--- a/tests/test-v2v-sound.sh
++++ b/tests/test-sound.sh
+@@ -27,12 +27,12 @@ set -x
+ skip_if_skipped
+ requires test -f ../test-data/phony-guests/windows.img
+ 
+-libvirt_uri="test://$abs_builddir/test-v2v-sound.xml"
++libvirt_uri="test://$abs_builddir/test-sound.xml"
+ f=../test-data/phony-guests/windows.img
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-d=test-v2v-sound.d
++d=test-sound.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+diff --git a/tests/test-v2v-sound.xml.in b/tests/test-sound.xml.in
+similarity index 100%
+rename from tests/test-v2v-sound.xml.in
+rename to tests/test-sound.xml.in
+diff --git a/tests/test-v2v-trim.sh b/tests/test-trim.sh
+similarity index 99%
+rename from tests/test-v2v-trim.sh
+rename to tests/test-trim.sh
+index ed6c031d..a3247666 100755
+--- a/tests/test-v2v-trim.sh
++++ b/tests/test-trim.sh
+@@ -31,7 +31,7 @@ set -x
+ slow_test
+ skip_if_skipped
+ 
+-d=test-v2v-trim.d
++d=test-trim.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+diff --git a/tests/test-v2v-virtio-win-iso.sh b/tests/test-virtio-win-iso.sh
+similarity index 99%
+rename from tests/test-v2v-virtio-win-iso.sh
+rename to tests/test-virtio-win-iso.sh
+index 2e133034..d2adbc6b 100755
+--- a/tests/test-v2v-virtio-win-iso.sh
++++ b/tests/test-virtio-win-iso.sh
+@@ -49,7 +49,7 @@ function random_choice
+ choices=("/dev/sda2" "single" "first")
+ root=`random_choice`
+ 
+-d=test-v2v-virtio-win-iso.d
++d=test-virtio-win-iso.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d
+diff --git a/tests/test-v2v-windows-conversion.sh b/tests/test-windows-conversion.sh
+similarity index 98%
+rename from tests/test-v2v-windows-conversion.sh
+rename to tests/test-windows-conversion.sh
+index 1ff41f6a..2f9b0ca5 100755
+--- a/tests/test-v2v-windows-conversion.sh
++++ b/tests/test-windows-conversion.sh
+@@ -43,7 +43,7 @@ function random_choice
+ choices=("/dev/sda2" "single" "first")
+ root=`random_choice`
+ 
+-d=test-v2v-windows-conversion.d
++d=test-windows-conversion.d
+ rm -rf $d
+ cleanup_fn rm -r $d
+ mkdir $d

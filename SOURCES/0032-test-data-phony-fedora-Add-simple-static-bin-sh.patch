@@ -1,4 +1,4 @@
-From 00550a9ff230ab28d7306d881f923778cccf9e90 Mon Sep 17 00:00:00 2001
+From 453e38ce02118fc81fe9ec9ca8f81ae341c93fe7 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Wed, 19 Feb 2025 15:15:30 +0000
 Subject: [PATCH] test-data: phony fedora: Add simple static /bin/sh
@@ -10,7 +10,6 @@ inside the phony Fedora image.
 guestfs-tools commit 4c5854f54e1da0d96807acb1b047bbf34694a0bb)
 
 (cherry picked from commit de073524ec9fbfa179f2721c36013b2bb312e73f)
-(cherry picked from commit 453e38ce02118fc81fe9ec9ca8f81ae341c93fe7)
 ---
  test-data/phony-guests/fedora.c           | 76 +++++++++++++++++++++--
  test-data/phony-guests/make-fedora-img.pl |  6 +-

@@ -1,4 +1,4 @@
-From b0386851d539e414302cb646567836717fd027d9 Mon Sep 17 00:00:00 2001
+From 6593a1970703eee10c3ef9f41279d80a133a611d Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Wed, 30 Jun 2021 11:15:52 +0100
 Subject: [PATCH] RHEL: Disable -o glance
@@ -98,10 +98,10 @@ index cd4862b1..54cd276e 100644
  =head1 AUTHOR
  
 diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
-index 81a4b45a..7c7069df 100644
+index a1e8fb30..b89a08a3 100644
 --- a/docs/virt-v2v.pod
 +++ b/docs/virt-v2v.pod
-@@ -435,14 +435,6 @@ See L</Networks and bridges> below.
+@@ -446,14 +446,6 @@ See L</Networks and bridges> below.
  
  This is the same as I<-o local>.
  
@@ -116,7 +116,7 @@ index 81a4b45a..7c7069df 100644
  =item B<-o> B<kubevirt>
  
  Set the output method to I<kubevirt>.  B<Note the way this mode works
-@@ -1191,11 +1183,6 @@ and output methods may use disk space, as outlined in the table below.
+@@ -1206,11 +1198,6 @@ and output methods may use disk space, as outlined in the table below.
  This temporarily places a full copy of the uncompressed source disks
  in C<$VIRT_V2V_TMPDIR> (or F</var/tmp>).
  
@@ -128,7 +128,7 @@ index 81a4b45a..7c7069df 100644
  =item I<-o local>
  
  =item I<-o qemu>
-@@ -1398,13 +1385,6 @@ See also L</Starting the libvirt system instance>.
+@@ -1413,13 +1400,6 @@ See also L</Starting the libvirt system instance>.
  Because of how Cinder volumes are presented as F</dev> block devices,
  using I<-o openstack> normally requires that virt-v2v is run as root.
  
@@ -167,7 +167,7 @@ index c0db9115..074b5e16 100755
  set -e
  set -x
 diff --git a/v2v/v2v.ml b/v2v/v2v.ml
-index fca5f6e9..4148fa50 100644
+index 6baa111f..427d35d4 100644
 --- a/v2v/v2v.ml
 +++ b/v2v/v2v.ml
 @@ -197,7 +197,6 @@ let rec main () =
@@ -187,7 +187,7 @@ index fca5f6e9..4148fa50 100644
        s_"Set output mode (default: libvirt)";
      [ M"oa" ],       Getopt.String ("sparse|preallocated", set_output_alloc),
                                      s_"Set output allocation mode";
-@@ -325,8 +324,6 @@ virt-v2v -i libvirtxml guest-domain.xml -o local -os /var/tmp
+@@ -333,8 +332,6 @@ virt-v2v -i libvirtxml guest-domain.xml -o local -os /var/tmp
  
  virt-v2v -i disk disk.img -o local -os /var/tmp
  
@@ -196,7 +196,7 @@ index fca5f6e9..4148fa50 100644
  There is a companion front-end called \"virt-p2v\" which comes as an
  ISO or CD image that can be booted on physical machines.
  
-@@ -401,7 +398,6 @@ read the man page virt-v2v(1).
+@@ -412,7 +409,6 @@ read the man page virt-v2v(1).
        pr "input:libvirtxml\n";
        pr "input:ova\n";
        pr "input:vmx\n";
@@ -204,7 +204,7 @@ index fca5f6e9..4148fa50 100644
        pr "output:kubevirt\n";
        pr "output:libvirt\n";
        pr "output:local\n";
-@@ -498,7 +494,6 @@ read the man page virt-v2v(1).
+@@ -509,7 +505,6 @@ read the man page virt-v2v(1).
      | `Disk -> (module Output_disk.Disk)
      | `Null -> (module Output_null.Null)
      | `QEmu -> (module Output_qemu.QEMU)

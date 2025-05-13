@@ -1,0 +1,189 @@
+From 60785259a8bea65663da270b25ea6f46be42aa0f Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Sun, 9 Feb 2025 17:35:14 +0000
+Subject: [PATCH] Update common submodule
+
+Pulls in the following fix:
+
+  commit 38315604596ac747e44e38db79496610efee49f8
+  Author: Richard W.M. Jones <rjones@redhat.com>
+  Date:   Thu Feb 6 08:04:38 2025 +0000
+
+    mldrivers/linux_bootloaders.ml: Don't overwrite EFI grub2 wrapper
+
+    Fedora 34+ and RHEL 9.0+ unified BIOS and UEFI grub configuration into
+    a single file.  This leaves /boot/efi/EFI/<OS>/grub.cfg as a so-called
+    "wrapper" which just loads the real grub2 configuration at
+    /boot/grub2/grub.cfg.
+
+    Running '/sbin/grub2-mkconfig -o /boot/efi/EFI/<OS>/grub.cfg'
+    overwrites the wrapper instead of the real configuration file.
+
+    RHEL 9.5 added a hard error if you try to do this, which broke
+    virt-v2v.  The error message was:
+
+      commandrvf: /sbin/grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg
+      Running `grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg' will
+      overwrite the GRUB wrapper.  Please run `grub2-mkconfig -o
+      /boot/grub2/grub.cfg' instead to update grub.cfg.
+
+    Try to detect this situation and substitute the real grub
+    configuration file instead.
+
+    Reported-by: Robert Knipp, Fabian Deutsch
+    Thanks: Nijin Ashok, Marta Lewandowska
+    Fixes: https://issues.redhat.com/browse/RHEL-77989
+    Related: https://issues.redhat.com/browse/RHEL-32099
+    Related: https://fedoraproject.org/wiki/Changes/UnifyGrubConfig
+
+Fixes: https://issues.redhat.com/browse/RHEL-77989
+Related: https://issues.redhat.com/browse/RHEL-32099
+(cherry picked from commit 17610d1c9b37424fec55c39fbf83c971a843f45f)
+---
+ common | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Submodule common faee2645..2bb8c83c:
+diff --git a/common/mldrivers/linux_bootloaders.ml b/common/mldrivers/linux_bootloaders.ml
+index 91c5ab9e..a821a3f3 100644
+--- a/common/mldrivers/linux_bootloaders.ml
++++ b/common/mldrivers/linux_bootloaders.ml
+@@ -375,8 +375,7 @@ let detect_bootloader (g : G.guestfs) root i_firmware =
+     with G.Error msg ->
+       error (f_"could not find bootloader mount point (%s): %s") mp msg in
+ 
+-  (*
+-   * Workaround for older UEFI-based Debian which may not have
++  (* Workaround for older UEFI-based Debian which may not have
+    * /boot/efi/EFI/debian/grub.cfg.
+    *)
+   let paths =
+@@ -410,6 +409,28 @@ let detect_bootloader (g : G.guestfs) root i_firmware =
+     in
+     loop paths in
+ 
++  (* If we found a grub2 boot config called /boot/efi/EFI/<OS>/grub.cfg
++   * check if it's a "wrapper" that redirects to /boot/grub2/grub.cfg.
++   * This is needed for Fedora 34+ and RHEL 9.0+.  See:
++   * https://issues.redhat.com/browse/RHEL-32099
++   * https://issues.redhat.com/browse/RHEL-77989
++   * https://github.com/libguestfs/libguestfs-common/pull/6
++   *)
++  let grub_config =
++    match typ with
++    | Grub1 -> grub_config
++    | Grub2 ->
++       let grub2_efi_rex = PCRE.compile "^/boot/efi/EFI/.*/grub.cfg$" in
++       let grub2_real = "/boot/grub2/grub.cfg" in
++
++       if PCRE.matches grub2_efi_rex grub_config &&
++          (* does it look like the "wrapper"? *)
++          g#grep "configfile \\$prefix/grub\\.cfg" grub_config <> [||] &&
++          g#exists grub2_real then
++         grub2_real
++       else
++         grub_config in
++
+   let bl =
+     match typ with
+     | Grub1 -> new bootloader_grub1 g root grub_config
+diff --git a/common/mlpcre/pcre-c.c b/common/mlpcre/pcre-c.c
+index ad9c6d11..3959fd56 100644
+--- a/common/mlpcre/pcre-c.c
++++ b/common/mlpcre/pcre-c.c
+@@ -39,19 +39,6 @@
+ 
+ #pragma GCC diagnostic ignored "-Wmissing-prototypes"
+ 
+-/* Replacement if caml_alloc_initialized_string is missing, added
+- * to OCaml runtime in 2017.
+- */
+-#ifndef HAVE_CAML_ALLOC_INITIALIZED_STRING
+-static inline value
+-caml_alloc_initialized_string (mlsize_t len, const char *p)
+-{
+-  value sv = caml_alloc_string (len);
+-  memcpy ((char *) String_val (sv), p, len);
+-  return sv;
+-}
+-#endif
+-
+ /* Data on the most recent match is stored in this thread-local
+  * variable.  It is freed either by the next call to PCRE.matches or
+  * by (clean) thread exit.
+diff --git a/common/mlstdutils/std_utils.ml b/common/mlstdutils/std_utils.ml
+index 86b21a7c..5be358de 100644
+--- a/common/mlstdutils/std_utils.ml
++++ b/common/mlstdutils/std_utils.ml
+@@ -392,21 +392,6 @@ module List = struct
+     let push_front_list xs xsp = xsp := xs @ !xsp
+ end
+ 
+-module Option = struct
+-    let iter f = function
+-      | None -> ()
+-      | Some x -> f x
+-
+-    let map f = function
+-      | None -> None
+-      | Some x -> Some (f x)
+-
+-    let value x ~default =
+-      match x with
+-      | None -> default
+-      | Some x -> x
+-end
+-
+ let (//) = Filename.concat
+ let quote = Filename.quote
+ 
+diff --git a/common/mlstdutils/std_utils.mli b/common/mlstdutils/std_utils.mli
+index a39ac5f3..c320b877 100644
+--- a/common/mlstdutils/std_utils.mli
++++ b/common/mlstdutils/std_utils.mli
+@@ -290,21 +290,6 @@ module List : sig
+ end
+ (** Override the List module from stdlib. *)
+ 
+-module Option : sig
+-    val iter : ('a -> unit) -> 'a option -> unit
+-    (** [iter f o] is [f v] if [o] is [Some v] and [()] otherwise *)
+-
+-    val map : ('a -> 'b) -> 'a option -> 'b option
+-    (** [map f (Some x)] returns [Some (f x)].  [map f None] returns [None]. *)
+-
+-    val value : 'a option -> default:'a -> 'a
+-    (** [value o ~default] is [v] if [o] is [Some v] and [default] otherwise. *)
+-end
+-(** Functions for dealing with option types.
+-
+-    This module will be removed when we can use baseline OCaml 4.08
+-    since that version introduces a compatible [Option] module. *)
+-
+ val ( // ) : string -> string -> string
+ (** Concatenate directory and filename. *)
+ 
+diff --git a/common/mlxml/xml-c.c b/common/mlxml/xml-c.c
+index e024bd8a..9259314f 100644
+--- a/common/mlxml/xml-c.c
++++ b/common/mlxml/xml-c.c
+@@ -41,19 +41,6 @@
+ 
+ #pragma GCC diagnostic ignored "-Wmissing-prototypes"
+ 
+-/* Replacement if caml_alloc_initialized_string is missing, added
+- * to OCaml runtime in 2017.
+- */
+-#ifndef HAVE_CAML_ALLOC_INITIALIZED_STRING
+-static inline value
+-caml_alloc_initialized_string (mlsize_t len, const char *p)
+-{
+-  value sv = caml_alloc_string (len);
+-  memcpy ((char *) String_val (sv), p, len);
+-  return sv;
+-}
+-#endif
+-
+ /* xmlDocPtr type */
+ #define docptr_val(v) (*((xmlDocPtr *)Data_custom_val(v)))
+ 

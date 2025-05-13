@@ -1,17 +1,17 @@
-From be45d1e5bca42148c295da10c27c485c72de28c3 Mon Sep 17 00:00:00 2001
+From dc02d123d578511f9c4dffd3df5d797af14a1f3b Mon Sep 17 00:00:00 2001
 From: Pino Toscano <ptoscano@redhat.com>
 Date: Tue, 26 Mar 2019 09:42:25 +0100
 Subject: [PATCH] RHEL: point to KB for supported v2v hypervisors/guests
 
 ---
- docs/virt-v2v-support.pod | 104 ++------------------------------------
- 1 file changed, 4 insertions(+), 100 deletions(-)
+ docs/virt-v2v-support.pod | 96 ++-------------------------------------
+ 1 file changed, 4 insertions(+), 92 deletions(-)
 
 diff --git a/docs/virt-v2v-support.pod b/docs/virt-v2v-support.pod
-index 8b64a5ea..1ffc0f9d 100644
+index e6415692..1ffc0f9d 100644
 --- a/docs/virt-v2v-support.pod
 +++ b/docs/virt-v2v-support.pod
-@@ -8,106 +8,10 @@ systems and guests in virt-v2v
+@@ -8,98 +8,10 @@ systems and guests in virt-v2v
  This page documents which foreign hypervisors, virtualization
  management systems and guest types that L<virt-v2v(1)> can support.
  
@@ -84,9 +84,9 @@ index 8b64a5ea..1ffc0f9d 100644
 -
 -=over 4
 -
--=item Red Hat Enterprise Linux 4, 5, 6, 7
+-=item Red Hat Enterprise Linux 4, 5, 6, 7, 8, 9, 10
 -
--=item CentOS 4, 5, 6, 7
+-=item CentOS 4, 5, 6, 7, 8, 9, 10
 -
 -=item Scientific Linux 4, 5, 6, 7
 -
@@ -104,15 +104,7 @@ index 8b64a5ea..1ffc0f9d 100644
 -
 -=item Ubuntu 10.04, 12.04, 14.04, 16.04, and up
 -
--=item Windows XP to Windows 10 / Windows Server 2016
--
--We use Windows internal version numbers, see
--L<https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions>
--
--Currently NT 5.2 to NT 6.3 are supported.
--
--See L</WINDOWS> below for additional notes on converting Windows
--guests.
+-=item Windows XP to Windows 11 / Windows Server 2025
 -
 -=back
 +For more information on supported hypervisors, and guest types in

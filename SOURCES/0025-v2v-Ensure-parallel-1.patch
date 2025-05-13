@@ -1,0 +1,24 @@
+From b242c331e0e3a3d04369aaefe7e910c978491368 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Sat, 7 Dec 2024 11:13:09 +0000
+Subject: [PATCH] v2v: Ensure --parallel >= 1
+
+Fixes: commit fd1148f79581b148525eb12154aef7603ccf0baa
+(cherry picked from commit 755ce5dc08929ef4ef9dc0b0290d380574cb1235)
+---
+ v2v/v2v.ml | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index 68502884..e56462a5 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -369,6 +369,8 @@ read the man page virt-v2v(1).
+   let output_mode = !output_mode in
+   let output_name = !output_name in
+   let parallel = !parallel in
++  if parallel < 1 then
++    error (f_"--parallel parameter must be >= 1");
+   let print_source = !print_source in
+   let root_choice = !root_choice in
+   let static_ips = !static_ips in

@@ -1,4 +1,4 @@
-From 13970ce5d6be475cf6e06185636a730584303a6e Mon Sep 17 00:00:00 2001
+From 421a6ec290e90add03f9ddf4ca8436fdf80f885c Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Thu, 2 Mar 2017 14:21:37 +0100
 Subject: [PATCH] RHEL: v2v: -i disk: force VNC as display (RHBZ#1372671)

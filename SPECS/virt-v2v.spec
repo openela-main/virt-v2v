@@ -3,12 +3,12 @@
 %global verify_tarball_signature 1
 
 # The source directory.
-%global source_directory 2.5-development
+%global source_directory 2.7-development
 
 Name:          virt-v2v
 Epoch:         1
-Version:       2.5.6
-Release:       10%{?dist}
+Version:       2.7.1
+Release:       5%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -25,38 +25,42 @@ Source2:       libguestfs.keyring
 Source3:       copy-patches.sh
 
 # Patches are maintained in the following repository:
-# https://github.com/libguestfs/virt-v2v/commits/rhel-9.5
+# https://github.com/libguestfs/virt-v2v/commits/rhel-9.6
 
 # Patches.
-Patch0001:     0001-docs-Note-that-mac-len-field-is-now-optional.patch
-Patch0002:     0002-convert-More-robust-qemu-ga-installation-change-path.patch
-Patch0003:     0003-common-mlcustomize-Inject-qemu-ga-blnsvr-into-firstb.patch
-Patch0004:     0004-docs-Add-a-note-about-removal-of-VMware-Tools-on-Win.patch
-Patch0005:     0005-Update-common-submodule.patch
-Patch0006:     0006-Pull-in-a-fix-to-make-Windows-firstboot-more-reliabl.patch
-Patch0007:     0007-docs-Restate-position-on-removal-of-VMware-Tools.patch
-Patch0008:     0008-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
-Patch0009:     0009-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
-Patch0010:     0010-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
-Patch0011:     0011-RHEL-Fixes-for-libguestfs-winsupport.patch
-Patch0012:     0012-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
-Patch0013:     0013-RHEL-v2v-do-not-mention-SUSE-Xen-hosts-RHBZ-1430203.patch
-Patch0014:     0014-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
-Patch0015:     0015-RHEL-Disable-o-glance.patch
-Patch0016:     0016-RHEL-Remove-the-in-place-option.patch
-Patch0017:     0017-RHEL-9-oo-compressed-Remove-nbdcopy-version-check-an.patch
-Patch0018:     0018-RHEL-9-tests-Remove-btrfs-test.patch
-Patch0019:     0019-RHEL-9-Remove-block-driver-option.patch
-Patch0020:     0020-RHEL-Add-warning-about-virt-v2v-in-place-not-being-s.patch
-Patch0021:     0021-convert-windows-Online-all-virtio-disks-at-first-boo.patch
-Patch0022:     0022-convert-windows-Ignore-sriov-drivers-on-virtio-win-d.patch
-Patch0023:     0023-Update-common-submodule.patch
-Patch0024:     0024-convert-Use-yum-apt-.-for-package-removals-not-rpm-d.patch
-Patch0025:     0025-test-data-phony-fedora-Add-simple-static-bin-sh.patch
-Patch0026:     0026-convert-Handle-large-output-from-rpm-ql-command.patch
-Patch0027:     0027-build-Remove-with-virt-v2v-nbdkit-python-plugin.patch
-Patch0028:     0028-build-Use-nbdcopy-and-nbdinfo-from-.-configure.patch
-Patch0029:     0029-v2v-Use-nbdcopy-blkhash-in-verbose-mode.patch
+Patch0001:     0001-lib-OVF-Add-preliminary-support-for-Windows-Server-2.patch
+Patch0002:     0002-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
+Patch0003:     0003-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
+Patch0004:     0004-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
+Patch0005:     0005-RHEL-Fixes-for-libguestfs-winsupport.patch
+Patch0006:     0006-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
+Patch0007:     0007-RHEL-v2v-do-not-mention-SUSE-Xen-hosts-RHBZ-1430203.patch
+Patch0008:     0008-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
+Patch0009:     0009-RHEL-Disable-o-glance.patch
+Patch0010:     0010-RHEL-Remove-the-in-place-option.patch
+Patch0011:     0011-RHEL-9-oo-compressed-Remove-nbdcopy-version-check-an.patch
+Patch0012:     0012-RHEL-9-tests-Remove-btrfs-test.patch
+Patch0013:     0013-RHEL-9-Remove-block-driver-option.patch
+Patch0014:     0014-RHEL-Add-warning-about-virt-v2v-in-place-not-being-s.patch
+Patch0015:     0015-in-place-Add-a-warning-about-checking-the-exit-code.patch
+Patch0016:     0016-i-libvirt-Trim-whitespace-around-name.patch
+Patch0017:     0017-o-qemu-Replace-hard-coded-UEFI-paths.patch
+Patch0018:     0018-o-qemu-Add-set-e-x-at-the-top-of-the-output-script.patch
+Patch0019:     0019-v2v-Implement-parallel-N-for-parallel-disk-copies.patch
+Patch0020:     0020-tests-Rename-all-test-v2v-to-test.patch
+Patch0021:     0021-tests-Sort-the-tests-into-alphabetical-order.patch
+Patch0022:     0022-docs-Embolden-whole-O.patch
+Patch0023:     0023-in-place-Fix-name-of-program-in-the-help-output.patch
+Patch0024:     0024-inspector-Reorder-O-option-in-alphabetical-order.patch
+Patch0025:     0025-v2v-Ensure-parallel-1.patch
+Patch0026:     0026-inspector-Move-the-code-that-creates-XML-output-to-a.patch
+Patch0027:     0027-build-Define-MLOBJECT-OCaml-object-file-as-either-cm.patch
+Patch0028:     0028-in-place-Add-new-O-option-to-write-inspector-XML.patch
+Patch0029:     0029-convert-Mention-operating-system-in-error-message.patch
+Patch0030:     0030-Update-common-submodule.patch
+Patch0031:     0031-convert-Use-yum-apt-.-for-package-removals-not-rpm-d.patch
+Patch0032:     0032-test-data-phony-fedora-Add-simple-static-bin-sh.patch
+Patch0033:     0033-convert-Handle-large-output-from-rpm-ql-command.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -81,12 +85,12 @@ BuildRequires: /usr/bin/pod2man
 BuildRequires: gcc
 BuildRequires: ocaml >= 4.04
 
-BuildRequires: libguestfs-devel >= 1:1.50.2-2.el9_5
+BuildRequires: libguestfs-devel >= 1:1.54.0-4.el9
 BuildRequires: augeas-devel
 BuildRequires: bash-completion
 BuildRequires: file-devel
 BuildRequires: gettext-devel
-BuildRequires: jansson-devel
+BuildRequires: json-c-devel
 BuildRequires: libnbd-devel
 BuildRequires: libosinfo-devel
 BuildRequires: libvirt-daemon-kvm
@@ -125,7 +129,7 @@ BuildRequires: sqlite
 BuildRequires: gnupg2
 %endif
 
-Requires:      libguestfs%{?_isa} >= 1:1.50.2-2.el9_5
+Requires:      libguestfs%{?_isa} >= 1:1.54.0-4.el9
 Requires:      guestfs-tools >= 1.49.7-1
 
 # XFS is the default filesystem in Fedora and RHEL.
@@ -311,7 +315,7 @@ done
 # "windows.vmdk", regardless of the TESTS we want to run. The real
 # target we need to make here is "fedora-luks-on-lvm.img".
 make -C test-data/phony-guests windows.img fedora-luks-on-lvm.img
-make -C tests TESTS=test-v2v-fedora-luks-on-lvm-conversion.sh check
+make -C tests TESTS=test-fedora-luks-on-lvm-conversion.sh check
 %endif
 
 
@@ -337,9 +341,7 @@ make -C tests TESTS=test-v2v-fedora-luks-on-lvm-conversion.sh check
 %{_mandir}/man1/virt-v2v-output-openstack.1*
 %{_mandir}/man1/virt-v2v-output-rhv.1*
 %{_mandir}/man1/virt-v2v-release-notes-1.42.1*
-%{_mandir}/man1/virt-v2v-release-notes-2.0.1*
-%{_mandir}/man1/virt-v2v-release-notes-2.2.1*
-%{_mandir}/man1/virt-v2v-release-notes-2.4.1*
+%{_mandir}/man1/virt-v2v-release-notes-2.*.1*
 %{_mandir}/man1/virt-v2v-support.1*
 %{_datadir}/virt-tools
 
@@ -360,25 +362,28 @@ make -C tests TESTS=test-v2v-fedora-luks-on-lvm-conversion.sh check
 
 
 %changelog
-* Wed Apr 02 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-10
-- Print blkhash of converted image in virt-v2v debugging output
-  resolves: RHEL-85832
-
-* Thu Feb 27 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-9
-- Fix failure if the kernel-source package is installed in the source VM
-  resolves: RHEL-81083
-
-* Tue Feb 11 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-8
+* Tue Feb 25 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.7.1-5
+- Rebase to upstream development version 2.7.1
+  resolves: RHEL-56813
+- Replace Jansson with json-c
+  resolves: RHEL-65296
+- Find drivers for win2025 guests
+  resolves: RHEL-65010
+- in-place: Add new -O option to write inspector XML
+  resolves: RHEL-58032
 - mldrivers/linux_bootloaders.ml: Don't overwrite EFI grub2 wrapper
-  resolves: RHEL-78844
+  resolves: RHEL-77989
 - convert: Use yum/apt/... for package removals
-  resolves: RHEL-78842
+  resolves: RHEL-71522
+- Fix failure if the kernel-source package is installed in the source VM
+  resolves: RHEL-80080
 
-* Thu Sep 12 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-7
-- Bump and rebuild to resolve rhel-9.5.0 branch issue
-  related: RHEL-56383
-
-* Fri Sep 06 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.6-6
+* Thu Sep 05 2024 Richard W.M. Jones <rjones@redhat.com> - 1:2.5.9-1
+- Rebase to upstream development version 2.5.9
+- Fix display of incorrect Windows 11 version
+  resolves: RHEL-56784
+- Add customization options for post-conversion modification
+  resolves: RHEL-55761
 - convert: windows: Ignore sriov drivers on virtio-win disk
   resolves: RHEL-56383
 

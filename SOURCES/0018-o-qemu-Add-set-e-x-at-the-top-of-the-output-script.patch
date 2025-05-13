@@ -1,0 +1,32 @@
+From f43d92473d3da0a5f6a2da6e44ca8416ad824d8f Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 15 Nov 2024 14:04:48 +0000
+Subject: [PATCH] -o qemu: Add set -e, -x at the top of the output script
+
+This adds:
+
+  set -e
+  #set -x
+
+The second command is commented so that users can enable it if they
+want to see the output.
+
+(cherry picked from commit e09aaad7e787803ff5e383fa6b5276c888b42ef5)
+---
+ output/output_qemu.ml | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/output/output_qemu.ml b/output/output_qemu.ml
+index fd0182d6..b0c2ff01 100644
+--- a/output/output_qemu.ml
++++ b/output/output_qemu.ml
+@@ -116,6 +116,9 @@ module QEMU = struct
+     let fpf fs = fprintf chan fs in
+     fpf "#!/bin/sh -\n";
+     fpf "\n";
++    fpf "set -e\n";
++    fpf "#set -x\n";
++    fpf "\n";
+ 
+     (* Allow the user to override our choice of machine type. *)
+     let () =

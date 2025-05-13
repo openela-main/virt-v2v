@@ -1,4 +1,4 @@
-From 98a14fe2f8a428ed4bba85aba3889467d48a5743 Mon Sep 17 00:00:00 2001
+From 8e52f84563cf8f6eaa68ed60d1f46b39c9b73b50 Mon Sep 17 00:00:00 2001
 From: Pino Toscano <ptoscano@redhat.com>
 Date: Wed, 8 Mar 2017 11:03:40 +0100
 Subject: [PATCH] RHEL: v2v: do not mention SUSE Xen hosts (RHBZ#1430203)

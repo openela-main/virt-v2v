@@ -1,4 +1,4 @@
-From 2039580744223840a09b8aab7ff2fbf94a563a6c Mon Sep 17 00:00:00 2001
+From 0d6280e2be92bef1246adc70830a6ae18359f121 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Sun, 30 Aug 2015 03:21:57 -0400
 Subject: [PATCH] RHEL: Fixes for libguestfs-winsupport.
@@ -18,10 +18,10 @@ https://bugzilla.redhat.com/show_bug.cgi?id=2187961#c1
  6 files changed, 28 insertions(+), 4 deletions(-)
 
 diff --git a/convert/convert.ml b/convert/convert.ml
-index 344c5858..ecc48ad4 100644
+index 64b36c97..604902d1 100644
 --- a/convert/convert.ml
 +++ b/convert/convert.ml
-@@ -52,6 +52,7 @@ let rec convert dir options source =
+@@ -53,6 +53,7 @@ let rec convert dir options source =
  
    message (f_"Opening the source");
    let g = open_guestfs ~identifier:"v2v" () in
@@ -30,7 +30,7 @@ index 344c5858..ecc48ad4 100644
    (* Setting the number of vCPUs allows parallel mkinitrd, but make
     * sure this is not too large because each vCPU consumes guest RAM.
 diff --git a/test-data/phony-guests/make-windows-img.sh b/test-data/phony-guests/make-windows-img.sh
-index 30908a91..73cf5144 100755
+index 501c2a93..28b2744f 100755
 --- a/test-data/phony-guests/make-windows-img.sh
 +++ b/test-data/phony-guests/make-windows-img.sh
 @@ -37,6 +37,7 @@ fi
@@ -85,7 +85,7 @@ index 4373f140..2b31b0bb 100755
  
  # Test the base image remained untouched
 diff --git a/tests/test-v2v-virtio-win-iso.sh b/tests/test-v2v-virtio-win-iso.sh
-index 69f6f414..b9b806fb 100755
+index 68fb879b..2e133034 100755
 --- a/tests/test-v2v-virtio-win-iso.sh
 +++ b/tests/test-v2v-virtio-win-iso.sh
 @@ -82,6 +82,12 @@ mktest ()

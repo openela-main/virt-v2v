@@ -1,4 +1,4 @@
-From c7d1809f4b57cb3161800d6fa1499029176f4fd1 Mon Sep 17 00:00:00 2001
+From 1d3017a30a2f831ee1461c1828c63c9a196805dd Mon Sep 17 00:00:00 2001
 From: Cole Robinson <crobinso@redhat.com>
 Date: Mon, 10 Feb 2025 10:53:00 -0500
 Subject: [PATCH] convert: Use yum/apt/... for package removals, not rpm/dpkg
@@ -15,13 +15,12 @@ Just print a warning when package removal goes sideways.
 Fixes: https://issues.redhat.com/browse/RHEL-71522
 Signed-off-by: Cole Robinson <crobinso@redhat.com>
 (cherry picked from commit b3268a13beca4da218e7ffe4648a18420296103a)
-(cherry picked from commit 1d3017a30a2f831ee1461c1828c63c9a196805dd)
 ---
  convert/convert_linux.ml | 26 +++++++++++++++++++++-----
  1 file changed, 21 insertions(+), 5 deletions(-)
 
 diff --git a/convert/convert_linux.ml b/convert/convert_linux.ml
-index 94dd7428..e4042d1f 100644
+index 3d0e2b88..cbae5e3d 100644
 --- a/convert/convert_linux.ml
 +++ b/convert/convert_linux.ml
 @@ -131,6 +131,23 @@ let convert (g : G.guestfs) source inspect i_firmware _ keep_serial_console _ =
@@ -48,7 +47,7 @@ index 94dd7428..e4042d1f 100644
    let rec do_convert () =
      augeas_grub_configuration ();
  
-@@ -239,7 +256,7 @@ let convert (g : G.guestfs) source inspect i_firmware _ keep_serial_console _ =
+@@ -237,7 +254,7 @@ let convert (g : G.guestfs) source inspect i_firmware _ keep_serial_console _ =
            else
              None
        ) inspect.i_apps in
@@ -57,7 +56,7 @@ index 94dd7428..e4042d1f 100644
  
      (* Undo related nastiness if kmod-xenpv was installed. *)
      if xenmods <> [] then (
-@@ -312,7 +329,7 @@ let convert (g : G.guestfs) source inspect i_firmware _ keep_serial_console _ =
+@@ -310,7 +327,7 @@ let convert (g : G.guestfs) source inspect i_firmware _ keep_serial_console _ =
          fun { G.app2_name = name } -> name = package_name
        ) inspect.i_apps in
      if has_guest_additions then
@@ -66,7 +65,7 @@ index 94dd7428..e4042d1f 100644
  
      (* Guest Additions might have been installed from a tarball.  The
       * above code won't detect this case.  Look for the uninstall tool
-@@ -457,8 +474,7 @@ let convert (g : G.guestfs) source inspect i_firmware _ keep_serial_console _ =
+@@ -455,8 +472,7 @@ let convert (g : G.guestfs) source inspect i_firmware _ keep_serial_console _ =
        )
      );
  
@@ -76,7 +75,7 @@ index 94dd7428..e4042d1f 100644
  
      (* VMware Tools may have been installed from a tarball, so the
       * above code won't remove it.  Look for the uninstall tool and run
-@@ -505,7 +521,7 @@ let convert (g : G.guestfs) source inspect i_firmware _ keep_serial_console _ =
+@@ -503,7 +519,7 @@ let convert (g : G.guestfs) source inspect i_firmware _ keep_serial_console _ =
      let pkgs = List.map (fun { G.app2_name = name } -> name) pkgs in
  
      if pkgs <> [] then (

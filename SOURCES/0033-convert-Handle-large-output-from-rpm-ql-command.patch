@@ -1,4 +1,4 @@
-From b75bde1767c3ec64e44992742a837b26dffe3566 Mon Sep 17 00:00:00 2001
+From 0a5fb62a2816d16cbdd7452c8bd95a8fcd2d4a02 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Wed, 19 Feb 2025 14:16:13 +0000
 Subject: [PATCH] convert: Handle large output from 'rpm -ql' command
@@ -15,13 +15,12 @@ Update common submodule to include:
 Fixes: https://issues.redhat.com/browse/RHEL-80080
 Reported-by: Nijin Ashok
 (cherry picked from commit 5dfe62885bc7d81c7d3c9260ba6def5cb477b5fd)
-(cherry picked from commit 0a5fb62a2816d16cbdd7452c8bd95a8fcd2d4a02)
 ---
  common                  | 2 +-
  m4/guestfs-libraries.m4 | 4 +++-
  2 files changed, 4 insertions(+), 2 deletions(-)
 
-Submodule common 084ea740..521f27c9:
+Submodule common 2bb8c83c..18310179:
 diff --git a/common/mldrivers/linux.ml b/common/mldrivers/linux.ml
 index 4e30a8e1..0dec1549 100644
 --- a/common/mldrivers/linux.ml
@@ -181,7 +180,7 @@ index 4e30a8e1..0dec1549 100644
  let is_file_owned (g : G.guestfs) root path =
    let package_format = g#inspect_get_package_format root in
 diff --git a/common/mlstdutils/std_utils.ml b/common/mlstdutils/std_utils.ml
-index 86b21a7c..1a36ab77 100644
+index 5be358de..212a1513 100644
 --- a/common/mlstdutils/std_utils.ml
 +++ b/common/mlstdutils/std_utils.ml
 @@ -98,24 +98,27 @@ module String = struct
@@ -287,7 +286,7 @@ index 86b21a7c..1a36ab77 100644
      let rec lines_split str =
        let buf = Buffer.create 16 in
 diff --git a/common/mlstdutils/std_utils.mli b/common/mlstdutils/std_utils.mli
-index a39ac5f3..7bd55fba 100644
+index c320b877..72a2d44c 100644
 --- a/common/mlstdutils/std_utils.mli
 +++ b/common/mlstdutils/std_utils.mli
 @@ -82,6 +82,10 @@ module String : sig
@@ -327,7 +326,7 @@ index 3f5bb1a8..4e368152 100644
  (* Test Std_utils.String.lines_split. *)
  let test_string_lines_split ctx =
 diff --git a/m4/guestfs-libraries.m4 b/m4/guestfs-libraries.m4
-index 6789a2cb..1cc10d5b 100644
+index f0cad0f5..3cb3cabd 100644
 --- a/m4/guestfs-libraries.m4
 +++ b/m4/guestfs-libraries.m4
 @@ -18,7 +18,9 @@
@@ -336,8 +335,8 @@ index 6789a2cb..1cc10d5b 100644
  dnl Of course we need libguestfs.
 -PKG_CHECK_MODULES([LIBGUESTFS], [libguestfs >= 1.44])
 +dnl
-+dnl We need libguestfs >= 1:1.50.2-1.el9_5 for guestfs_sh_out.
-+PKG_CHECK_MODULES([LIBGUESTFS], [libguestfs >= 1.50.2])
++dnl We need libguestfs >= 1:1.54.0-4.el9_6 for guestfs_sh_out.
++PKG_CHECK_MODULES([LIBGUESTFS], [libguestfs >= 1.54.0])
  
  dnl And libnbd.
  PKG_CHECK_MODULES([LIBNBD], [libnbd >= 1.10])
