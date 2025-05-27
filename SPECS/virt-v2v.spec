@@ -8,7 +8,7 @@
 Name:          virt-v2v
 Epoch:         1
 Version:       2.7.1
-Release:       5%{?dist}
+Release:       8%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -61,6 +61,13 @@ Patch0030:     0030-Update-common-submodule.patch
 Patch0031:     0031-convert-Use-yum-apt-.-for-package-removals-not-rpm-d.patch
 Patch0032:     0032-test-data-phony-fedora-Add-simple-static-bin-sh.patch
 Patch0033:     0033-convert-Handle-large-output-from-rpm-ql-command.patch
+Patch0034:     0034-build-Remove-with-virt-v2v-nbdkit-python-plugin.patch
+Patch0035:     0035-build-Use-nbdcopy-and-nbdinfo-from-.-configure.patch
+Patch0036:     0036-v2v-Use-nbdcopy-blkhash-in-verbose-mode.patch
+Patch0037:     0037-lib-libvirt_utils.ml-Turn-live-domain-error-into-a-w.patch
+Patch0038:     0038-input-nbdkit_vddk.ml-Rename-path-parameter-to-file.patch
+Patch0039:     0039-input-Add-io-vddk-file-.-option.patch
+Patch0040:     0040-docs-Document-io-vddk-file-in-the-main-options-listi.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -362,6 +369,14 @@ make -C tests TESTS=test-fedora-luks-on-lvm-conversion.sh check
 
 
 %changelog
+* Fri May 16 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.7.1-8
+- Add -io vddk-file option
+  resolves: RHEL-91098
+
+* Wed Apr 02 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.7.1-6
+- Print blkhash of converted image in virt-v2v debugging output
+  resolves: RHEL-85833
+
 * Tue Feb 25 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.7.1-5
 - Rebase to upstream development version 2.7.1
   resolves: RHEL-56813

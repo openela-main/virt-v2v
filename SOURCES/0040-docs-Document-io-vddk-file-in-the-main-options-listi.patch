@@ -1,0 +1,25 @@
+From c941463a3b555dcd24b1b56abf1916ea273de982 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 15 May 2025 16:41:30 +0100
+Subject: [PATCH] docs: Document -io vddk-file in the main options listing
+
+Reported-by: Ming Xie
+Fixes: commit 5328142e6a9faae1db99c646991d27badc6efe91
+(cherry picked from commit 3a54eabde33fe753ebd864785de8a2fe54c2e1a2)
+---
+ docs/virt-v2v.pod | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index 216e617d..886ae421 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -328,6 +328,8 @@ See L<virt-v2v-input-vmware(1)> for details.
+ 
+ =item B<-io vddk-cookie=>COOKIE
+ 
++=item B<-io vddk-file=>FILE
++
+ =item B<-io vddk-nfchostport=>PORT
+ 
+ =item B<-io vddk-port=>PORT

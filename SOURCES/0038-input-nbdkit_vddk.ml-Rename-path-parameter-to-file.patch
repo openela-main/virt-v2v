@@ -1,0 +1,57 @@
+From 7b2641bd22350802261b657df5e3d0de92784521 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 29 Apr 2025 13:16:41 +0100
+Subject: [PATCH] input/nbdkit_vddk.ml: Rename 'path' parameter to 'file'
+
+The nbdkit parameter is called 'file'.  There is no actual change here.
+
+(cherry picked from commit 5acc67d454add0b75f6671c06979a0cc90562f7e)
+---
+ input/input_vddk.ml  | 4 ++--
+ input/nbdkit_vddk.ml | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/input/input_vddk.ml b/input/input_vddk.ml
+index 6444ce18..982dff17 100644
+--- a/input/input_vddk.ml
++++ b/input/input_vddk.ml
+@@ -193,7 +193,7 @@ information on these settings.
+         | BlockDev _ | NBD _ | HTTP _ -> (* These should never happen? *)
+            assert false
+ 
+-        | LocalFile path ->
++        | LocalFile file ->
+            (* The <source file=...> attribute returned by the libvirt
+             * VMX driver looks like "[datastore] path".  We can use it
+             * directly as the nbdkit file= parameter, and it is passed
+@@ -206,7 +206,7 @@ information on these settings.
+                ?libdir ~moref
+                ?nfchostport ?password_file:options.input_password ?port
+                ~server ?snapshot ~thumbprint ?transports ?user
+-               path in
++               file in
+            let _, pid = Nbdkit.run_unix socket nbdkit in
+            On_exit.kill pid
+     ) disks;
+diff --git a/input/nbdkit_vddk.ml b/input/nbdkit_vddk.ml
+index 0cb45e89..597ae88f 100644
+--- a/input/nbdkit_vddk.ml
++++ b/input/nbdkit_vddk.ml
+@@ -52,7 +52,7 @@ let libNN = sprintf "lib%d" Sys.word_size
+ (* Create an nbdkit module specialized for reading from VDDK sources. *)
+ let create_vddk ?bandwidth ?config ?cookie ?cor ?libdir ~moref
+                 ?nfchostport ?password_file ?port
+-                ~server ?snapshot ~thumbprint ?transports ?user path =
++                ~server ?snapshot ~thumbprint ?transports ?user file =
+   if not (Nbdkit.is_installed ()) then
+     error (f_"nbdkit is not installed or not working");
+ 
+@@ -114,7 +114,7 @@ See also the virt-v2v-input-vmware(1) manual.") libNN
+ 
+   Nbdkit.add_arg cmd "server" server;
+   Nbdkit.add_arg cmd "vm" (sprintf "moref=%s" moref);
+-  Nbdkit.add_arg cmd "file" path;
++  Nbdkit.add_arg cmd "file" file;
+ 
+   (* For VDDK we require some user.  If it's not supplied, assume root. *)
+   let user = Option.value ~default:"root" user in

@@ -1,0 +1,87 @@
+From 134b7aa79cb617c5db5794904254cfb495a1635e Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 2 Dec 2024 13:43:39 +0000
+Subject: [PATCH] build: Use nbdcopy and nbdinfo from ./configure
+
+Use the configured binaries, so that (eg) ./configure NBDCOPY=...
+will do the right thing.
+
+(cherry picked from commit 5c866e7bb2c7a08a37bb71dea094141802e849e7)
+(cherry picked from commit 52bbbfed912b723f5a4618571fbab57cd9d459b7)
+---
+ input/ssh.ml     | 4 ++--
+ lib/config.ml.in | 2 ++
+ lib/config.mli   | 6 ++++++
+ v2v/v2v.ml       | 8 +++++---
+ 4 files changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/input/ssh.ml b/input/ssh.ml
+index e35a2b5a..3b17cb38 100644
+--- a/input/ssh.ml
++++ b/input/ssh.ml
+@@ -47,7 +47,7 @@ let start_nbdkit ~server ?port ?user ?password path =
+ let download_file ~server ?port ?user ?password path output =
+   let uri = start_nbdkit ~server ?port ?user ?password path in
+ 
+-  let cmd = [ "nbdcopy"; uri; output ] in
++  let cmd = [ Config.nbdcopy; uri; output ] in
+   if run_command cmd <> 0 then
+     error (f_"could not copy the VMX file from the remote server, \
+               see earlier error messages")
+@@ -59,5 +59,5 @@ let remote_file_exists ~server ?port ?user ?password path =
+   (* Testing that we can connect to the nbdkit server is enough to
+    * prove the remote file exists.
+    *)
+-  let cmd = [ "nbdinfo"; "--can"; "connect"; uri ] in
++  let cmd = [ Config.nbdinfo; "--can"; "connect"; uri ] in
+   run_command cmd = 0
+diff --git a/lib/config.ml.in b/lib/config.ml.in
+index be3bdfa2..4f1d1e08 100644
+--- a/lib/config.ml.in
++++ b/lib/config.ml.in
+@@ -23,3 +23,5 @@ let package_version_full = "@PACKAGE_VERSION_FULL@"
+ let prefix = "@prefix@"
+ let datadir = prefix ^ "/share"
+ let host_cpu = "@host_cpu@"
++let nbdcopy = "@NBDCOPY@"
++let nbdinfo = "@NBDINFO@"
+diff --git a/lib/config.mli b/lib/config.mli
+index a02864fa..9cd249f1 100644
+--- a/lib/config.mli
++++ b/lib/config.mli
+@@ -33,3 +33,9 @@ val datadir : string
+ 
+ val host_cpu : string
+ (** The configure value [@host_cpu@] *)
++
++val nbdcopy : string
++(** The location of the nbdcopy program, from configure value [@NBDCOPY@] *)
++
++val nbdinfo : string
++(** The location of the nbdinfo program, from configure value [@NBDINFO@] *)
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index e56462a5..60425768 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -688,7 +688,7 @@ and nbdcopy ?request_size output_alloc input_uri output_uri =
+    * --target-is-zero which would be a useful optimization.
+    *)
+   let cmd = ref [] in
+-  List.push_back_list cmd [ "nbdcopy"; input_uri; output_uri ];
++  List.push_back_list cmd [ Config.nbdcopy; input_uri; output_uri ];
+ 
+   (match request_size with
+     | None -> ()
+@@ -722,8 +722,10 @@ and nbdcopy ?request_size output_alloc input_uri output_uri =
+  *)
+ and nbdinfo ?(content = false) uri =
+   let cmd =
+-    sprintf "nbdinfo%s %s ||:"
+-      (if content then " --content" else " --no-content") (quote uri) in
++    sprintf "%s%s %s ||:"
++      (quote Config.nbdinfo)
++      (if content then " --content" else " --no-content")
++      (quote uri) in
+   external_command cmd
+ 
+ (* Convert a Unix domain socket path to an NBD URI. *)

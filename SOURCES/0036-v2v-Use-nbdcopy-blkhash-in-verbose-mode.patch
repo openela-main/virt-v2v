@@ -1,0 +1,79 @@
+From 9197091bf47218ab2ce3ef31c2d83286bb3ca96b Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 31 Mar 2025 11:06:09 +0100
+Subject: [PATCH] v2v: Use nbdcopy --blkhash in verbose mode
+
+In verbose mode, and if nbdcopy supports it, add the nbdcopy --blkhash
+option.  This will compute and print a hash of the disk as we are
+copying it (more precisely, a hash of the source disk after conversion
+changes have been made).  This will allow users to detect any
+corruption during or after writing the output.
+
+This feature requires nbdcopy >= 1.23.1
+
+It adds some overhead to the copy, but (a) we're almost always copying
+over the network which is slow anyway and (b) this is only done in
+verbose mode where there's a lot of overhead from the output anyway.
+However keep an eye on this overhead.
+
+Note what is printed is a blkhash, not a regular checksum.  See:
+https://gitlab.com/nirs/blkhash/
+
+Fixes: https://issues.redhat.com/browse/RHEL-85508
+Fixes: https://issues.redhat.com/browse/RHEL-85512
+Fixes: https://issues.redhat.com/browse/RHEL-85514
+(cherry picked from commit cffd129d8fd47554255d52ad611d58a30b6b9951)
+(cherry picked from commit 7d36586c5a299ecf17ef241063988bc1b9ace2bb)
+---
+ lib/utils.ml  | 8 ++++++++
+ lib/utils.mli | 3 +++
+ v2v/v2v.ml    | 3 +++
+ 3 files changed, 14 insertions(+)
+
+diff --git a/lib/utils.ml b/lib/utils.ml
+index f2da9e80..ecdaeb80 100644
+--- a/lib/utils.ml
++++ b/lib/utils.ml
+@@ -181,6 +181,14 @@ let error_if_no_ssh_agent () =
+               is not set).  This is required by qemu to do passwordless \
+               ssh access.  See the virt-v2v(1) man page for more information.")
+ 
++let nbdcopy_supports_blkhash =
++  let check =
++    lazy (
++      let cmd = sprintf "%s --help | grep -sq -- --blkhash" Config.nbdcopy in
++      0 = Sys.command cmd
++    ) in
++  fun () -> Lazy.force check
++
+ (* Create the directory containing inX and outX sockets. *)
+ let create_v2v_directory () =
+   let d = Mkdtemp.temp_dir "v2v." in
+diff --git a/lib/utils.mli b/lib/utils.mli
+index e7ee13d1..6b405353 100644
+--- a/lib/utils.mli
++++ b/lib/utils.mli
+@@ -68,6 +68,9 @@ val chown_for_libvirt_rhbz_1045069 : string -> unit
+ 
+ val error_if_no_ssh_agent : unit -> unit
+ 
++val nbdcopy_supports_blkhash : unit -> bool
++(** Return true if [nbdcopy] supports the [--blkhash] flag. *)
++
+ val create_v2v_directory : unit -> string
+ (** Create the directory containing inX and outX sockets. *)
+ 
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index 60425768..3436ce14 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -704,6 +704,9 @@ and nbdcopy ?request_size output_alloc input_uri output_uri =
+     min 64 (target_buffer_size / request_size) in
+   List.push_back cmd (sprintf "--requests=%d" requests);
+ 
++  if verbose () && nbdcopy_supports_blkhash () then
++    List.push_back cmd "--blkhash";
++
+   List.push_back cmd "--flush";
+   (*List.push_back cmd "--verbose";*)
+ 
