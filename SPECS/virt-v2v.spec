@@ -8,7 +8,7 @@
 Name:          virt-v2v
 Epoch:         1
 Version:       2.7.1
-Release:       8%{?dist}
+Release:       10%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -68,6 +68,9 @@ Patch0037:     0037-lib-libvirt_utils.ml-Turn-live-domain-error-into-a-w.patch
 Patch0038:     0038-input-nbdkit_vddk.ml-Rename-path-parameter-to-file.patch
 Patch0039:     0039-input-Add-io-vddk-file-.-option.patch
 Patch0040:     0040-docs-Document-io-vddk-file-in-the-main-options-listi.patch
+Patch0041:     0041-Modify-configure_pnputil_install-script-to-check.patch
+Patch0042:     0042-Ignore-ERROR_NO_MORE_ITEMS-status-from-PnPUtil.patch
+Patch0043:     0043-remove-timeout-before-installing-virtio-win-drivers.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -369,6 +372,10 @@ make -C tests TESTS=test-fedora-luks-on-lvm-conversion.sh check
 
 
 %changelog
+* Fri Jul 18 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.7.1-10
+- Fix installation of drivers on firstboot with pending reboots
+  resolves: RHEL-103421
+
 * Fri May 16 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.7.1-8
 - Add -io vddk-file option
   resolves: RHEL-91098

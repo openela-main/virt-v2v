@@ -1,0 +1,110 @@
+From 4888b96dec2e9670f7d9f239ceb7c57a51114937 Mon Sep 17 00:00:00 2001
+From: Vadim Rozenfeld <vrozenfe@redhat.com>
+Date: Thu, 10 Jul 2025 10:12:56 +1000
+Subject: [PATCH] Modify configure_pnputil_install script to check pending
+ reboot status and report PnPUtil execution status
+
+This change adds checks for system reboot status and reports
+the result of PnPUtil driver installation attempt.
+
+Related: https://issues.redhat.com/browse/RHEL-100682
+
+Signed-off-by: Vadim Rozenfeld <vrozenfe@redhat.com>
+
+RWMJ:
+Cherry picked from commit 594b05d6940c8719167d10c0cdfaa253349060ab.
+I also updated the common submodule to cherry pick
+libguestfs-common commit b40e534fefb74af32bd496904e44ce9bca1a7b34
+
+(cherry picked from commit f93106129586d21c5326445b730113744d140ebd)
+---
+ common                     |  2 +-
+ convert/convert_windows.ml | 48 +++++++++++++++++++++++++++++++++++---
+ 2 files changed, 46 insertions(+), 4 deletions(-)
+
+Submodule common 3da17d53..d7e9b334:
+diff --git a/common/mlcustomize/firstboot.ml b/common/mlcustomize/firstboot.ml
+index 6aca4c34..5f2642b0 100644
+--- a/common/mlcustomize/firstboot.ml
++++ b/common/mlcustomize/firstboot.ml
+@@ -305,13 +305,19 @@ if not exist \"%%scripts_done%%\" (
+ :: Pick the next script to run.
+ for %%%%f in (\"%%scripts%%\"\\*.bat) do (
+   echo running \"%%%%f\"
+-  move \"%%%%f\" \"%%scripts_done%%\"
+-  pushd \"%%scripts_done%%\"
++  pushd \"%%scripts%%\"
+   call \"%%%%~nf\"
+   set elvl=!errorlevel!
+   echo .... exit code !elvl!
+   popd
+ 
++  if !elvl! NEQ 249 (
++    echo Script succeeded, moving to scripts-done
++    move \"%%%%f\" \"%%scripts_done%%\"
++  ) else (
++    echo Script failed, will retry on next boot
++  )
++
+   :: Reboot the computer.  This is necessary to free any locked
+   :: files which may prevent later scripts from running.
+   shutdown /r /t 0 /y
+diff --git a/convert/convert_windows.ml b/convert/convert_windows.ml
+index 7434ac69..a9ec276a 100644
+--- a/convert/convert_windows.ml
++++ b/convert/convert_windows.ml
+@@ -396,9 +396,51 @@ let convert (g : G.guestfs) source inspect i_firmware
+   and configure_pnputil_install () =
+     let fb_script = "@echo off\n\
+                      \n\
+-                     echo Wait for VirtIO drivers to be installed\n\
+-                     %systemroot%\\Sysnative\\PnPutil -i -a \
+-                     %systemroot%\\Drivers\\Virtio\\*.inf" in
++                     setlocal EnableDelayedExpansion\n\
++                     set inf_dir=%systemroot%\\Drivers\\Virtio\\\n\
++                     echo Installing drivers from %inf_dir%\n\
++                     set REBOOT_PENDING=0\n\
++                     \n\
++                     timeout /t 10 /nobreak\n\
++                     \n\
++                     reg query \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WindowsUpdate\\Auto Update\\RebootRequired\"\n\
++                     if %errorlevel%==0 (\n\
++                     echo Windows Update: Reboot required.\n\
++                     set REBOOT_PENDING=1\n\
++                     )\n\
++                     \n\
++                     reg query \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Component Based Servicing\\RebootPending\"\n\
++                     if %errorlevel%==0 (\n\
++                     echo CBS: Reboot required.\n\
++                     set REBOOT_PENDING=1\n\
++                     )\n\
++                     \n\
++                     reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\" /v PendingFileRenameOperations\n\
++                     if %errorlevel%==0 (\n\
++                     echo Session Manager: Reboot required.\n\
++                     set REBOOT_PENDING=1\n\
++                     )\n\
++                     \n\
++                     if \"%REBOOT_PENDING%\"==\"1\" (\n\
++                     echo A reboot is pending.\n\
++                     exit /b 249\n\
++                     ) else (\n\
++                     echo No pending reboot detected.\n\
++                     )\n\
++                     \n\
++                     for %%f in (\"%inf_dir%*.inf\") do (\n\
++                     echo Installing: %%~nxf.\n\
++                     %systemroot%\\Sysnative\\PnPutil -i -a \"%%f\"\n\
++                     if !errorlevel! NEQ 0 (\n\
++                     echo Failed to install %%~nxf.\n\
++                     exit /b 249\n\
++                     ) else (\n\
++                     echo Successfully installed %%~nxf.\n\
++                     )\n\
++                     )\n\
++                     echo All drivers installed successfully.\n\
++                     exit /b 0\n\
++                     )" in
+ 
+     (* Set priority higher than that of "network-configure" firstboot script. *)
+     Firstboot.add_firstboot_script g inspect.i_root ~prio:2000
