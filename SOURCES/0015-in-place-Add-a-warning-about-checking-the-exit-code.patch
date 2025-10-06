@@ -1,0 +1,33 @@
+From d903b78c675ca51a6d62fb83bc5b94a64861b0d9 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Wed, 30 Oct 2024 15:39:31 +0000
+Subject: [PATCH] in-place: Add a warning about checking the exit code
+
+(cherry picked from commit 8b768fd9b17412ee8893447dc0f1e75bc612df58)
+(cherry picked from commit a794e7936064812540f0bb8b37827fa562a6fba4)
+---
+ docs/virt-v2v-in-place.pod | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/docs/virt-v2v-in-place.pod b/docs/virt-v2v-in-place.pod
+index b7384210..4057dae5 100644
+--- a/docs/virt-v2v-in-place.pod
++++ b/docs/virt-v2v-in-place.pod
+@@ -35,6 +35,17 @@ If the guest has been copied to local libvirt then:
+ 
+  virt-v2v-in-place -i libvirt guest
+ 
++=head2 Exit code
++
++If virt-v2v-in-place fails it will return a non-zero (error) exit
++code.  In this case, the disk image will be in an B<unknown, possibly
++corrupted state>.
++
++If the image contains important information you should ensure you have
++a backup before trying a virt-v2v-in-place conversion.  And you should
++check the exit code is zero before using the disk image after a
++conversion.
++
+ =head1 EXAMPLES
+ 
+ =head1 OPTIONS

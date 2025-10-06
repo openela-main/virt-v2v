@@ -1,0 +1,4728 @@
+From 4a460f0ae97f59d9bff9ff568d45588fe4241b7e Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 8 Jul 2024 09:56:54 +0100
+Subject: [PATCH] RHEL: Remove -o rhv, -o rhv-upload and -o vdsm modes
+
+Fixes: https://issues.redhat.com/browse/RHEL-36712
+---
+ docs/Makefile.am                              |  14 -
+ docs/virt-v2v-output-rhv.pod                  | 232 --------
+ docs/virt-v2v.pod                             | 208 +------
+ output/Makefile.am                            |  54 +-
+ output/output_rhv.ml                          | 317 -----------
+ output/output_rhv.mli                         |  21 -
+ output/output_rhv_upload.ml                   | 520 -----------------
+ output/output_rhv_upload.mli                  |  21 -
+ output/output_rhv_upload_cancel_source.mli    |  19 -
+ output/output_rhv_upload_createvm_source.mli  |  19 -
+ output/output_rhv_upload_finalize_source.mli  |  19 -
+ output/output_rhv_upload_plugin_source.mli    |  19 -
+ output/output_rhv_upload_precheck_source.mli  |  19 -
+ output/output_rhv_upload_transfer_source.mli  |  19 -
+ output/output_rhv_upload_vmcheck_source.mli   |  19 -
+ output/output_vdsm.ml                         | 237 --------
+ output/output_vdsm.mli                        |  21 -
+ output/rhv-upload-cancel.py                   |  96 ----
+ output/rhv-upload-createvm.py                 | 137 -----
+ output/rhv-upload-finalize.py                 | 174 ------
+ output/rhv-upload-plugin.py                   | 525 ------------------
+ output/rhv-upload-precheck.py                 | 135 -----
+ output/rhv-upload-transfer.py                 | 298 ----------
+ output/rhv-upload-vmcheck.py                  |  72 ---
+ tests/Makefile.am                             |  15 -
+ tests/test-v2v-o-rhv-upload-module/imageio.py |  71 ---
+ .../ovirtsdk4/__init__.py                     | 150 -----
+ .../ovirtsdk4/types.py                        | 184 ------
+ tests/test-v2v-o-rhv-upload-oo-query.sh       |  41 --
+ tests/test-v2v-o-rhv-upload.sh                |  74 ---
+ tests/test-v2v-o-rhv.ovf.expected             | 113 ----
+ tests/test-v2v-o-rhv.sh                       |  87 ---
+ tests/test-v2v-o-vdsm-oo-query.sh             |  41 --
+ tests/test-v2v-o-vdsm-options.ovf.expected    | 113 ----
+ tests/test-v2v-o-vdsm-options.sh              |  96 ----
+ v2v/v2v.ml                                    |  31 +-
+ 36 files changed, 5 insertions(+), 4226 deletions(-)
+ delete mode 100644 docs/virt-v2v-output-rhv.pod
+ delete mode 100644 output/output_rhv.ml
+ delete mode 100644 output/output_rhv.mli
+ delete mode 100644 output/output_rhv_upload.ml
+ delete mode 100644 output/output_rhv_upload.mli
+ delete mode 100644 output/output_rhv_upload_cancel_source.mli
+ delete mode 100644 output/output_rhv_upload_createvm_source.mli
+ delete mode 100644 output/output_rhv_upload_finalize_source.mli
+ delete mode 100644 output/output_rhv_upload_plugin_source.mli
+ delete mode 100644 output/output_rhv_upload_precheck_source.mli
+ delete mode 100644 output/output_rhv_upload_transfer_source.mli
+ delete mode 100644 output/output_rhv_upload_vmcheck_source.mli
+ delete mode 100644 output/output_vdsm.ml
+ delete mode 100644 output/output_vdsm.mli
+ delete mode 100644 output/rhv-upload-cancel.py
+ delete mode 100644 output/rhv-upload-createvm.py
+ delete mode 100644 output/rhv-upload-finalize.py
+ delete mode 100644 output/rhv-upload-plugin.py
+ delete mode 100644 output/rhv-upload-precheck.py
+ delete mode 100644 output/rhv-upload-transfer.py
+ delete mode 100644 output/rhv-upload-vmcheck.py
+ delete mode 100755 tests/test-v2v-o-rhv-upload-module/imageio.py
+ delete mode 100644 tests/test-v2v-o-rhv-upload-module/ovirtsdk4/__init__.py
+ delete mode 100644 tests/test-v2v-o-rhv-upload-module/ovirtsdk4/types.py
+ delete mode 100755 tests/test-v2v-o-rhv-upload-oo-query.sh
+ delete mode 100755 tests/test-v2v-o-rhv-upload.sh
+ delete mode 100644 tests/test-v2v-o-rhv.ovf.expected
+ delete mode 100755 tests/test-v2v-o-rhv.sh
+ delete mode 100755 tests/test-v2v-o-vdsm-oo-query.sh
+ delete mode 100644 tests/test-v2v-o-vdsm-options.ovf.expected
+ delete mode 100755 tests/test-v2v-o-vdsm-options.sh
+
+diff --git a/docs/Makefile.am b/docs/Makefile.am
+index 7cb6e09a..4c341f8b 100644
+--- a/docs/Makefile.am
++++ b/docs/Makefile.am
+@@ -26,7 +26,6 @@ EXTRA_DIST = \
+ 	virt-v2v-inspector.pod \
+ 	virt-v2v-output-local.pod \
+ 	virt-v2v-output-openstack.pod \
+-	virt-v2v-output-rhv.pod \
+ 	virt-v2v-release-notes-1.42.pod \
+ 	virt-v2v-release-notes-2.0.pod \
+ 	virt-v2v-release-notes-2.2.pod \
+@@ -45,7 +44,6 @@ man_MANS = \
+ 	virt-v2v-inspector.1 \
+ 	virt-v2v-output-local.1 \
+ 	virt-v2v-output-openstack.1 \
+-	virt-v2v-output-rhv.1 \
+ 	virt-v2v-release-notes-1.42.1 \
+ 	virt-v2v-release-notes-2.0.1 \
+ 	virt-v2v-release-notes-2.2.1 \
+@@ -61,7 +59,6 @@ noinst_DATA = \
+ 	$(top_builddir)/website/virt-v2v-inspector.1.html \
+ 	$(top_builddir)/website/virt-v2v-output-local.1.html \
+ 	$(top_builddir)/website/virt-v2v-output-openstack.1.html \
+-	$(top_builddir)/website/virt-v2v-output-rhv.1.html \
+ 	$(top_builddir)/website/virt-v2v-release-notes-1.42.1.html \
+ 	$(top_builddir)/website/virt-v2v-release-notes-2.0.1.html \
+ 	$(top_builddir)/website/virt-v2v-release-notes-2.2.1.html \
+@@ -150,17 +147,6 @@ stamp-virt-v2v-output-openstack.pod: virt-v2v-output-openstack.pod
+ 	  $<
+ 	touch $@
+ 
+-virt-v2v-output-rhv.1 $(top_builddir)/website/virt-v2v-output-rhv.1.html: stamp-virt-v2v-output-rhv.pod
+-
+-stamp-virt-v2v-output-rhv.pod: virt-v2v-output-rhv.pod
+-	$(PODWRAPPER) \
+-	  --man virt-v2v-output-rhv.1 \
+-	  --html $(top_builddir)/website/virt-v2v-output-rhv.1.html \
+-	  --license GPLv2+ \
+-	  --warning safe \
+-	  $<
+-	touch $@
+-
+ virt-v2v-release-notes-1.42.1 $(top_builddir)/website/virt-v2v-release-notes-1.42.1.html: stamp-virt-v2v-release-notes-1.42.pod
+ 
+ stamp-virt-v2v-release-notes-1.42.pod: virt-v2v-release-notes-1.42.pod
+diff --git a/docs/virt-v2v-output-rhv.pod b/docs/virt-v2v-output-rhv.pod
+deleted file mode 100644
+index 2ce697f4..00000000
+--- a/docs/virt-v2v-output-rhv.pod
++++ /dev/null
+@@ -1,232 +0,0 @@
+-=head1 NAME
+-
+-virt-v2v-output-rhv - Using virt-v2v to convert guests to oVirt or RHV
+-
+-=head1 SYNOPSIS
+-
+- virt-v2v [-i* options] -o rhv-upload [-oc ENGINE_URL] -os STORAGE
+-                        [-op PASSWORD] [-of raw]
+-                        [-oo rhv-cafile=FILE]
+-                        [-oo rhv-cluster=CLUSTER]
+-                        [-oo rhv-proxy]
+-                        [-oo rhv-disk-uuid=UUID ...]
+-                        [-oo rhv-verifypeer]
+-
+- virt-v2v [-i* options] -o rhv -os [esd:/path|/path]
+-
+- virt-v2v [-i* options] -o vdsm
+-                        [-oo vdsm-image-uuid=UUID]
+-                        [-oo vdsm-vol-uuid=UUID]
+-                        [-oo vdsm-vm-uuid=UUID]
+-                        [-oo vdsm-ovf-output=DIR]
+-
+-=head1 DESCRIPTION
+-
+-This page documents how to use L<virt-v2v(1)> to convert guests to an
+-oVirt or RHV management instance.  There are three output modes that
+-you can select, but only I<-o rhv-upload> should be used normally, the
+-other two are deprecated:
+-
+-=over 4
+-
+-=item B<-o rhv-upload> B<-os> STORAGE
+-
+-Full description: L</OUTPUT TO RHV>
+-
+-This is the modern method for uploading to oVirt/RHV via the REST API.
+-It requires oVirt/RHV E<ge> 4.2.
+-
+-=item B<-o rhv> B<-os> esd:/path
+-
+-=item B<-o rhv> B<-os> /path
+-
+-Full description: L</OUTPUT TO EXPORT STORAGE DOMAIN>
+-
+-This is the old method for uploading to oVirt/RHV via the
+-Export Storage Domain (ESD).  The ESD can either be accessed
+-over NFS (using the I<-os esd:/path> form) or if you have
+-already NFS-mounted it somewhere specify the path to the mountpoint
+-as I<-os /path>.
+-
+-The Export Storage Domain was deprecated in oVirt 4, and so we expect
+-that this method will stop working at some point in the future.
+-
+-=item B<-o vdsm>
+-
+-This is the old method used internally by the RHV-M user interface.
+-It is never intended to be used directly by end users.
+-
+-=back
+-
+-=head1 OUTPUT TO RHV
+-
+-This new method to upload guests to oVirt or RHV directly via the REST
+-API requires oVirt/RHV E<ge> 4.2.
+-
+-You need to specify I<-o rhv-upload> as well as the following extra
+-parameters:
+-
+-=over 4
+-
+-=item I<-oc> C<https://ovirt-engine.example.com/ovirt-engine/api>
+-
+-The URL of the REST API which is usually the server name with
+-C</ovirt-engine/api> appended, but might be different if you installed
+-oVirt Engine on a different path.
+-
+-You can optionally add a username and port number to the URL.  If the
+-username is not specified then virt-v2v defaults to using
+-C<admin@internal> which is the typical superuser account for oVirt
+-instances.
+-
+-=item I<-of raw>
+-
+-Currently you must use I<-of raw> and you cannot use I<-oa preallocated>.
+-
+-These restrictions will be loosened in a future version.
+-
+-=item I<-op> F<password-file>
+-
+-A file containing a password to be used when connecting to the oVirt
+-engine.  Note the file should contain the whole password, B<without
+-any trailing newline>, and for security the file should have mode
+-C<0600> so that others cannot read it.
+-
+-=item I<-os> C<ovirt-data>
+-
+-The storage domain.
+-
+-=item I<-oo rhv-cafile=>F<ca.pem>
+-
+-The F<ca.pem> file (Certificate Authority), copied from
+-F</etc/pki/ovirt-engine/ca.pem> on the oVirt engine.
+-
+-If I<-oo rhv-verifypeer> is enabled then this option can
+-be used to control which CA is used to verify the client’s
+-identity.  If this option is not used then the system’s
+-global trust store is used.
+-
+-=item I<-oo rhv-cluster=>C<CLUSTERNAME>
+-
+-Set the RHV Cluster Name.  If not given it uses C<Default>.
+-
+-=item I<-oo rhv-disk-uuid=>C<UUID>
+-
+-This option can used to manually specify UUIDs for the disks when
+-creating the virtual machine.  If not specified, the oVirt engine will
+-generate random UUIDs for the disks.  Please note that:
+-
+-=over 4
+-
+-=item *
+-
+-you B<must> pass as many I<-oo rhv-disk-uuid=UUID> options as the
+-amount of disks in the guest
+-
+-=item *
+-
+-the specified UUIDs must not conflict with the UUIDs of existing disks
+-
+-=back
+-
+-=item I<-oo rhv-proxy>
+-
+-Proxy the upload through oVirt Engine.  This is slower than uploading
+-directly to the oVirt node but may be necessary if you do not have
+-direct network access to the nodes.
+-
+-=item I<-oo rhv-verifypeer>
+-
+-Verify the oVirt/RHV server’s identity by checking the server‘s
+-certificate against the Certificate Authority.
+-
+-=back
+-
+-=head1 OUTPUT TO EXPORT STORAGE DOMAIN
+-
+-This section only applies to the I<-o rhv> output mode.  If you use
+-virt-v2v from the RHV-M user interface, then behind the scenes the
+-import is managed by VDSM using the I<-o vdsm> output mode (which end
+-users should not try to use directly).
+-
+-You have to specify I<-o rhv> and an I<-os> option that points to the
+-RHV-M Export Storage Domain.  You can either specify the NFS server
+-and mountpoint, eg. S<C<-os rhv-storage:/rhv/export>>, or you can
+-mount that first and point to the directory where it is mounted,
+-eg. S<C<-os /tmp/mnt>>.  Be careful not to point to the Data Storage
+-Domain by accident as that will not work.
+-
+-On successful completion virt-v2v will have written the new guest to
+-the Export Storage Domain, but it will not yet be ready to run.  It
+-must be imported into RHV using the UI before it can be used.
+-
+-In RHV E<ge> 2.2 this is done from the Storage tab.  Select the
+-export domain the guest was written to.  A pane will appear underneath
+-the storage domain list displaying several tabs, one of which is "VM
+-Import".  The converted guest will be listed here.  Select the
+-appropriate guest an click "Import".  See the RHV documentation for
+-additional details.
+-
+-If you export several guests, then you can import them all at the same
+-time through the UI.
+-
+-=head2 Testing RHV conversions
+-
+-If you do not have an oVirt or RHV instance to test against, then you
+-can test conversions by creating a directory structure which looks
+-enough like a RHV-M Export Storage Domain to trick virt-v2v:
+-
+- uuid=`uuidgen`
+- mkdir /tmp/rhv
+- mkdir /tmp/rhv/$uuid
+- mkdir /tmp/rhv/$uuid/images
+- mkdir /tmp/rhv/$uuid/master
+- mkdir /tmp/rhv/$uuid/master/vms
+- touch /tmp/rhv/$uuid/dom_md
+- virt-v2v [...] -o rhv -os /tmp/rhv
+-
+-=head2 Debugging RHV-M import failures
+-
+-When you export to the RHV-M Export Storage Domain, and then import
+-that guest through the RHV-M UI, you may encounter an import failure.
+-Diagnosing these failures is infuriatingly difficult as the UI
+-generally hides the true reason for the failure.
+-
+-There are several log files of interest:
+-
+-=over 4
+-
+-=item F</var/log/vdsm/import/>
+-
+-In oVirt E<ge> 4.1.0, VDSM preserves the virt-v2v log file for
+-30 days in this directory.
+-
+-This directory is found on the host which performed the conversion.
+-The host can be selected in the import dialog, or can be found under
+-the C<Events> tab in oVirt administration.
+-
+-=item F</var/log/vdsm/vdsm.log>
+-
+-As above, this file is present on the host which performed the
+-conversion.  It contains detailed error messages from low-level
+-operations executed by VDSM, and is useful if the error was not caused
+-by virt-v2v, but by VDSM.
+-
+-=item F</var/log/ovirt-engine/engine.log>
+-
+-This log file is stored on the RHV-M server.  It contains more detail
+-for any errors caused by the oVirt GUI.
+-
+-=back
+-
+-=head1 SEE ALSO
+-
+-L<virt-v2v(1)>.
+-
+-=head1 AUTHOR
+-
+-Richard W.M. Jones
+-
+-=head1 COPYRIGHT
+-
+-Copyright (C) 2009-2020 Red Hat Inc.
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index eb7da9ca..de92db84 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -14,7 +14,7 @@ virt-v2v - Convert a guest to use KVM
+ Virt-v2v converts a single guest from a foreign hypervisor to run on
+ KVM.  It can read Linux and Windows guests running on VMware,
+ Hyper-V and some other hypervisors, and convert them to KVM managed by
+-libvirt, OpenStack, oVirt, Red Hat Virtualisation (RHV) or several
++libvirt, OpenStack or several
+ other targets.  It can modify the guest to make it bootable on KVM and
+ install virtio drivers so it will run quickly.
+ 
+@@ -54,8 +54,6 @@ L<virt-v2v-input-vmware(1)> — Input from VMware.
+ 
+ L<virt-v2v-output-local(1)> — Output to local files or local libvirt.
+ 
+-L<virt-v2v-output-rhv(1)> — Output to oVirt or RHV.
+-
+ L<virt-v2v-output-openstack(1)> — Output to OpenStack.
+ 
+ L<virt-v2v-release-notes-1.42(1)> — Release notes for 1.42 release.
+@@ -85,21 +83,6 @@ disks to F</var/lib/libvirt/images>.
+ 
+ For more information see L<virt-v2v-input-vmware(1)>.
+ 
+-=head2 Convert from VMware to RHV/oVirt
+-
+-This is the same as the previous example, except you want to send the
+-guest to a RHV Data Domain using the RHV REST API.  Guest network
+-interface(s) are connected to the target network called C<ovirtmgmt>.
+-
+- virt-v2v -ic vpx://vcenter.example.com/Datacenter/esxi vmware_guest \
+-   -o rhv-upload -oc https://ovirt-engine.example.com/ovirt-engine/api \
+-   -os ovirt-data -op /tmp/ovirt-admin-password -of raw \
+-   -oo rhv-cafile=/tmp/ca.pem --bridge ovirtmgmt
+-
+-In this case the host running virt-v2v acts as a B<conversion server>.
+-
+-For more information see L<virt-v2v-output-rhv(1)>.
+-
+ =head2 Convert from ESXi hypervisor over SSH to local libvirt
+ 
+ You have an ESXi hypervisor called C<esxi.example.com> with SSH access
+@@ -479,14 +462,6 @@ no metadata is written.
+ 
+ Set the output method to OpenStack.  See L<virt-v2v-output-openstack(1)>.
+ 
+-=item B<-o> B<ovirt>
+-
+-This is the same as I<-o rhv>.
+-
+-=item B<-o> B<ovirt-upload>
+-
+-This is the same as I<-o rhv-upload>.
+-
+ =item B<-o> B<qemu>
+ 
+ Set the output method to I<qemu>.
+@@ -495,40 +470,6 @@ This is similar to I<-o local>, except that a shell script is written
+ which you can use to boot the guest in qemu.  The converted disks and
+ shell script are written to the directory specified by I<-os>.
+ 
+-=item B<-o> B<rhev>
+-
+-This is the same as I<-o rhv>.
+-
+-=item B<-o> B<rhv>
+-
+-Set the output method to I<rhv>.
+-
+-The converted guest is written to a RHV Export Storage Domain.  The
+-I<-os> parameter must also be used to specify the location of the
+-Export Storage Domain.  Note this does not actually import the guest
+-into RHV.  You have to do that manually later using the UI.
+-
+-See L<virt-v2v-output-rhv(1)>.
+-
+-=item B<-o> B<rhv-upload>
+-
+-Set the output method to I<rhv-upload>.
+-
+-The converted guest is written directly to a RHV Data Domain.
+-This is a faster method than I<-o rhv>, but requires oVirt
+-or RHV E<ge> 4.2.
+-
+-See L<virt-v2v-output-rhv(1)>.
+-
+-=item B<-o> B<vdsm>
+-
+-Set the output method to I<vdsm>.
+-
+-This mode is similar to I<-o rhv>, but the full path to the
+-data domain must be given:
+-F</rhv/data-center/E<lt>data-center-uuidE<gt>/E<lt>data-domain-uuidE<gt>>.
+-This mode is only used when virt-v2v runs under VDSM control.
+-
+ =item B<-oa> B<sparse>
+ 
+ =item B<-oa> B<preallocated>
+@@ -591,117 +532,11 @@ For I<-o openstack> (L<virt-v2v-output-openstack(1)>) only, set optional
+ OpenStack authentication.  For example I<-oo os-username=>NAME is
+ equivalent to C<openstack --os-username=NAME>.
+ 
+-=item B<-oo rhv-cafile=>F<ca.pem>
+-
+-For I<-o rhv-upload> (L<virt-v2v-output-rhv(1)>) only, the F<ca.pem> file
+-(Certificate Authority), copied from F</etc/pki/ovirt-engine/ca.pem>
+-on the oVirt engine.
+-
+-=item B<-oo rhv-cluster=>C<CLUSTERNAME>
+-
+-For I<-o rhv-upload> (L<virt-v2v-output-rhv(1)>) only, set the RHV Cluster
+-Name.  If not given it uses C<Default>.
+-
+-=item B<-oo rhv-proxy>
+-
+-For I<-o rhv-upload> (L<virt-v2v-output-rhv(1)>) only, proxy the
+-upload through oVirt Engine.  This is slower than uploading directly
+-to the oVirt node but may be necessary if you do not have direct
+-network access to the nodes.
+-
+-=item B<-oo rhv-verifypeer>
+-
+-For I<-o rhv-upload> (L<virt-v2v-output-rhv(1)>) only, verify the oVirt/RHV
+-server’s identity by checking the server‘s certificate against the
+-Certificate Authority.
+-
+ =item B<-oo server-id=>C<NAME|UUID>
+ 
+ For I<-o openstack> (L<virt-v2v-output-openstack(1)>) only, set the name
+ of the conversion appliance where virt-v2v is running.
+ 
+-=item B<-oo vdsm-compat=0.10>
+-
+-=item B<-oo vdsm-compat=1.1>
+-
+-If I<-o vdsm> and the output format is qcow2, then we add the qcow2
+-I<compat=0.10> option to the output file for compatibility with RHEL 6
+-(see L<https://bugzilla.redhat.com/1145582>).
+-
+-If I<-oo vdsm-compat=1.1> is used then modern qcow2 (I<compat=1.1>)
+-files are generated instead.
+-
+-Currently I<-oo vdsm-compat=0.10> is the default, but this will change
+-to I<-oo vdsm-compat=1.1> in a future version of virt-v2v (when we can
+-assume that everyone is using a modern version of qemu).
+-
+-B<Note this option only affects I<-o vdsm> output>.  All other output
+-modes (including I<-o rhv>) generate modern qcow2 I<compat=1.1>
+-files, always.
+-
+-If this option is available, then C<vdsm-compat-option> will appear in
+-the I<--machine-readable> output.
+-
+-=item B<-oo vdsm-image-uuid=>UUID
+-
+-=item B<-oo vdsm-vol-uuid=>UUID
+-
+-=item B<-oo vdsm-vm-uuid=>UUID
+-
+-=item B<-oo vdsm-ovf-output=>DIR
+-
+-Normally the RHV output mode chooses random UUIDs for the target
+-guest.  However VDSM needs to control the UUIDs and passes these
+-parameters when virt-v2v runs under VDSM control.  The parameters
+-control:
+-
+-=over 4
+-
+-=item *
+-
+-the image directory of each guest disk (I<-oo vdsm-image-uuid>) (this
+-option is passed once for each guest disk)
+-
+-=item *
+-
+-UUIDs for each guest disk (I<-oo vdsm-vol-uuid>) (this option
+-is passed once for each guest disk)
+-
+-=item *
+-
+-the OVF file name (I<-oo vdsm-vm-uuid>).
+-
+-=item *
+-
+-the OVF output directory (default current directory) (I<-oo vdsm-ovf-output>).
+-
+-=back
+-
+-The format of UUIDs is: C<12345678-1234-1234-1234-123456789abc> (each
+-hex digit can be C<0-9> or C<a-f>), conforming to S<OSF DCE 1.1>.
+-
+-These options can only be used with I<-o vdsm>.
+-
+-=item B<-oo vdsm-ovf-flavour=>flavour
+-
+-This option controls the format of the OVF generated at the end of conversion.
+-Currently there are two possible flavours:
+-
+-=over 4
+-
+-=item rhvexp
+-
+-The OVF format used in RHV export storage domain.
+-
+-=item ovirt
+-
+-The OVF format understood by oVirt REST API.
+-
+-=back
+-
+-For backward compatibility the default is I<rhvexp>, but this may change in
+-the future.
+-
+ =item B<-op> file
+ 
+ Supply a file containing a password to be used when connecting to the
+@@ -719,28 +554,8 @@ For I<-o libvirt>, this is a libvirt directory pool
+ For I<-o local> and I<-o qemu>, this is a directory name.
+ The directory must exist.
+ 
+-For I<-o rhv-upload>, this is the name of the destination Storage
+-Domain.
+-
+ For I<-o openstack>, this is the optional Cinder volume type.
+ 
+-For I<-o rhv>, this can be an NFS path of the Export Storage Domain
+-of the form C<E<lt>hostE<gt>:E<lt>pathE<gt>>, eg:
+-
+- rhv-storage.example.com:/rhv/export
+-
+-The NFS export must be mountable and writable by the user and host
+-running virt-v2v, since the virt-v2v program has to actually mount it
+-when it runs.  So you probably have to run virt-v2v as C<root>.
+-
+-B<Or:> You can mount the Export Storage Domain yourself, and point
+-I<-os> to the mountpoint.  Note that virt-v2v will still need to write
+-to this remote directory, so virt-v2v will still need to run as
+-C<root>.
+-
+-You will get an error if virt-v2v is unable to mount/write to the
+-Export Storage Domain.
+-
+ =item B<--print-source>
+ 
+ Print information about the source guest and stop.  This option is
+@@ -1302,26 +1117,6 @@ require either root or a special user:
+ 
+ =over 4
+ 
+-=item Mounting the Export Storage Domain
+-
+-When using I<-o rhv -os server:/esd> virt-v2v has to have sufficient
+-privileges to NFS mount the Export Storage Domain from C<server>.
+-
+-You can avoid needing root here by mounting it yourself before running
+-virt-v2v, and passing I<-os /mountpoint> instead, but first of all
+-read the next S<section ...>
+-
+-=item Writing to the Export Storage Domain as 36:36
+-
+-RHV-M cannot read files and directories from the Export Storage
+-Domain unless they have UID:GID 36:36.  You will see VM import
+-problems if the UID:GID is not correct.
+-
+-When you run virt-v2v I<-o rhv> as root, virt-v2v attempts to create
+-files and directories with the correct ownership.  If you run virt-v2v
+-as non-root, it will probably still work, but you will need to
+-manually change ownership after virt-v2v has finished.
+-
+ =item Writing to libvirt
+ 
+ When using I<-o libvirt>, you may need to run virt-v2v as root so that
+@@ -1428,7 +1223,6 @@ virt-v2v binary.  Typical output looks like this:
+  virt-v2v
+  libguestfs-rewrite
+  colours-option
+- vdsm-compat-option
+  input:disk
+  [...]
+  output:local
+diff --git a/output/Makefile.am b/output/Makefile.am
+index 1e6799c3..09638c25 100644
+--- a/output/Makefile.am
++++ b/output/Makefile.am
+@@ -17,14 +17,7 @@
+ 
+ include $(top_srcdir)/subdir-rules.mk
+ 
+-BUILT_SOURCES = \
+-	output_rhv_upload_cancel_source.ml \
+-	output_rhv_upload_createvm_source.ml \
+-	output_rhv_upload_finalize_source.ml \
+-	output_rhv_upload_plugin_source.ml \
+-	output_rhv_upload_precheck_source.ml \
+-	output_rhv_upload_transfer_source.ml \
+-	output_rhv_upload_vmcheck_source.ml
++BUILT_SOURCES =
+ 
+ EXTRA_DIST = \
+ 	$(SOURCES_MLI) \
+@@ -32,13 +25,6 @@ EXTRA_DIST = \
+ 	$(SOURCES_C) \
+ 	$(BUILT_SOURCES) \
+ 	embed.sh \
+-	rhv-upload-cancel.py \
+-	rhv-upload-createvm.py \
+-	rhv-upload-finalize.py \
+-	rhv-upload-plugin.py \
+-	rhv-upload-precheck.py \
+-	rhv-upload-transfer.py \
+-	rhv-upload-vmcheck.py \
+ 	test-v2v-python-syntax.sh
+ 
+ SOURCES_MLI = \
+@@ -54,16 +40,6 @@ SOURCES_MLI = \
+ 	output_null.mli \
+ 	output_openstack.mli \
+ 	output_qemu.mli \
+-	output_rhv.mli \
+-	output_rhv_upload.mli \
+-	output_vdsm.mli \
+-	output_rhv_upload_cancel_source.mli \
+-	output_rhv_upload_createvm_source.mli \
+-	output_rhv_upload_finalize_source.mli \
+-	output_rhv_upload_plugin_source.mli \
+-	output_rhv_upload_precheck_source.mli \
+-	output_rhv_upload_transfer_source.mli \
+-	output_rhv_upload_vmcheck_source.mli \
+ 	python_script.mli \
+ 	qemuopts.mli
+ 
+@@ -74,13 +50,6 @@ SOURCES_ML = \
+ 	create_kubevirt_yaml.ml \
+ 	qemuopts.ml \
+ 	openstack_image_properties.ml \
+-	output_rhv_upload_cancel_source.ml \
+-	output_rhv_upload_createvm_source.ml \
+-	output_rhv_upload_finalize_source.ml \
+-	output_rhv_upload_plugin_source.ml \
+-	output_rhv_upload_precheck_source.ml \
+-	output_rhv_upload_transfer_source.ml \
+-	output_rhv_upload_vmcheck_source.ml \
+ 	output.ml \
+ 	output_disk.ml \
+ 	output_glance.ml \
+@@ -88,30 +57,11 @@ SOURCES_ML = \
+ 	output_libvirt.ml \
+ 	output_null.ml \
+ 	output_openstack.ml \
+-	output_qemu.ml \
+-	output_rhv.ml \
+-	output_rhv_upload.ml \
+-	output_vdsm.ml
++	output_qemu.ml
+ 
+ SOURCES_C = \
+ 	qemuopts-c.c
+ 
+-# These files are generated and contain *.py embedded as an OCaml string.
+-output_rhv_upload_cancel_source.ml: $(srcdir)/rhv-upload-cancel.py
+-	$(srcdir)/embed.sh code $^ $@
+-output_rhv_upload_createvm_source.ml: $(srcdir)/rhv-upload-createvm.py
+-	$(srcdir)/embed.sh code $^ $@
+-output_rhv_upload_finalize_source.ml: $(srcdir)/rhv-upload-finalize.py
+-	$(srcdir)/embed.sh code $^ $@
+-output_rhv_upload_plugin_source.ml: $(srcdir)/rhv-upload-plugin.py
+-	$(srcdir)/embed.sh code $^ $@
+-output_rhv_upload_precheck_source.ml: $(srcdir)/rhv-upload-precheck.py
+-	$(srcdir)/embed.sh code $^ $@
+-output_rhv_upload_transfer_source.ml: $(srcdir)/rhv-upload-transfer.py
+-	$(srcdir)/embed.sh code $^ $@
+-output_rhv_upload_vmcheck_source.ml: $(srcdir)/rhv-upload-vmcheck.py
+-	$(srcdir)/embed.sh code $^ $@
+-
+ # We pretend that we're building a C library.  automake handles the
+ # compilation of the C sources for us.  At the end we take the C
+ # objects and OCaml objects and link them into the OCaml library.
+diff --git a/output/output_rhv.ml b/output/output_rhv.ml
+deleted file mode 100644
+index 13c2d8dc..00000000
+--- a/output/output_rhv.ml
++++ /dev/null
+@@ -1,317 +0,0 @@
+-(* virt-v2v
+- * Copyright (C) 2009-2021 Red Hat Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *)
+-
+-open Printf
+-open Unix
+-
+-open Std_utils
+-open Tools_utils
+-open Unix_utils
+-open Common_gettext.Gettext
+-
+-open Types
+-open Utils
+-
+-open Output
+-
+-module RHV = struct
+-  type poptions = Types.output_allocation * string * string * string
+-
+-  type t = string * string * string * string list * string list * int64 list
+-
+-  let to_string options = "-o rhv"
+-
+-  let query_output_options () =
+-    printf (f_"No output options can be used in this mode.\n")
+-
+-  let parse_options options source =
+-    if options.output_options <> [] then
+-      error (f_"no -oo (output options) are allowed here");
+-    if options.output_password <> None then
+-      error_option_cannot_be_used_in_output_mode "rhv" "-op";
+-
+-    (* -os must be set, but at this point we cannot check it. *)
+-    let output_storage =
+-      match options.output_storage with
+-      | None -> error (f_"-o rhv: -os option was not specified")
+-      | Some d -> d in
+-
+-    let output_name = Option.value ~default:source.s_name options.output_name in
+-
+-    (options.output_alloc, options.output_format, output_name, output_storage)
+-
+-  let rec setup dir options source =
+-    error_if_disk_count_gt dir 23;
+-    let disks = get_disks dir in
+-    let output_alloc, output_format, output_name, output_storage = options in
+-
+-    (* UID:GID required for files and directories when writing to ESD. *)
+-    let uid = 36 and gid = 36 in
+-
+-    (* Create a UID-switching handle.  If we're not root, create a dummy
+-     * one because we cannot switch UIDs.
+-     *)
+-    let running_as_root = geteuid () = 0 in
+-    let changeuid_t =
+-      if running_as_root then
+-        Changeuid.create ~uid ~gid ()
+-      else
+-        Changeuid.create () in
+-
+-    let esd_mp, esd_uuid =
+-      mount_and_check_storage_domain (s_"Export Storage Domain")
+-        output_storage in
+-    debug "RHV: ESD mountpoint: %s\nRHV: ESD UUID: %s" esd_mp esd_uuid;
+-
+-    (* See if we can write files as UID:GID 36:36. *)
+-    let () =
+-      let testfile = esd_mp // esd_uuid // String.random8 () in
+-      Changeuid.make_file changeuid_t testfile "";
+-      let stat = stat testfile in
+-      Changeuid.unlink changeuid_t testfile;
+-      let actual_uid = stat.st_uid and actual_gid = stat.st_gid in
+-      debug "RHV: actual UID:GID of new files is %d:%d" actual_uid actual_gid;
+-      if uid <> actual_uid || gid <> actual_gid then (
+-        if running_as_root then
+-          warning (f_"cannot write files to the NFS server as %d:%d, \
+-                      even though we appear to be running as root. This \
+-                      probably means the NFS client or idmapd is not \
+-                      configured properly.\n\nYou will have to chown \
+-                      the files that virt-v2v creates after the run, \
+-                      otherwise RHV-M will not be able to import the VM.")
+-            uid gid
+-        else
+-          warning (f_"cannot write files to the NFS server as %d:%d. \
+-                      You might want to stop virt-v2v (^C) and rerun it \
+-                      as root.") uid gid
+-      ) in
+-
+-    (* Create unique UUIDs for everything *)
+-    let vm_uuid = uuidgen () in
+-    (* Generate random image and volume UUIDs for each target disk. *)
+-    let image_uuids = List.map (fun _ -> uuidgen ()) disks in
+-    let vol_uuids = List.map (fun _ -> uuidgen ()) disks in
+-
+-    (* We need to create the target image director(ies) so there's a place
+-     * for the main program to copy the images to.  However if image
+-     * conversion fails for any reason then we delete this directory.
+-     *)
+-    let images_dir = esd_mp // esd_uuid // "images" in
+-    List.iter (
+-      fun image_uuid ->
+-        let d = images_dir // image_uuid in
+-        Changeuid.mkdir changeuid_t d 0o755
+-    ) image_uuids;
+-    On_exit.f (
+-      fun () ->
+-        (* virt-v2v writes v2vdir/done on success only. *)
+-        let success = Sys.file_exists (dir // "done") in
+-        if not success then (
+-          List.iter (
+-            fun image_uuid ->
+-              let d = images_dir // image_uuid in
+-              let cmd = sprintf "rm -rf %s" (quote d) in
+-              Changeuid.command changeuid_t cmd
+-            ) image_uuids
+-        )
+-    );
+-
+-    (* The final directory structure should look like this:
+-     *   /<MP>/<ESD_UUID>/images/
+-     *      <IMAGE_UUID_1>/<VOL_UUID_1>        # first disk
+-     *      <IMAGE_UUID_1>/<VOL_UUID_1>.meta   # first disk
+-     *      <IMAGE_UUID_2>/<VOL_UUID_2>        # second disk
+-     *      <IMAGE_UUID_2>/<VOL_UUID_2>.meta   # second disk
+-     *      <IMAGE_UUID_3>/<VOL_UUID_3>        # etc
+-     *      <IMAGE_UUID_3>/<VOL_UUID_3>.meta   #
+-     *)
+-
+-    (* Generate the randomly named target files (just the names).
+-     * The main code is what generates the files themselves.
+-     *)
+-    let filenames =
+-      List.map (
+-        fun (image_uuid, vol_uuid) ->
+-          let filename = images_dir // image_uuid // vol_uuid in
+-          debug "RHV: disk: %s" filename;
+-          filename
+-      ) (List.combine image_uuids vol_uuids) in
+-
+-    (* Generate the .meta file associated with each volume. *)
+-    let sizes = List.map snd disks in
+-    let metas =
+-      Create_ovf.create_meta_files output_alloc output_format
+-        esd_uuid image_uuids sizes in
+-    List.iter (
+-      fun (filename, meta) ->
+-        let meta_filename = filename ^ ".meta" in
+-        Changeuid.make_file changeuid_t meta_filename meta
+-    ) (List.combine filenames metas);
+-
+-    (* Set up the NBD servers. *)
+-    List.iter (
+-      fun ((i, size), filename) ->
+-        let socket = sprintf "%s/out%d" dir i in
+-        On_exit.unlink socket;
+-
+-        (* Create the actual output disk. *)
+-        let changeuid f =
+-          Changeuid.func changeuid_t (
+-            fun () ->
+-              (* Run the command to create the file. *)
+-              f ();
+-              (* Make the file sufficiently writable so that possibly root, or
+-               * root squashed nbdkit will definitely be able to open it.
+-               * An example of how root squashing nonsense makes everyone
+-               * less secure.
+-               *)
+-              chmod filename 0o666
+-          )
+-        in
+-
+-        (* We have to wait for the NBD server to exit rather than just
+-         * killing it, otherwise it races with unmounting.  See:
+-         * https://bugzilla.redhat.com/show_bug.cgi?id=1953286#c26
+-         *)
+-        let on_exit_kill = Output.KillAndWait in
+-
+-        output_to_local_file ~changeuid ~on_exit_kill
+-          output_alloc output_format filename size socket
+-    ) (List.combine disks filenames);
+-
+-    (* Save parameters since we need them during finalization. *)
+-    let t = esd_mp, esd_uuid, vm_uuid, image_uuids, vol_uuids, sizes in
+-    t
+-
+-  and mount_and_check_storage_domain domain_class os =
+-    (* The user can either specify -os nfs:/export, or a local directory
+-     * which is assumed to be the already-mounted NFS export.
+-     *)
+-    match String.split ":/" os with
+-    | mp, "" ->                         (* Already mounted directory. *)
+-       check_storage_domain domain_class os mp
+-    | server, export ->
+-       let export = "/" ^ export in
+-
+-       (* Create a mountpoint.  Default mode is too restrictive for us
+-        * when we need to write into the directory as 36:36.
+-        *)
+-       let mp = Mkdtemp.temp_dir "v2v." in
+-       chmod mp 0o755;
+-
+-       (* Try mounting it. *)
+-       let cmd = [ "mount"; sprintf "%s:%s" server export; mp ] in
+-       if run_command cmd <> 0 then
+-         error (f_"mount command failed, see earlier errors.\n\nThis probably \
+-                   means you didn't specify the right %s path [-os %s], or \
+-                   else you need to rerun virt-v2v as root.") domain_class os;
+-
+-       (* Make sure it is unmounted at exit, as late as possible (prio=9999) *)
+-       On_exit.f ~prio:9999 (
+-         fun () ->
+-           let cmd = [ "umount"; mp ] in
+-           ignore (run_command cmd);
+-           try rmdir mp with _ -> ()
+-       );
+-
+-       check_storage_domain domain_class os mp
+-
+-  and check_storage_domain domain_class os mp =
+-    (* Typical SD mountpoint looks like this:
+-     * $ ls /tmp/mnt
+-     * 39b6af0e-1d64-40c2-97e4-4f094f1919c7  __DIRECT_IO_TEST__  lost+found
+-     * $ ls /tmp/mnt/39b6af0e-1d64-40c2-97e4-4f094f1919c7
+-     * dom_md  images  master
+-     * We expect exactly one of those magic UUIDs.
+-     *)
+-    let entries =
+-      try Sys.readdir mp
+-      with Sys_error msg ->
+-        error (f_"could not read the %s specified by the '-os %s' \
+-                  parameter on the command line.  Is it really an \
+-                  OVirt or RHV-M %s?  The original error is: %s")
+-          domain_class os domain_class msg in
+-    let entries = Array.to_list entries in
+-    let uuids = List.filter (
+-        fun entry ->
+-          String.length entry = 36 &&
+-          entry.[8] = '-' && entry.[13] = '-' && entry.[18] = '-' &&
+-          entry.[23] = '-'
+-      ) entries in
+-    let uuid =
+-      match uuids with
+-      | [uuid] -> uuid
+-      | [] ->
+-         error (f_"there are no UUIDs in the %s (%s).  Is it really an \
+-                   OVirt or RHV-M %s?") domain_class os domain_class
+-      | _::_ ->
+-         error (f_"there are multiple UUIDs in the %s (%s).  This is \
+-                   unexpected, and may be a bug in virt-v2v or OVirt.")
+-           domain_class os in
+-
+-    (* Check that the domain has been attached to a Data Center by
+-     * checking that the master/vms directory exists.
+-     *)
+-    let () =
+-      let master_vms_dir = mp // uuid // "master" // "vms" in
+-      if not (is_directory master_vms_dir) then
+-        error (f_"%s does not exist or is not a directory.\n\nMost likely \
+-                  cause: Either the %s (%s) has not been attached to any \
+-                  Data Center, or the path %s is not an %s at all.\n\n\
+-                  You have to attach the %s to a Data Center using the \
+-                  RHV-M / OVirt user interface first.\n\nIf you don’t \
+-                  know what the %s mount point should be then you can \
+-                  also find this out through the RHV-M user interface.")
+-          master_vms_dir domain_class os os
+-          domain_class domain_class domain_class in
+-
+-    (* Looks good, so return the SD mountpoint and UUID. *)
+-    (mp, uuid)
+-
+-  let finalize dir options t source inspect target_meta =
+-    let output_alloc, output_format, output_name, output_storage = options in
+-    let esd_mp, esd_uuid, vm_uuid, image_uuids, vol_uuids, sizes = t in
+-
+-    (* UID:GID required for files and directories when writing to ESD. *)
+-    let uid = 36 and gid = 36 in
+-
+-    (* Create a UID-switching handle.  If we're not root, create a dummy
+-     * one because we cannot switch UIDs.
+-     *)
+-    let running_as_root = geteuid () = 0 in
+-    let changeuid_t =
+-      if running_as_root then
+-        Changeuid.create ~uid ~gid ()
+-      else
+-        Changeuid.create () in
+-
+-    (* Create the metadata. *)
+-    let ovf =
+-      Create_ovf.create_ovf source inspect target_meta sizes
+-        output_alloc output_format output_name esd_uuid image_uuids vol_uuids
+-        ~need_actual_sizes:true dir vm_uuid
+-        Create_ovf.RHVExportStorageDomain in
+-
+-    (* Write it to the metadata file. *)
+-    let dir = esd_mp // esd_uuid // "master" // "vms" // vm_uuid in
+-    Changeuid.mkdir changeuid_t dir 0o755;
+-    let file = dir // vm_uuid ^ ".ovf" in
+-    Changeuid.output changeuid_t file (fun chan -> DOM.doc_to_chan chan ovf)
+-
+-  let request_size = None
+-end
+diff --git a/output/output_rhv.mli b/output/output_rhv.mli
+deleted file mode 100644
+index 08f3f2d0..00000000
+--- a/output/output_rhv.mli
++++ /dev/null
+@@ -1,21 +0,0 @@
+-(* virt-v2v
+- * Copyright (C) 2009-2021 Red Hat Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *)
+-
+-(** [-o rhv] output mode. *)
+-
+-module RHV : Output.OUTPUT
+diff --git a/output/output_rhv_upload.ml b/output/output_rhv_upload.ml
+deleted file mode 100644
+index 63624860..00000000
+--- a/output/output_rhv_upload.ml
++++ /dev/null
+@@ -1,520 +0,0 @@
+-(* virt-v2v
+- * Copyright (C) 2009-2021 Red Hat Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *)
+-
+-open Printf
+-open Unix
+-
+-open Std_utils
+-open Tools_utils
+-open Common_gettext.Gettext
+-
+-open Types
+-open Utils
+-
+-open Output
+-
+-module RHVUpload = struct
+-  type poptions = string * string * string * string * string *
+-                  string option * string option * bool * bool *
+-                  string list option
+-
+-  type t = int64 list * string list * string list *
+-           Python_script.script * Python_script.script *
+-           JSON.field list * string option * string option *
+-           string option * string * int list ref
+-
+-  let to_string options =
+-    "-o rhv-upload" ^
+-      (match options.output_conn with
+-       | Some oc -> " -oc " ^ oc
+-       | None -> "") ^
+-      (match options.output_storage with
+-       | Some os -> " -os " ^ os
+-       | None -> "")
+-
+-  let query_output_options () =
+-    printf (f_"Output options (-oo) which can be used with -o rhv-upload:
+-
+-  -oo rhv-cafile=CA.PEM         Set ‘ca.pem’ certificate bundle filename.
+-  -oo rhv-cluster=CLUSTERNAME   Set RHV cluster name.
+-  -oo rhv-proxy                 Connect via oVirt Engine proxy (default: false).
+-  -oo rhv-verifypeer[=true|false] Verify server identity (default: false).
+-
+-You can override the UUIDs of the disks, instead of using autogenerated UUIDs
+-after their uploads (if you do, you must supply one for each disk):
+-
+-  -oo rhv-disk-uuid=UUID          Disk UUID
+-")
+-
+-  let rec parse_options options source =
+-    let output_conn =
+-      match options.output_conn with
+-      | None ->
+-         error (f_"-o rhv-upload: use ‘-oc’ to point to the oVirt \
+-                   or RHV server REST API URL, which is usually \
+-                   https://servername/ovirt-engine/api")
+-      | Some oc -> oc in
+-    (* In theory we could make the password optional in future. *)
+-    let output_password =
+-      match options.output_password with
+-      | None ->
+-         error (f_"-o rhv-upload: output password file was not specified, \
+-                   use ‘-op’ to point to a file which contains the password \
+-                   used to connect to the oVirt or RHV server")
+-      | Some op -> op in
+-    let output_storage =
+-      match options.output_storage with
+-      | None ->
+-         error (f_"-o rhv-upload: output storage was not specified, use ‘-os’");
+-      | Some os -> os in
+-
+-    let rhv_cafile = ref None in
+-    let rhv_cluster = ref None in
+-    let rhv_direct = ref true in
+-    let rhv_verifypeer = ref false in
+-    let rhv_disk_uuids = ref None in
+-
+-    List.iter (
+-      function
+-      | "rhv-cafile", v ->
+-         if !rhv_cafile <> None then
+-           error (f_"-o rhv-upload: -oo rhv-cafile set more than once");
+-         rhv_cafile := Some v
+-      | "rhv-cluster", v ->
+-         if !rhv_cluster <> None then
+-           error (f_"-o rhv-upload: -oo rhv-cluster set more than once");
+-         rhv_cluster := Some v
+-      | "rhv-direct", "" -> rhv_direct := true
+-      | "rhv-direct", v -> rhv_direct := bool_of_string v
+-      | "rhv-proxy", "" -> rhv_direct := false
+-      | "rhv-proxy", v -> rhv_direct := not (bool_of_string v)
+-      | "rhv-verifypeer", "" -> rhv_verifypeer := true
+-      | "rhv-verifypeer", v -> rhv_verifypeer := bool_of_string v
+-      | "rhv-disk-uuid", v ->
+-         if not (is_nonnil_uuid v) then
+-           error (f_"-o rhv-upload: invalid UUID for -oo rhv-disk-uuid");
+-         rhv_disk_uuids := Some (v :: (Option.value ~default:[] !rhv_disk_uuids))
+-      | k, _ ->
+-         error (f_"-o rhv-upload: unknown output option ‘-oo %s’") k
+-    ) options.output_options;
+-
+-    let rhv_cafile = !rhv_cafile in
+-    let rhv_cluster = !rhv_cluster in
+-    let rhv_direct = !rhv_direct in
+-    let rhv_verifypeer = !rhv_verifypeer in
+-    let rhv_disk_uuids = Option.map List.rev !rhv_disk_uuids in
+-
+-    let output_name = Option.value ~default:source.s_name options.output_name in
+-
+-    (output_conn, options.output_format,
+-     output_password, output_name, output_storage,
+-     rhv_cafile, rhv_cluster, rhv_direct,
+-     rhv_verifypeer, rhv_disk_uuids)
+-
+-  and is_nonnil_uuid uuid =
+-    let nil_uuid = "00000000-0000-0000-0000-000000000000" in
+-    let rex_uuid = lazy (
+-      let hex = "[a-fA-F0-9]" in
+-      let str = sprintf "^%s{8}-%s{4}-%s{4}-%s{4}-%s{12}$"
+-                  hex hex hex hex hex in
+-      PCRE.compile str
+-    ) in
+-    if uuid = nil_uuid then false
+-    else PCRE.matches (Lazy.force rex_uuid) uuid
+-
+-  let rec setup dir options source =
+-    error_if_disk_count_gt dir 23;
+-    let disks = get_disks dir in
+-    let output_conn, output_format,
+-        output_password, output_name, output_storage,
+-        rhv_cafile, rhv_cluster, rhv_direct,
+-        rhv_verifypeer, rhv_disk_uuids = options in
+-
+-    (* We need nbdkit >= 1.22 for API_VERSION 2 and parallel threading model
+-     * in the python plugin.
+-     *)
+-    let nbdkit_min_version = (1, 22, 0) in
+-    let nbdkit_min_version_string = "1.22.0" in
+-
+-    (* Check that the 'ovirtsdk4' Python module is available. *)
+-    let error_unless_ovirtsdk4_module_available () =
+-      let res = run_command [ Python_script.python; "-c";
+-                              "import ovirtsdk4" ] in
+-      if res <> 0 then
+-        error (f_"the Python module ‘ovirtsdk4’ could not be loaded, \
+-                  is it installed?  See previous messages for problems.")
+-    in
+-
+-    (* Check that nbdkit is available and new enough. *)
+-    let error_unless_nbdkit_working () =
+-      if not (Nbdkit.is_installed ()) then
+-        error (f_"nbdkit is not installed or not working.  It is required \
+-                  to use ‘-o rhv-upload’.  See the virt-v2v-output-rhv(1) \
+-                  manual.")
+-    in
+-
+-    let error_unless_nbdkit_min_version () =
+-      let version = Nbdkit.version () in
+-      if version < nbdkit_min_version then
+-        error (f_"nbdkit is not new enough, you need to upgrade to nbdkit ≥ %s")
+-          nbdkit_min_version_string
+-    in
+-
+-    (* Check that the python3 plugin is installed and working
+-     * and can load the plugin script.
+-     *)
+-    let error_unless_nbdkit_python_plugin_working plugin_script =
+-      let cmd = sprintf "nbdkit python %s --dump-plugin >/dev/null"
+-                  (quote (Python_script.path plugin_script)) in
+-      debug "%s" cmd;
+-      if Sys.command cmd <> 0 then
+-        error (f_"nbdkit python plugin is not installed or not working.  \
+-                  It is required if you want to use ‘-o rhv-upload’.
+-
+-See also the virt-v2v-output-rhv(1) manual.");
+-    in
+-
+-    (* Check that nbdkit was compiled with SELinux support (for the
+-     * --selinux-label option).
+-     *)
+-    let error_unless_nbdkit_compiled_with_selinux () =
+-      if have_selinux then (
+-        let config = Nbdkit.config () in
+-        let selinux = try List.assoc "selinux" config with Not_found -> "no" in
+-        if selinux = "no" then
+-          error (f_"nbdkit was compiled without SELinux support.  You will \
+-                    have to recompile nbdkit with libselinux-devel installed, \
+-                    or else set SELinux to Permissive mode while doing the \
+-                    conversion.")
+-      )
+-    in
+-
+-    Python_script.error_unless_python_interpreter_found ();
+-    error_unless_ovirtsdk4_module_available ();
+-    error_unless_nbdkit_working ();
+-    error_unless_nbdkit_min_version ();
+-    error_unless_nbdkit_compiled_with_selinux ();
+-
+-    (* Python code. *)
+-    let precheck_script =
+-      Python_script.create ~name:"rhv-upload-precheck.py"
+-        Output_rhv_upload_precheck_source.code in
+-    let vmcheck_script =
+-      Python_script.create ~name:"rhv-upload-vmcheck.py"
+-        Output_rhv_upload_vmcheck_source.code in
+-    let plugin_script =
+-      Python_script.create ~name:"rhv-upload-plugin.py"
+-        Output_rhv_upload_plugin_source.code in
+-    let transfer_script =
+-      Python_script.create ~name:"rhv-upload-transfer.py"
+-        Output_rhv_upload_transfer_source.code in
+-    let finalize_script =
+-      Python_script.create ~name:"rhv-upload-finalize.py"
+-        Output_rhv_upload_finalize_source.code in
+-    let cancel_script =
+-      Python_script.create ~name:"rhv-upload-cancel.py"
+-        Output_rhv_upload_cancel_source.code in
+-    let createvm_script =
+-      Python_script.create ~name:"rhv-upload-createvm.py"
+-        Output_rhv_upload_createvm_source.code in
+-
+-    error_unless_nbdkit_python_plugin_working plugin_script;
+-
+-    (* JSON parameters which are invariant between disks. *)
+-    let json_params = [
+-      "verbose", JSON.Bool (verbose ());
+-
+-      "output_conn", JSON.String output_conn;
+-      "output_password", JSON.String output_password;
+-      "output_storage", JSON.String output_storage;
+-      "rhv_cafile", json_optstring rhv_cafile;
+-      "rhv_cluster", JSON.String (Option.value ~default:"Default" rhv_cluster);
+-      "rhv_direct", JSON.Bool rhv_direct;
+-
+-      (* The 'Insecure' flag seems to be a number with various possible
+-       * meanings, however we just set it to True/False.
+-       *
+-       * https://github.com/oVirt/ovirt-engine-sdk/blob/19aa7070b80e60a4cfd910448287aecf9083acbe/sdk/lib/ovirtsdk4/__init__.py#L395
+-       *)
+-      "insecure", JSON.Bool (not rhv_verifypeer);
+-    ] in
+-
+-    (* nbdkit command line which is invariant between disks. *)
+-    let cmd = Nbdkit.create "python" in
+-    Nbdkit.add_arg cmd "script" (Python_script.path plugin_script);
+-
+-    (* Match number of parallel coroutines in qemu-img *)
+-    Nbdkit.set_threads cmd 8;
+-
+-    (* Python code prechecks. *)
+-    let json_params = match rhv_disk_uuids with
+-      | None -> json_params
+-      | Some uuids ->
+-         let ids = List.map (fun uuid -> JSON.String uuid) uuids in
+-         ("rhv_disk_uuids", JSON.List ids) :: json_params
+-    in
+-    let precheck_json = dir // "v2vprecheck.json" in
+-    let fd = Unix.openfile precheck_json [O_WRONLY; O_CREAT; O_TRUNC] 0o600 in
+-    if Python_script.run_command ~stdout_fd:fd
+-         precheck_script json_params [] <> 0 then
+-      error (f_"failed server prechecks, see earlier errors");
+-    if verbose () then
+-      debug "precheck output before parsing: %s"
+-            (read_whole_file precheck_json);
+-    let json = JSON_parser.json_parser_tree_parse_file precheck_json in
+-    debug "precheck output parsed as: %s"
+-      (JSON.string_of_doc ~fmt:JSON.Indented ["", json]);
+-    let rhv_storagedomain_uuid =
+-      Some (JSON_parser.object_get_string "rhv_storagedomain_uuid" json) in
+-    let rhv_cluster_uuid =
+-      Some (JSON_parser.object_get_string "rhv_cluster_uuid" json) in
+-    let rhv_cluster_cpu_architecture =
+-      Some (JSON_parser.object_get_string "rhv_cluster_cpu_architecture" json) in
+-
+-    (* If the disk UUIDs were not provided, then generate them.
+-     * This is simpler than letting RHV generate them and trying
+-     * to read them back from RHV.
+-     *)
+-    let disk_uuids =
+-      match rhv_disk_uuids with
+-      | Some uuids ->
+-         let nr_disks = List.length disks in
+-         if List.length uuids <> nr_disks then
+-           error (f_"the number of ‘-oo rhv-disk-uuid’ parameters passed on \
+-                     the command line has to match the number of guest \
+-                     disk images (for this guest: %d)") nr_disks;
+-         uuids
+-      | None -> List.map (fun _ -> uuidgen ()) disks in
+-
+-    (* This will accumulate the list of transfer IDs from the transfer
+-     * script.
+-     *)
+-    let transfer_ids = ref [] in
+-
+-    let rhv_cluster_name =
+-      match List.assoc "rhv_cluster" json_params with
+-      | JSON.String s -> s
+-      | _ -> assert false in
+-
+-    let json_params =
+-      ("output_name", JSON.String output_name) :: json_params in
+-
+-    (* Check that the VM does not exist.  This can't run in #precheck because
+-     * we need to know the name of the virtual machine.
+-     *)
+-    if Python_script.run_command vmcheck_script json_params [] <> 0 then
+-      error (f_"failed vmchecks, see earlier errors");
+-
+-    (* Cancel the transfer and delete disks.
+-     *
+-     * This ignores errors since the only time we are doing this is on
+-     * the failure path.
+-     *)
+-    let cancel transfer_ids disk_uuids =
+-      let ids = List.map (fun id -> JSON.String id) transfer_ids in
+-      let json_params = ("transfer_ids", JSON.List ids) :: json_params in
+-      let ids = List.map (fun uuid -> JSON.String uuid) disk_uuids in
+-      let json_params = ("disk_uuids", JSON.List ids) :: json_params in
+-      ignore (Python_script.run_command cancel_script json_params [])
+-    in
+-
+-    (* Set up an at-exit handler to perform some cleanups.
+-     * - Kill nbdkit PIDs (only before finalization).
+-     * - Delete the orphan disks (only on conversion failure).
+-     *)
+-    let nbdkit_pids = ref [] in
+-    On_exit.f (
+-      fun () ->
+-        (* Kill the nbdkit PIDs. *)
+-        List.iter (
+-          fun pid ->
+-            try kill pid Sys.sigterm
+-            with exn -> debug "%s" (Printexc.to_string exn)
+-        ) !nbdkit_pids;
+-        nbdkit_pids := [];
+-
+-        (* virt-v2v writes v2vdir/done on success only. *)
+-        let success = Sys.file_exists (dir // "done") in
+-        if not success then (
+-          if disk_uuids <> [] then
+-            cancel !transfer_ids disk_uuids
+-        )
+-    );
+-
+-    (* Create an nbdkit instance for each disk and set the
+-     * target URI to point to the NBD socket.
+-     *)
+-    List.iter (
+-      fun ((i, size), uuid) ->
+-        let socket = sprintf "%s/out%d" dir i in
+-        On_exit.unlink socket;
+-
+-        let disk_name = sprintf "%s-%03d" output_name i in
+-        let json_params =
+-          ("disk_name", JSON.String disk_name) :: json_params in
+-
+-        let disk_format =
+-          match output_format with
+-          | "raw" as fmt -> fmt
+-          | "qcow2" as fmt -> fmt
+-          | _ ->
+-             error (f_"rhv-upload: -of %s: Only output format ‘raw’ or ‘qcow2’ \
+-                       is supported.  If the input is in a different format \
+-                       then force one of these output formats by adding \
+-                       either ‘-of raw’ or ‘-of qcow2’ on the command line.")
+-               output_format in
+-        let json_params =
+-          ("disk_format", JSON.String disk_format) :: json_params in
+-
+-        let json_params =
+-          ("disk_size", JSON.Int size) :: json_params in
+-
+-        let json_params =
+-          ("disk_uuid", JSON.String uuid) :: json_params in
+-
+-        (* Write the JSON parameters to a file. *)
+-        let json_param_file = dir // sprintf "out.params%d.json" i in
+-        with_open_out
+-          json_param_file
+-          (fun chan -> output_string chan (JSON.string_of_doc json_params));
+-
+-        (* Start the transfer. *)
+-        let transfer_json = dir // sprintf "v2vtransfer%d.json" i in
+-        let fd =
+-          Unix.openfile transfer_json [O_WRONLY; O_CREAT; O_TRUNC] 0o600 in
+-        if Python_script.run_command ~stdout_fd:fd
+-             transfer_script json_params [] <> 0 then
+-          error (f_"failed to start transfer, see earlier errors");
+-        if verbose () then
+-          debug "transfer output before parsing: %s"
+-                (read_whole_file transfer_json);
+-        let json = JSON_parser.json_parser_tree_parse_file transfer_json in
+-        debug "transfer output parsed as: %s"
+-          (JSON.string_of_doc ~fmt:JSON.Indented ["", json]);
+-        let destination_url =
+-          JSON_parser.object_get_string "destination_url" json in
+-        let transfer_id =
+-          JSON_parser.object_get_string "transfer_id" json in
+-        List.push_back transfer_ids transfer_id;
+-        let is_ovirt_host =
+-          JSON_parser.object_get_bool "is_ovirt_host" json in
+-
+-        (* Create the nbdkit instance. *)
+-        Nbdkit.add_arg cmd "size" (Int64.to_string size);
+-        Nbdkit.add_arg cmd "url" destination_url;
+-        Option.iter (Nbdkit.add_arg cmd "cafile") rhv_cafile;
+-        if not rhv_verifypeer then
+-          Nbdkit.add_arg cmd "insecure" "true";
+-        if is_ovirt_host then
+-          Nbdkit.add_arg cmd "is_ovirt_host" "true";
+-        let _, pid = Nbdkit.run_unix socket cmd in
+-        List.push_front pid nbdkit_pids
+-    ) (List.combine disks disk_uuids);
+-
+-    (* Stash some data we will need during finalization. *)
+-    let disk_sizes = List.map snd disks in
+-    let t = (disk_sizes : int64 list), disk_uuids, !transfer_ids,
+-            finalize_script, createvm_script, json_params,
+-            rhv_storagedomain_uuid, rhv_cluster_uuid,
+-            rhv_cluster_cpu_architecture, rhv_cluster_name, nbdkit_pids in
+-    t
+-
+-  and json_optstring = function
+-    | Some s -> JSON.String s
+-    | None -> JSON.Null
+-
+-  let finalize dir options t source inspect target_meta =
+-    let output_conn, output_format,
+-        output_password, output_name, output_storage,
+-        rhv_cafile, rhv_cluster, rhv_direct,
+-        rhv_verifypeer, rhv_disk_uuids = options in
+-    let disk_sizes, disk_uuids, transfer_ids,
+-        finalize_script, createvm_script, json_params,
+-        rhv_storagedomain_uuid, rhv_cluster_uuid,
+-        rhv_cluster_cpu_architecture, rhv_cluster_name,
+-        nbdkit_pids = t in
+-
+-    (* Check the cluster CPU arch matches what we derived about the
+-     * guest during conversion.
+-     *)
+-    (match rhv_cluster_cpu_architecture with
+-     | None -> assert false
+-     | Some arch ->
+-        if arch <> target_meta.guestcaps.gcaps_arch then
+-          error (f_"the cluster ‘%s’ does not support the architecture %s \
+-                    but %s")
+-            rhv_cluster_name target_meta.guestcaps.gcaps_arch arch
+-    );
+-
+-    (* We must kill all our nbdkit instances before finalizing the
+-     * transfer.  See:
+-     * https://listman.redhat.com/archives/libguestfs/2022-February/msg00111.html
+-     *
+-     * We want to fail here if the kill fails because nbdkit
+-     * died already, as that would be unexpected.
+-     *)
+-    let () =
+-      let pids = !nbdkit_pids in
+-      List.iter (fun pid -> kill pid Sys.sigterm) pids;
+-      List.iter (fun pid -> ignore (waitpid [] pid)) pids;
+-      nbdkit_pids := [] (* Don't kill them again in the On_exit handler. *) in
+-
+-    (* Finalize all the transfers. *)
+-    let json_params =
+-      let ids = List.map (fun id -> JSON.String id) transfer_ids in
+-      let json_params = ("transfer_ids", JSON.List ids) :: json_params in
+-      let ids = List.map (fun uuid -> JSON.String uuid) disk_uuids in
+-      let json_params = ("disk_uuids", JSON.List ids) :: json_params in
+-      json_params in
+-    if Python_script.run_command finalize_script json_params [] <> 0 then
+-      error (f_"failed to finalize the transfers, see earlier errors");
+-
+-    (* The storage domain UUID. *)
+-    let sd_uuid =
+-      match rhv_storagedomain_uuid with
+-      | None -> assert false
+-      | Some uuid -> uuid in
+-
+-    (* The volume and VM UUIDs are made up. *)
+-    let vol_uuids = List.map (fun _ -> uuidgen ()) disk_sizes
+-    and vm_uuid = uuidgen () in
+-
+-    (* Create the metadata. *)
+-    let ovf =
+-      Create_ovf.create_ovf source inspect target_meta disk_sizes
+-        Sparse output_format output_name
+-        sd_uuid disk_uuids vol_uuids dir vm_uuid OVirt in
+-    let ovf = DOM.doc_to_string ovf in
+-
+-    let json_params =
+-      match rhv_cluster_uuid with
+-      | None -> assert false
+-      | Some uuid -> ("rhv_cluster_uuid", JSON.String uuid) :: json_params in
+-
+-    let ovf_file = dir // "vm.ovf" in
+-    with_open_out ovf_file (fun chan -> output_string chan ovf);
+-    if Python_script.run_command createvm_script json_params [ovf_file] <> 0
+-    then
+-      error (f_"failed to create virtual machine, see earlier errors")
+-
+-  (* The imageio server has high overhead per request. Using 4 MiB
+-   * request size is 1.8x times faster compared with nbdcopy default
+-   * request size (256k).
+-   *)
+-  let request_size = Some (4*1024*1024)
+-end
+diff --git a/output/output_rhv_upload.mli b/output/output_rhv_upload.mli
+deleted file mode 100644
+index 35457596..00000000
+--- a/output/output_rhv_upload.mli
++++ /dev/null
+@@ -1,21 +0,0 @@
+-(* virt-v2v
+- * Copyright (C) 2009-2021 Red Hat Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *)
+-
+-(** [-o rhv-upload] output mode. *)
+-
+-module RHVUpload : Output.OUTPUT
+diff --git a/output/output_rhv_upload_cancel_source.mli b/output/output_rhv_upload_cancel_source.mli
+deleted file mode 100644
+index aa33bc54..00000000
+--- a/output/output_rhv_upload_cancel_source.mli
++++ /dev/null
+@@ -1,19 +0,0 @@
+-(* virt-v2v
+- * Copyright (C) 2019 Red Hat Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *)
+-
+-val code : string
+diff --git a/output/output_rhv_upload_createvm_source.mli b/output/output_rhv_upload_createvm_source.mli
+deleted file mode 100644
+index c1bafa15..00000000
+--- a/output/output_rhv_upload_createvm_source.mli
++++ /dev/null
+@@ -1,19 +0,0 @@
+-(* virt-v2v
+- * Copyright (C) 2018 Red Hat Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *)
+-
+-val code : string
+diff --git a/output/output_rhv_upload_finalize_source.mli b/output/output_rhv_upload_finalize_source.mli
+deleted file mode 100644
+index aa33bc54..00000000
+--- a/output/output_rhv_upload_finalize_source.mli
++++ /dev/null
+@@ -1,19 +0,0 @@
+-(* virt-v2v
+- * Copyright (C) 2019 Red Hat Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *)
+-
+-val code : string
+diff --git a/output/output_rhv_upload_plugin_source.mli b/output/output_rhv_upload_plugin_source.mli
+deleted file mode 100644
+index c1bafa15..00000000
+--- a/output/output_rhv_upload_plugin_source.mli
++++ /dev/null
+@@ -1,19 +0,0 @@
+-(* virt-v2v
+- * Copyright (C) 2018 Red Hat Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *)
+-
+-val code : string
+diff --git a/output/output_rhv_upload_precheck_source.mli b/output/output_rhv_upload_precheck_source.mli
+deleted file mode 100644
+index aa33bc54..00000000
+--- a/output/output_rhv_upload_precheck_source.mli
++++ /dev/null
+@@ -1,19 +0,0 @@
+-(* virt-v2v
+- * Copyright (C) 2019 Red Hat Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *)
+-
+-val code : string
+diff --git a/output/output_rhv_upload_transfer_source.mli b/output/output_rhv_upload_transfer_source.mli
+deleted file mode 100644
+index aa33bc54..00000000
+--- a/output/output_rhv_upload_transfer_source.mli
++++ /dev/null
+@@ -1,19 +0,0 @@
+-(* virt-v2v
+- * Copyright (C) 2019 Red Hat Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *)
+-
+-val code : string
+diff --git a/output/output_rhv_upload_vmcheck_source.mli b/output/output_rhv_upload_vmcheck_source.mli
+deleted file mode 100644
+index c1bafa15..00000000
+--- a/output/output_rhv_upload_vmcheck_source.mli
++++ /dev/null
+@@ -1,19 +0,0 @@
+-(* virt-v2v
+- * Copyright (C) 2018 Red Hat Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *)
+-
+-val code : string
+diff --git a/output/output_vdsm.ml b/output/output_vdsm.ml
+deleted file mode 100644
+index 3052fb9c..00000000
+--- a/output/output_vdsm.ml
++++ /dev/null
+@@ -1,237 +0,0 @@
+-(* virt-v2v
+- * Copyright (C) 2009-2021 Red Hat Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *)
+-
+-open Printf
+-open Unix
+-
+-open Std_utils
+-open Tools_utils
+-open Common_gettext.Gettext
+-
+-open Types
+-open Utils
+-
+-open Output
+-
+-module VDSM = struct
+-  type poptions = Types.output_allocation * string * string * string *
+-                  string list * string list * string * string *
+-                  string * Create_ovf.ovf_flavour
+-
+-  type t = string * string * int64 list
+-
+-  let to_string options = "-o vdsm"
+-
+-  let query_output_options () =
+-    let ovf_flavours_str = String.concat "|" Create_ovf.ovf_flavours in
+-
+-    printf (f_"Output options (-oo) which can be used with -o vdsm:
+-
+-  -oo vdsm-compat=0.10|1.1     Write qcow2 with compat=0.10|1.1
+-                                   (default: 0.10)
+-  -oo vdsm-vm-uuid=UUID        VM UUID (required)
+-  -oo vdsm-ovf-output=DIR      OVF metadata directory (required)
+-  -oo vdsm-ovf-flavour=%s
+-                               Set the type of generated OVF (default: rhvexp)
+-
+-For each disk you must supply one of each of these options:
+-
+-  -oo vdsm-image-uuid=UUID     Image directory UUID
+-  -oo vdsm-vol-uuid=UUID       Disk volume UUID
+-") ovf_flavours_str
+-
+-  let parse_options options source =
+-    if options.output_password <> None then
+-      error_option_cannot_be_used_in_output_mode "vdsm" "-op";
+-
+-    let vm_uuid = ref None in
+-    let ovf_output = ref None in (* default "." *)
+-    let compat = ref "0.10" in
+-    let ovf_flavour = ref Create_ovf.RHVExportStorageDomain in
+-    let image_uuids = ref [] in
+-    let vol_uuids = ref [] in
+-
+-    List.iter (
+-      function
+-      | "vdsm-compat", "0.10" -> compat := "0.10"
+-      | "vdsm-compat", "1.1" -> compat := "1.1"
+-      | "vdsm-compat", v ->
+-         error (f_"-o vdsm: unknown vdsm-compat level ‘%s’") v
+-      | "vdsm-vm-uuid", v ->
+-         if !vm_uuid <> None then
+-           error (f_"-o vdsm: -oo vdsm-vm-uuid set more than once");
+-         vm_uuid := Some v;
+-      | "vdsm-ovf-output", v ->
+-         if !ovf_output <> None then
+-           error (f_"-o vdsm: -oo vdsm-ovf-output set more than once");
+-         ovf_output := Some v;
+-      | "vdsm-ovf-flavour", v ->
+-         ovf_flavour := Create_ovf.ovf_flavour_of_string v
+-      | "vdsm-image-uuid", v ->
+-         List.push_front v image_uuids
+-      | "vdsm-vol-uuid", v ->
+-         List.push_front v vol_uuids
+-      | k, _ ->
+-         error (f_"-o vdsm: unknown output option ‘-oo %s’") k
+-    ) options.output_options;
+-
+-    let compat = !compat in
+-    let image_uuids = List.rev !image_uuids in
+-    let vol_uuids = List.rev !vol_uuids in
+-    if image_uuids = [] || vol_uuids = [] then
+-      error (f_"-o vdsm: either -oo vdsm-vol-uuid or \
+-                -oo vdsm-vm-uuid was not specified");
+-    let vm_uuid =
+-      match !vm_uuid with
+-      | None ->
+-         error (f_"-o vdsm: -oo vdsm-image-uuid was not specified")
+-      | Some uuid -> uuid in
+-    let ovf_output = Option.value ~default:"." !ovf_output in
+-    let ovf_flavour = !ovf_flavour in
+-
+-    (* -os must be set, but at this point we cannot check it. *)
+-    let output_storage =
+-      match options.output_storage with
+-      | None -> error (f_"-o vdsm: -os option was not specified")
+-      | Some d when not (is_directory d) ->
+-         error (f_"-os %s: output directory does not exist \
+-                   or is not a directory") d
+-      | Some d -> d in
+-
+-    let output_name = Option.value ~default:source.s_name options.output_name in
+-
+-    (options.output_alloc, options.output_format,
+-     output_name, output_storage,
+-     image_uuids, vol_uuids, vm_uuid, ovf_output,
+-     compat, ovf_flavour)
+-
+-  let setup dir options source =
+-    error_if_disk_count_gt dir 23;
+-    let disks = get_disks dir in
+-    let output_alloc, output_format,
+-        output_name, output_storage,
+-        image_uuids, vol_uuids, vm_uuid, ovf_output,
+-        compat, ovf_flavour = options in
+-
+-    if List.length image_uuids <> List.length disks ||
+-       List.length vol_uuids <> List.length disks then
+-      error (f_"the number of ‘-oo vdsm-image-uuid’ and ‘-oo vdsm-vol-uuid’ \
+-                parameters passed on the command line has to match the \
+-                number of guest disk images (for this guest: %d)")
+-        (List.length disks);
+-
+-    let dd_mp, dd_uuid =
+-      let fields =
+-        String.nsplit "/" output_storage in (* ... "data-center" "UUID" *)
+-      let fields = List.rev fields in       (* "UUID" "data-center" ... *)
+-      let fields = List.dropwhile ((=) "") fields in
+-      match fields with
+-      | uuid :: rest when String.length uuid = 36 ->
+-         let mp = String.concat "/" (List.rev rest) in
+-         mp, uuid
+-      | _ ->
+-         error (f_"vdsm: invalid -os parameter \
+-                   does not contain a valid UUID: %s")
+-           output_storage in
+-
+-    debug "VDSM: DD mountpoint: %s\nVDSM: DD UUID: %s" dd_mp dd_uuid;
+-
+-    (* Note that VDSM has to create all these directories. *)
+-    let images_dir = dd_mp // dd_uuid // "images" in
+-    List.iter (
+-      fun image_uuid ->
+-        let d = images_dir // image_uuid in
+-        if not (is_directory d) then
+-          error (f_"image directory (%s) does not exist or is not a directory")
+-            d
+-      ) image_uuids;
+-
+-    (* Note that VDSM has to create this directory too. *)
+-    if not (is_directory ovf_output) then
+-      error (f_"OVF (metadata) directory (%s) does not exist or \
+-                is not a directory")
+-        ovf_output;
+-
+-    debug "VDSM: OVF (metadata) directory: %s" ovf_output;
+-
+-    (* The final directory structure should look like this:
+-     *   /<MP>/<ESD_UUID>/images/
+-     *      <IMAGE_UUID_1>/<VOL_UUID_1>        # first disk
+-     *      <IMAGE_UUID_1>/<VOL_UUID_1>.meta   # first disk
+-     *      <IMAGE_UUID_2>/<VOL_UUID_2>        # second disk
+-     *      <IMAGE_UUID_2>/<VOL_UUID_2>.meta   # second disk
+-     *      <IMAGE_UUID_3>/<VOL_UUID_3>        # etc
+-     *      <IMAGE_UUID_3>/<VOL_UUID_3>.meta   #
+-     *)
+-
+-    (* Create the target filenames. *)
+-    let filenames =
+-      List.map (
+-        fun (image_uuid, vol_uuid) ->
+-          let filename = images_dir // image_uuid // vol_uuid in
+-          debug "VDSM: disk: %s" filename;
+-          filename
+-      ) (List.combine image_uuids vol_uuids) in
+-
+-    (* Generate the .meta files associated with each volume. *)
+-    let sizes = List.map snd disks in
+-    let metas =
+-      Create_ovf.create_meta_files output_alloc output_format
+-        dd_uuid image_uuids sizes in
+-    List.iter (
+-      fun (filename, meta) ->
+-        let meta_filename = filename ^ ".meta" in
+-        with_open_out meta_filename (fun chan -> output_string chan meta)
+-    ) (List.combine filenames metas);
+-
+-    (* Set up the NBD servers. *)
+-    List.iter (
+-      fun ((i, size), filename) ->
+-        let socket = sprintf "%s/out%d" dir i in
+-        On_exit.unlink socket;
+-
+-        (* Create the actual output disk. *)
+-        output_to_local_file output_alloc output_format filename size socket
+-    ) (List.combine disks filenames);
+-
+-    (* Save parameters since we need them during finalization. *)
+-    let t = dd_mp, dd_uuid, sizes in
+-    t
+-
+-  let finalize dir options t source inspect target_meta =
+-    let output_alloc, output_format,
+-        output_name, output_storage,
+-        image_uuids, vol_uuids, vm_uuid, ovf_output,
+-        compat, ovf_flavour = options in
+-    let dd_mp, dd_uuid, sizes = t in
+-
+-    (* Create the metadata. *)
+-    let ovf = Create_ovf.create_ovf source inspect target_meta sizes
+-                output_alloc output_format output_name dd_uuid
+-                image_uuids
+-                vol_uuids
+-                dir
+-                vm_uuid
+-                ovf_flavour in
+-
+-    (* Write it to the metadata file. *)
+-    let file = ovf_output // vm_uuid ^ ".ovf" in
+-    with_open_out file (fun chan -> DOM.doc_to_chan chan ovf)
+-
+-  let request_size = None
+-end
+diff --git a/output/output_vdsm.mli b/output/output_vdsm.mli
+deleted file mode 100644
+index 2260d7e6..00000000
+--- a/output/output_vdsm.mli
++++ /dev/null
+@@ -1,21 +0,0 @@
+-(* virt-v2v
+- * Copyright (C) 2009-2021 Red Hat Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *)
+-
+-(** [-o vdsm] output mode. *)
+-
+-module VDSM : Output.OUTPUT
+diff --git a/output/rhv-upload-cancel.py b/output/rhv-upload-cancel.py
+deleted file mode 100644
+index b36e1904..00000000
+--- a/output/rhv-upload-cancel.py
++++ /dev/null
+@@ -1,96 +0,0 @@
+-# -*- python -*-
+-# oVirt or RHV upload cancel used by ‘virt-v2v -o rhv-upload’
+-# Copyright (C) 2019-2021 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License along
+-# with this program; if not, write to the Free Software Foundation, Inc.,
+-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-import json
+-import logging
+-import sys
+-from contextlib import closing
+-from urllib.parse import urlparse, urlunparse
+-
+-import ovirtsdk4 as sdk
+-import ovirtsdk4.types as types
+-
+-
+-def debug(s):
+-    if params['verbose']:
+-        print(s, file=sys.stderr)
+-        sys.stderr.flush()
+-
+-
+-# Parameters are passed in via a JSON doc from the OCaml code.
+-# Because this Python code ships embedded inside virt-v2v there
+-# is no formal API here.
+-params = None
+-
+-if len(sys.argv) != 2:
+-    raise RuntimeError("incorrect number of parameters")
+-
+-# Parameters are passed in via a JSON document.
+-with open(sys.argv[1], 'r') as fp:
+-    params = json.load(fp)
+-
+-# What is passed in is a password file, read the actual password.
+-with open(params['output_password'], 'r') as fp:
+-    output_password = fp.read()
+-output_password = output_password.rstrip()
+-
+-# Parse out the username from the output_conn URL.
+-parsed = urlparse(params['output_conn'])
+-username = parsed.username or "admin@internal"
+-netloc = f"{parsed.hostname:parsed.port}" if parsed.port else parsed.hostname
+-
+-# Connect to the server.
+-connection = sdk.Connection(
+-    url=urlunparse(parsed._replace(netloc=netloc)),
+-    username=username,
+-    password=output_password,
+-    ca_file=params['rhv_cafile'],
+-    log=logging.getLogger(),
+-    insecure=params['insecure'],
+-)
+-
+-with closing(connection):
+-    system_service = connection.system_service()
+-    image_transfers_service = system_service.image_transfers_service()
+-
+-    # Try to cancel the transfers.  This should delete the associated disk.
+-    for id in params['transfer_ids']:
+-        try:
+-            transfer_service = \
+-                image_transfers_service.image_transfer_service(id)
+-            transfer_service.cancel()
+-        except sdk.NotFoundError:
+-            debug("unexpected error: transfer id %s not found" % id)
+-        except Exception:
+-            if params['verbose']:
+-                traceback.print_exc()
+-
+-    disks_service = system_service.disks_service()
+-
+-    # In case we didn't associate a disk with a transfer and as a last
+-    # resort, delete the disk too.
+-    for uuid in params['disk_uuids']:
+-        try:
+-            disk_service = disks_service.disk_service(uuid)
+-            disk_service.remove()
+-        except (sdk.NotFoundError, sdk.Error):
+-            # We expect these exceptions so ignore them.
+-            pass
+-        except Exception:
+-            if params['verbose']:
+-                traceback.print_exc()
+diff --git a/output/rhv-upload-createvm.py b/output/rhv-upload-createvm.py
+deleted file mode 100644
+index 9af2c167..00000000
+--- a/output/rhv-upload-createvm.py
++++ /dev/null
+@@ -1,137 +0,0 @@
+-# -*- python -*-
+-# oVirt or RHV upload create VM used by ‘virt-v2v -o rhv-upload’
+-# Copyright (C) 2018 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License along
+-# with this program; if not, write to the Free Software Foundation, Inc.,
+-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-import json
+-import logging
+-import sys
+-import time
+-import uuid
+-
+-from urllib.parse import urlparse, urlunparse
+-
+-import ovirtsdk4 as sdk
+-import ovirtsdk4.types as types
+-
+-
+-def debug(s):
+-    if params['verbose']:
+-        print(s, file=sys.stderr)
+-        sys.stderr.flush()
+-
+-
+-def jobs_completed(system_service, correlation_id):
+-    jobs_service = system_service.jobs_service()
+-
+-    try:
+-        jobs = jobs_service.list(
+-            search="correlation_id=%s" % correlation_id)
+-    except sdk.Error as e:
+-        debug(
+-            "Error searching for jobs with correlation id %s: %s" %
+-            (correlation_id, e))
+-        # We don't know, assume that jobs did not complete yet.
+-        return False
+-
+-    # STARTED is the only "in progress" status, anything else means the job
+-    # has already terminated.
+-    if all(job.status != types.JobStatus.STARTED for job in jobs):
+-        failed_jobs = [(job.description, str(job.status))
+-                       for job in jobs
+-                       if job.status != types.JobStatus.FINISHED]
+-        if failed_jobs:
+-            raise RuntimeError(
+-                "Failed to create a VM! Failed jobs: %r" % failed_jobs)
+-        return True
+-    else:
+-        running_jobs = [(job.description, str(job.status)) for job in jobs]
+-        debug("Some jobs with correlation id %s are running: %s" %
+-              (correlation_id, running_jobs))
+-        return False
+-
+-
+-# Seconds to wait for the VM import job to complete in oVirt.
+-timeout = 3 * 60
+-
+-# Parameters are passed in via a JSON doc from the OCaml code.
+-# Because this Python code ships embedded inside virt-v2v there
+-# is no formal API here.
+-params = None
+-ovf = None                      # OVF file
+-
+-if len(sys.argv) != 3:
+-    raise RuntimeError("incorrect number of parameters")
+-
+-# Parameters are passed in via a JSON document.
+-with open(sys.argv[1], 'r') as fp:
+-    params = json.load(fp)
+-
+-# What is passed in is a password file, read the actual password.
+-with open(params['output_password'], 'r') as fp:
+-    output_password = fp.read()
+-output_password = output_password.rstrip()
+-
+-# Read the OVF document.
+-with open(sys.argv[2], 'r') as fp:
+-    ovf = fp.read()
+-
+-# Parse out the username from the output_conn URL.
+-parsed = urlparse(params['output_conn'])
+-username = parsed.username or "admin@internal"
+-netloc = f"{parsed.hostname:parsed.port}" if parsed.port else parsed.hostname
+-
+-# Connect to the server.
+-connection = sdk.Connection(
+-    url=urlunparse(parsed._replace(netloc=netloc)),
+-    username=username,
+-    password=output_password,
+-    ca_file=params['rhv_cafile'],
+-    log=logging.getLogger(),
+-    insecure=params['insecure'],
+-)
+-
+-system_service = connection.system_service()
+-
+-# Get the cluster.
+-cluster = system_service.clusters_service().cluster_service(params['rhv_cluster_uuid'])
+-cluster = cluster.get()
+-
+-correlation_id = str(uuid.uuid4())
+-vms_service = system_service.vms_service()
+-vm = vms_service.add(
+-    types.Vm(
+-        cluster=cluster,
+-        initialization=types.Initialization(
+-            configuration=types.Configuration(
+-                type=types.ConfigurationType.OVA,
+-                data=ovf,
+-            )
+-        )
+-    ),
+-    query={'correlation_id': correlation_id},
+-)
+-
+-# Wait for the import job to finish.
+-endt = time.monotonic() + timeout
+-while True:
+-    time.sleep(10)
+-    if jobs_completed(system_service, correlation_id):
+-        break
+-    if time.monotonic() > endt:
+-        raise RuntimeError(
+-            "Timed out waiting for VM creation!"
+-            " Jobs still running for correlation id %s" % correlation_id)
+diff --git a/output/rhv-upload-finalize.py b/output/rhv-upload-finalize.py
+deleted file mode 100644
+index 12fd39ec..00000000
+--- a/output/rhv-upload-finalize.py
++++ /dev/null
+@@ -1,174 +0,0 @@
+-# -*- python -*-
+-# oVirt or RHV upload finalize used by ‘virt-v2v -o rhv-upload’
+-# Copyright (C) 2018-2021 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License along
+-# with this program; if not, write to the Free Software Foundation, Inc.,
+-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-import json
+-import logging
+-import sys
+-import time
+-from urllib.parse import urlparse, urlunparse
+-
+-import ovirtsdk4 as sdk
+-import ovirtsdk4.types as types
+-
+-# Timeout to wait for oVirt disks to change status, or the transfer
+-# object to finish initializing [seconds].
+-timeout = 5 * 60
+-
+-
+-def debug(s):
+-    if params['verbose']:
+-        print(s, file=sys.stderr)
+-        sys.stderr.flush()
+-
+-
+-def finalize_transfer(connection, transfer_id, disk_id):
+-    """
+-    Finalize a transfer, making the transfer disk available.
+-
+-    If finalizing succeeds, the transfer's disk status will change to OK
+-    and transfer's phase will change to FINISHED_SUCCESS. Unfortunately,
+-    the disk status is modified before the transfer finishes, and oVirt
+-    may still hold a lock on the disk at this point.
+-
+-    The only way to make sure that the disk is unlocked, is to wait
+-    until the transfer phase switches FINISHED_SUCCESS. Unfortunately
+-    oVirt makes this hard to use because the transfer is removed shortly
+-    after switching the phase to the final phase. However if the
+-    transfer was removed, we can be sure that the disk is not locked,
+-    since oVirt releases the locks before removing the transfer.
+-
+-    On errors, the transfer's phase will change to FINISHED_FAILURE and
+-    the disk status will change to ILLEGAL and it will be removed. Again
+-    the transfer will be removed shortly after that.
+-
+-    If oVirt fails to finalize the transfer, transfer's phase will
+-    change to PAUSED_SYSTEM. In this case the disk's status will change
+-    to ILLEGAL and it will not be removed.
+-
+-    oVirt 4.4.7 made waiting for transfer easier by keeping transfers
+-    after they complete, but we must support older versions so we have
+-    generic code that work with any version.
+-
+-    For more info see:
+-    - http://ovirt.github.io/ovirt-engine-api-model/4.4/#services/image_transfer
+-    - http://ovirt.github.io/ovirt-engine-sdk/master/types.m.html#ovirtsdk4.types.ImageTransfer
+-    """
+-    debug("finalizing transfer %s" % transfer_id)
+-    transfer_service = (connection.system_service()
+-                        .image_transfers_service()
+-                        .image_transfer_service(transfer_id))
+-
+-    start = time.monotonic()
+-
+-    transfer_service.finalize()
+-
+-    while True:
+-        time.sleep(1)
+-        try:
+-            transfer = transfer_service.get()
+-        except sdk.NotFoundError:
+-            # Transfer was removed (ovirt < 4.4.7). We need to check the
+-            # disk status to understand if the transfer was successful.
+-            # Due to the way oVirt does locking, we know that the disk
+-            # is unlocked at this point so we can check only once.
+-
+-            debug("transfer %s was removed, checking disk %s status"
+-                  % (transfer_id, disk_id))
+-
+-            disk_service = (connection.system_service()
+-                            .disks_service()
+-                            .disk_service(disk_id))
+-
+-            try:
+-                disk = disk_service.get()
+-            except sdk.NotFoundError:
+-                raise RuntimeError(
+-                    "transfer %s failed: disk %s was removed"
+-                    % (transfer_id, disk_id))
+-
+-            debug("disk %s is %s" % (disk.id, disk.status))
+-
+-            if disk.status == types.DiskStatus.OK:
+-                break
+-
+-            raise RuntimeError(
+-                "transfer %s failed: disk is %s" % (transfer_id, disk.status))
+-        else:
+-            # Transfer exists, check if it reached one of the final
+-            # phases, or we timed out.
+-
+-            debug("transfer %s is %s" % (transfer.id, transfer.phase))
+-
+-            if transfer.phase == types.ImageTransferPhase.FINISHED_SUCCESS:
+-                break
+-
+-            if transfer.phase == types.ImageTransferPhase.FINISHED_FAILURE:
+-                raise RuntimeError(
+-                    "transfer %s has failed" % (transfer_id,))
+-
+-            if transfer.phase == types.ImageTransferPhase.PAUSED_SYSTEM:
+-                raise RuntimeError(
+-                    "transfer %s was paused by system" % (transfer.id,))
+-
+-            if time.monotonic() > start + timeout:
+-                raise RuntimeError(
+-                    "timed out waiting for transfer %s to finalize, "
+-                    "transfer is %s"
+-                    % (transfer.id, transfer.phase))
+-
+-    debug("transfer %s finalized in %.3f seconds"
+-          % (transfer_id, time.monotonic() - start))
+-
+-
+-# Parameters are passed in via a JSON doc from the OCaml code.
+-# Because this Python code ships embedded inside virt-v2v there
+-# is no formal API here.
+-params = None
+-
+-if len(sys.argv) != 2:
+-    raise RuntimeError("incorrect number of parameters")
+-
+-# Parameters are passed in via a JSON document.
+-with open(sys.argv[1], 'r') as fp:
+-    params = json.load(fp)
+-
+-# What is passed in is a password file, read the actual password.
+-with open(params['output_password'], 'r') as fp:
+-    output_password = fp.read()
+-output_password = output_password.rstrip()
+-
+-# Parse out the username from the output_conn URL.
+-parsed = urlparse(params['output_conn'])
+-username = parsed.username or "admin@internal"
+-netloc = f"{parsed.hostname:parsed.port}" if parsed.port else parsed.hostname
+-
+-# Connect to the server.
+-connection = sdk.Connection(
+-    url=urlunparse(parsed._replace(netloc=netloc)),
+-    username=username,
+-    password=output_password,
+-    ca_file=params['rhv_cafile'],
+-    log=logging.getLogger(),
+-    insecure=params['insecure'],
+-)
+-
+-# Finalize all the transfers.
+-for (transfer_id, disk_id) in zip(params['transfer_ids'], params['disk_uuids']):
+-    finalize_transfer(connection, transfer_id, disk_id)
+-
+-connection.close()
+diff --git a/output/rhv-upload-plugin.py b/output/rhv-upload-plugin.py
+deleted file mode 100644
+index 8bc79a4a..00000000
+--- a/output/rhv-upload-plugin.py
++++ /dev/null
+@@ -1,525 +0,0 @@
+-# -*- python -*-
+-# oVirt or RHV upload nbdkit plugin used by ‘virt-v2v -o rhv-upload’
+-# Copyright (C) 2018-2021 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License along
+-# with this program; if not, write to the Free Software Foundation, Inc.,
+-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-import json
+-import queue
+-import socket
+-import ssl
+-import threading
+-import time
+-
+-from contextlib import contextmanager
+-from http.client import HTTPSConnection, HTTPConnection
+-from urllib.parse import urlparse
+-
+-import nbdkit
+-
+-# Using version 2 supporting the buffer protocol for better performance.
+-API_VERSION = 2
+-
+-# Maximum number of connection to imageio server. Based on testing with imageio
+-# client, this give best performance.
+-MAX_CONNECTIONS = 4
+-
+-# Maximum idle time allowed for imageio connections.
+-IDLE_TIMEOUT = 30
+-
+-# Required parameters.
+-size = None
+-url = None
+-
+-# Optional parameters.
+-cafile = None
+-insecure = False
+-is_ovirt_host = False
+-
+-# List of options read from imageio server.
+-options = None
+-
+-# Pool of HTTP connections.
+-pool = None
+-
+-# Set when plugin is cleaning up.
+-done = threading.Event()
+-
+-# Set when periodic flush request fails.
+-pool_error = None
+-
+-
+-# Parse parameters.
+-def config(key, value):
+-    global cafile, url, is_ovirt_host, insecure, size
+-
+-    if key == "cafile":
+-        cafile = value
+-    elif key == "insecure":
+-        insecure = value.lower() in ['true', '1']
+-    elif key == "is_ovirt_host":
+-        is_ovirt_host = value.lower() in ['true', '1']
+-    elif key == "size":
+-        size = int(value)
+-    elif key == "url":
+-        url = urlparse(value)
+-    else:
+-        raise RuntimeError("unknown configuration key '%s'" % key)
+-
+-
+-def config_complete():
+-    # These parameters are required.
+-    if url is None:
+-        raise RuntimeError("url parameter was not set")
+-    if size is None:
+-        raise RuntimeError("size parameter was not set")
+-
+-
+-def after_fork():
+-    global options, pool
+-
+-    http = create_http(url)
+-    options = get_options(http, url)
+-    http.close()
+-
+-    nbdkit.debug("imageio features: flush=%(can_flush)r "
+-                 "zero=%(can_zero)r unix_socket=%(unix_socket)r "
+-                 "max_readers=%(max_readers)r max_writers=%(max_writers)r"
+-                 % options)
+-
+-    pool = create_http_pool(url, options)
+-
+-    t = threading.Thread(target=pool_keeper, name="poolkeeper")
+-    t.daemon = True
+-    t.start()
+-
+-
+-# This function is not actually defined before nbdkit 1.28, but it
+-# doesn't particularly matter if we don't close the pool because
+-# clients should call flush().
+-def cleanup():
+-    nbdkit.debug("cleaning up")
+-    done.set()
+-    close_http_pool(pool)
+-
+-
+-def thread_model():
+-    """
+-    Using parallel model to speed up transfer with multiple connections to
+-    imageio server.
+-    """
+-    return nbdkit.THREAD_MODEL_PARALLEL
+-
+-
+-def open(readonly):
+-    return 1
+-
+-
+-def can_trim(h):
+-    return False
+-
+-
+-def can_flush(h):
+-    return options['can_flush']
+-
+-
+-def can_fua(h):
+-    # imageio flush feature is is compatible with NBD_CMD_FLAG_FUA.
+-    return options['can_flush']
+-
+-
+-def can_multi_conn(h):
+-    # We can always handle multiple connections, and the number of NBD
+-    # connections is independent of the number of HTTP clients in the
+-    # pool.
+-    return True
+-
+-
+-def get_size(h):
+-    return size
+-
+-
+-# Any unexpected HTTP response status from the server will end up calling this
+-# function which logs the full error, and raises a RuntimeError exception.
+-def request_failed(r, msg):
+-    status = r.status
+-    reason = r.reason
+-    try:
+-        body = r.read()
+-    except EnvironmentError as e:
+-        body = "(Unable to read response body: %s)" % e
+-
+-    # Log the full error if we're verbose.
+-    nbdkit.debug("unexpected response from imageio server:")
+-    nbdkit.debug(msg)
+-    nbdkit.debug("%d: %s" % (status, reason))
+-    nbdkit.debug(body)
+-
+-    # Only a short error is included in the exception.
+-    raise RuntimeError("%s: %d %s: %r" % (msg, status, reason, body[:200]))
+-
+-
+-# For documentation see:
+-# https://github.com/oVirt/ovirt-imageio/blob/master/docs/random-io.md
+-# For examples of working code to read/write from the server, see:
+-# https://github.com/oVirt/ovirt-imageio/blob/master/daemon/test/server_test.py
+-def pread(h, buf, offset, flags):
+-    count = len(buf)
+-    headers = {"Range": "bytes=%d-%d" % (offset, offset + count - 1)}
+-
+-    with http_context(pool) as http:
+-        http.request("GET", url.path, headers=headers)
+-
+-        r = http.getresponse()
+-        # 206 = HTTP Partial Content.
+-        if r.status != 206:
+-            request_failed(r,
+-                           "could not read sector offset %d size %d" %
+-                           (offset, count))
+-
+-        content_length = int(r.getheader("content-length"))
+-        if content_length != count:
+-            # Should never happen.
+-            request_failed(r,
+-                           "unexpected Content-Length offset %d size %d got %d" %
+-                           (offset, count, content_length))
+-
+-        with memoryview(buf) as view:
+-            got = 0
+-            while got < count:
+-                n = r.readinto(view[got:])
+-                if n == 0:
+-                    request_failed(r,
+-                                   "short read offset %d size %d got %d" %
+-                                   (offset, count, got))
+-                got += n
+-
+-
+-def pwrite(h, buf, offset, flags):
+-    count = len(buf)
+-
+-    flush = "y" if (options['can_flush'] and (flags & nbdkit.FLAG_FUA)) else "n"
+-
+-    with http_context(pool) as http:
+-        http.putrequest("PUT", url.path + "?flush=" + flush)
+-        # The oVirt server only uses the first part of the range, and the
+-        # content-length.
+-        http.putheader("Content-Range", "bytes %d-%d/*" %
+-                       (offset, offset + count - 1))
+-        http.putheader("Content-Length", str(count))
+-        http.endheaders()
+-
+-        try:
+-            http.send(buf)
+-        except BrokenPipeError:
+-            pass
+-
+-        r = http.getresponse()
+-        if r.status != 200:
+-            request_failed(r,
+-                           "could not write sector offset %d size %d" %
+-                           (offset, count))
+-
+-        r.read()
+-
+-
+-def zero(h, count, offset, flags):
+-    # Unlike the trim and flush calls, there is no 'can_zero' method
+-    # so nbdkit could call this even if the server doesn't support
+-    # zeroing.  If this is the case we must emulate.
+-    if not options['can_zero']:
+-        emulate_zero(h, count, offset, flags)
+-        return
+-
+-    flush = bool(options['can_flush'] and (flags & nbdkit.FLAG_FUA))
+-
+-    # Construct the JSON request for zeroing.
+-    buf = json.dumps({'op': "zero",
+-                      'offset': offset,
+-                      'size': count,
+-                      'flush': flush}).encode()
+-
+-    headers = {"Content-Type": "application/json",
+-               "Content-Length": str(len(buf))}
+-
+-    with http_context(pool) as http:
+-        http.request("PATCH", url.path, body=buf, headers=headers)
+-
+-        r = http.getresponse()
+-        if r.status != 200:
+-            request_failed(r,
+-                           "could not zero sector offset %d size %d" %
+-                           (offset, count))
+-
+-        r.read()
+-
+-
+-def emulate_zero(h, count, offset, flags):
+-    flush = "y" if (options['can_flush'] and (flags & nbdkit.FLAG_FUA)) else "n"
+-
+-    with http_context(pool) as http:
+-        http.putrequest("PUT", url.path + "?flush=" + flush)
+-        http.putheader("Content-Range",
+-                       "bytes %d-%d/*" % (offset, offset + count - 1))
+-        http.putheader("Content-Length", str(count))
+-        http.endheaders()
+-
+-        try:
+-            buf = bytearray(128 * 1024)
+-            while count > len(buf):
+-                http.send(buf)
+-                count -= len(buf)
+-            http.send(memoryview(buf)[:count])
+-        except BrokenPipeError:
+-            pass
+-
+-        r = http.getresponse()
+-        if r.status != 200:
+-            request_failed(r,
+-                           "could not write zeroes offset %d size %d" %
+-                           (offset, count))
+-
+-        r.read()
+-
+-
+-def flush(h, flags):
+-    if pool_error:
+-        raise pool_error
+-
+-    # Wait until all inflight requests are completed, and send a flush
+-    # request for all imageio connections.
+-    locked = []
+-
+-    # Lock the pool by taking all connections out.
+-    while len(locked) < pool.maxsize:
+-        locked.append(pool.get())
+-
+-    try:
+-        for item in locked:
+-            send_flush(item.http)
+-            item.last_used = time.monotonic()
+-    finally:
+-        # Unlock the pool by puting the connection back.
+-        for item in locked:
+-            pool.put(item)
+-
+-
+-def send_flush(http):
+-    # Construct the JSON request for flushing.
+-    buf = json.dumps({'op': "flush"}).encode()
+-
+-    headers = {"Content-Type": "application/json",
+-               "Content-Length": str(len(buf))}
+-
+-    http.request("PATCH", url.path, body=buf, headers=headers)
+-
+-    r = http.getresponse()
+-    if r.status != 200:
+-        request_failed(r, "could not flush")
+-
+-    r.read()
+-
+-
+-# Modify http.client.HTTPConnection to work over a Unix domain socket.
+-# Derived from uhttplib written by Erik van Zijst under an MIT license.
+-# (https://pypi.org/project/uhttplib/)
+-# Ported to Python 3 by Irit Goihman.
+-class UnixHTTPConnection(HTTPConnection):
+-    def __init__(self, path, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
+-        self.path = path
+-        HTTPConnection.__init__(self, "localhost", timeout=timeout)
+-
+-    def connect(self):
+-        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+-        if self.timeout is not socket._GLOBAL_DEFAULT_TIMEOUT:
+-            self.sock.settimeout(timeout)
+-        self.sock.connect(self.path)
+-
+-
+-class PoolItem:
+-
+-    def __init__(self, http):
+-        self.http = http
+-        self.last_used = None
+-
+-
+-# Connection pool.
+-def create_http_pool(url, options):
+-    count = min(options["max_readers"],
+-                options["max_writers"],
+-                MAX_CONNECTIONS)
+-
+-    nbdkit.debug("creating http pool connections=%d" % count)
+-
+-    unix_socket = options["unix_socket"] if is_ovirt_host else None
+-
+-    pool = queue.Queue(count)
+-
+-    for i in range(count):
+-        http = create_http(url, unix_socket=unix_socket)
+-        pool.put(PoolItem(http))
+-
+-    return pool
+-
+-
+-def pool_keeper():
+-    """
+-    Thread flushing idle connections, keeping them alive.
+-
+-    If a connection does not send any request for 60 seconds, imageio
+-    server closes the connection. Recovering from closed connection is
+-    hard and unsafe, so this thread ensure that connections never
+-    becomes idle by sending a flush request if the connection is idle
+-    for too much time.
+-
+-    In normal conditions, all connections are busy most of the time, so
+-    the keeper will find no idle connections. If there short delays in
+-    nbdcopy, the keeper will find some idle connections, but will
+-    quickly return them back to the pool. In the pathological case when
+-    nbdcopy is blocked for 3 minutes on vddk input, the keeper will send
+-    a flush request on all connections every ~30 seconds, until nbdcopy
+-    starts communicating again.
+-    """
+-    global pool_error
+-
+-    nbdkit.debug("poolkeeper: started")
+-
+-    while not done.wait(IDLE_TIMEOUT / 2):
+-        idle = []
+-
+-        while True:
+-            try:
+-                idle.append(pool.get_nowait())
+-            except queue.Empty:
+-                break
+-
+-        if idle:
+-            now = time.monotonic()
+-            for item in idle:
+-                if item.last_used and now - item.last_used > IDLE_TIMEOUT:
+-                    nbdkit.debug("poolkeeper: flushing idle connection")
+-                    try:
+-                        send_flush(item.http)
+-                        item.last_used = now
+-                    except Exception as e:
+-                        # We will report this error on the next request.
+-                        pool_error = e
+-                        item.last_used = None
+-
+-                pool.put(item)
+-
+-    nbdkit.debug("poolkeeper: stopped")
+-
+-
+-@contextmanager
+-def http_context(pool):
+-    """
+-    Context manager yielding an imageio http connection from the pool. Blocks
+-    until a connection is available.
+-    """
+-    if pool_error:
+-        raise pool_error
+-
+-    item = pool.get()
+-    try:
+-        yield item.http
+-    finally:
+-        item.last_used = time.monotonic()
+-        pool.put(item)
+-
+-
+-def close_http_pool(pool):
+-    """
+-    Wait until all inflight requests are done, close all connections and remove
+-    them from the pool.
+-
+-    No request can be served by the pool after this call.
+-    """
+-    nbdkit.debug("closing http pool")
+-
+-    locked = []
+-
+-    while len(locked) < pool.maxsize:
+-        locked.append(pool.get())
+-
+-    for item in locked:
+-        item.http.close()
+-
+-
+-def create_http(url, unix_socket=None):
+-    """
+-    Create http connection for transfer url.
+-
+-    Returns HTTPConnection.
+-    """
+-    if unix_socket:
+-        nbdkit.debug("creating unix http connection socket=%r" % unix_socket)
+-        try:
+-            return UnixHTTPConnection(unix_socket)
+-        except Exception as e:
+-            # Very unlikely, but we can recover by using https.
+-            nbdkit.debug("cannot create unix socket connection: %s" % e)
+-
+-    if url.scheme == "https":
+-        context = \
+-            ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH,
+-                                       cafile=cafile)
+-        if insecure:
+-            context.check_hostname = False
+-            context.verify_mode = ssl.CERT_NONE
+-
+-        nbdkit.debug("creating https connection host=%s port=%s" %
+-                     (url.hostname, url.port))
+-        return HTTPSConnection(url.hostname, url.port, context=context)
+-    elif url.scheme == "http":
+-        nbdkit.debug("creating http connection host=%s port=%s" %
+-                     (url.hostname, url.port))
+-        return HTTPConnection(url.hostname, url.port)
+-    else:
+-        raise RuntimeError("unknown URL scheme (%s)" % url.scheme)
+-
+-
+-def get_options(http, url):
+-    """
+-    Send OPTIONS request to imageio server and return options dict.
+-    """
+-    http.request("OPTIONS", url.path)
+-    r = http.getresponse()
+-    data = r.read()
+-
+-    if r.status == 200:
+-        j = json.loads(data)
+-        features = j["features"]
+-        return {
+-            "can_flush": "flush" in features,
+-            "can_zero": "zero" in features,
+-            "unix_socket": j.get('unix_socket'),
+-            "max_readers": j.get("max_readers", 1),
+-            "max_writers": j.get("max_writers", 1),
+-        }
+-
+-    elif r.status == 405 or r.status == 204:
+-        # Old imageio servers returned either 405 Method Not Allowed or
+-        # 204 No Content (with an empty body).
+-        return {
+-            "can_flush": False,
+-            "can_zero": False,
+-            "unix_socket": None,
+-            "max_readers": 1,
+-            "max_writers": 1,
+-        }
+-    else:
+-        raise RuntimeError("could not use OPTIONS request: %d: %s" %
+-                           (r.status, r.reason))
+diff --git a/output/rhv-upload-precheck.py b/output/rhv-upload-precheck.py
+deleted file mode 100644
+index 0bbb738d..00000000
+--- a/output/rhv-upload-precheck.py
++++ /dev/null
+@@ -1,135 +0,0 @@
+-# -*- python -*-
+-# oVirt or RHV pre-upload checks used by ‘virt-v2v -o rhv-upload’
+-# Copyright (C) 2018-2020 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License along
+-# with this program; if not, write to the Free Software Foundation, Inc.,
+-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-import json
+-import logging
+-import re
+-import sys
+-
+-from urllib.parse import urlparse, urlunparse
+-
+-import ovirtsdk4 as sdk
+-import ovirtsdk4.types as types
+-
+-# Parameters are passed in via a JSON doc from the OCaml code.
+-# Because this Python code ships embedded inside virt-v2v there
+-# is no formal API here.
+-params = None
+-
+-if len(sys.argv) != 2:
+-    raise RuntimeError("incorrect number of parameters")
+-
+-# Parameters are passed in via a JSON document.
+-with open(sys.argv[1], 'r') as fp:
+-    params = json.load(fp)
+-
+-# What is passed in is a password file, read the actual password.
+-with open(params['output_password'], 'r') as fp:
+-    output_password = fp.read()
+-output_password = output_password.rstrip()
+-
+-# Parse out the username from the output_conn URL.
+-parsed = urlparse(params['output_conn'])
+-username = parsed.username or "admin@internal"
+-netloc = f"{parsed.hostname:parsed.port}" if parsed.port else parsed.hostname
+-
+-# Check the storage domain name is valid
+-# (https://bugzilla.redhat.com/show_bug.cgi?id=1986386#c1)
+-# Also this means it cannot contain spaces or glob symbols, so
+-# the search below is valid.
+-output_storage = params['output_storage']
+-if not re.match('^[-a-zA-Z0-9_]+$', output_storage):
+-    raise RuntimeError("The storage domain (-os) parameter ‘%s’ is not valid" %
+-                       output_storage)
+-
+-# Connect to the server.
+-connection = sdk.Connection(
+-    url=urlunparse(parsed._replace(netloc=netloc)),
+-    username=username,
+-    password=output_password,
+-    ca_file=params['rhv_cafile'],
+-    log=logging.getLogger(),
+-    insecure=params['insecure'],
+-)
+-
+-system_service = connection.system_service()
+-
+-# Check whether there is a datacenter for the specified storage.
+-data_centers = system_service.data_centers_service().list(
+-    search='storage.name=%s' % output_storage,
+-    case_sensitive=True,
+-)
+-if len(data_centers) == 0:
+-    storage_domains = system_service.storage_domains_service().list(
+-        search='name=%s' % output_storage,
+-        case_sensitive=True,
+-    )
+-    if len(storage_domains) == 0:
+-        # The storage domain does not even exist.
+-        raise RuntimeError("The storage domain ‘%s’ does not exist" %
+-                           output_storage)
+-
+-    # The storage domain is not attached to a datacenter
+-    # (shouldn't happen, would fail on disk creation).
+-    raise RuntimeError("The storage domain ‘%s’ is not attached to a DC" %
+-                       output_storage)
+-datacenter = data_centers[0]
+-
+-# Get the storage domain.
+-storage_domains = connection.follow_link(datacenter.storage_domains)
+-try:
+-    storage_domain = [sd for sd in storage_domains
+-                      if sd.name == output_storage][0]
+-except IndexError:
+-    raise RuntimeError("The storage domain ‘%s’ does not exist" %
+-                       output_storage)
+-
+-# Get the cluster.
+-clusters = connection.follow_link(datacenter.clusters)
+-clusters = [cluster for cluster in clusters if cluster.name == params['rhv_cluster']]
+-if len(clusters) == 0:
+-    raise RuntimeError("The cluster ‘%s’ is not part of the DC ‘%s’, "
+-                       "where the storage domain ‘%s’ is" %
+-                       (params['rhv_cluster'], datacenter.name,
+-                        output_storage))
+-cluster = clusters[0]
+-cpu = cluster.cpu
+-if cpu.architecture == types.Architecture.UNDEFINED:
+-    raise RuntimeError("The cluster ‘%s’ has an unknown architecture" %
+-                       (params['rhv_cluster']))
+-
+-# Find if any disk already exists with specified UUID.
+-# Only used with -oo rhv-disk-uuid.  It is assumed that the
+-# random UUIDs that we generate are unlikely to conflict.
+-disks_service = system_service.disks_service()
+-
+-for uuid in params.get('rhv_disk_uuids', []):
+-    try:
+-        disk_service = disks_service.disk_service(uuid).get()
+-        raise RuntimeError("Disk with the UUID '%s' already exists" % uuid)
+-    except sdk.NotFoundError:
+-        pass
+-
+-# Otherwise everything is OK, print a JSON with the results.
+-results = {
+-    "rhv_storagedomain_uuid": storage_domain.id,
+-    "rhv_cluster_uuid": cluster.id,
+-    "rhv_cluster_cpu_architecture": cpu.architecture.value,
+-}
+-
+-json.dump(results, sys.stdout)
+diff --git a/output/rhv-upload-transfer.py b/output/rhv-upload-transfer.py
+deleted file mode 100644
+index ed96153b..00000000
+--- a/output/rhv-upload-transfer.py
++++ /dev/null
+@@ -1,298 +0,0 @@
+-# -*- python -*-
+-# oVirt or RHV upload start transfer used by ‘virt-v2v -o rhv-upload’
+-# Copyright (C) 2018-2021 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License along
+-# with this program; if not, write to the Free Software Foundation, Inc.,
+-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-import inspect
+-import json
+-import logging
+-import sys
+-import time
+-from contextlib import closing
+-from urllib.parse import urlparse, urlunparse
+-
+-import ovirtsdk4 as sdk
+-import ovirtsdk4.types as types
+-
+-# Timeout to wait for oVirt disks to change status, or the transfer
+-# object to finish initializing [seconds].
+-timeout = 5 * 60
+-
+-
+-def debug(s):
+-    if params['verbose']:
+-        print(s, file=sys.stderr)
+-        sys.stderr.flush()
+-
+-
+-def find_host(connection):
+-    """Return the current host object or None."""
+-    try:
+-        with open("/etc/vdsm/vdsm.id") as f:
+-            vdsm_id = f.readline().strip()
+-    except FileNotFoundError:
+-        # Expected condition when running on non-oVirt host.
+-        debug("not an oVirt host, using non-oVirt host")
+-        return None
+-    except Exception as e:
+-        # Unexpected but we can degrade to remote transfer.
+-        debug(f"warning: cannot read host id, using non-oVirt host: {e}")
+-        return None
+-
+-    debug("hw_id = %r" % vdsm_id)
+-
+-    system_service = connection.system_service()
+-    storage_name = params['output_storage']
+-    data_centers = system_service.data_centers_service().list(
+-        search='storage.name=%s' % storage_name,
+-        case_sensitive=True,
+-    )
+-    if len(data_centers) == 0:
+-        # The storage domain is not attached to a datacenter
+-        # (shouldn't happen, would fail on disk creation).
+-        debug("storange domain (%s) is not attached to a DC" % storage_name)
+-        return None
+-
+-    datacenter = data_centers[0]
+-    debug("datacenter = %s" % datacenter.name)
+-
+-    hosts_service = system_service.hosts_service()
+-    hosts = hosts_service.list(
+-        search="hw_id=%s and datacenter=%s and status=Up"
+-               % (vdsm_id, datacenter.name),
+-        case_sensitive=True,
+-    )
+-    if len(hosts) == 0:
+-        # Couldn't find a host that's fulfilling the following criteria:
+-        # - 'hw_id' equals to 'vdsm_id'
+-        # - Its status is 'Up'
+-        # - Belongs to the storage domain's datacenter
+-        debug("cannot find a running host with hw_id=%r, "
+-              "that belongs to datacenter '%s', "
+-              "using any host" % (vdsm_id, datacenter.name))
+-        return None
+-
+-    host = hosts[0]
+-    debug("host.id = %r" % host.id)
+-
+-    return types.Host(id=host.id)
+-
+-
+-def create_disk(connection):
+-    """
+-    Create a new disk for the transfer and wait until the disk is ready.
+-
+-    Returns disk object.
+-    """
+-    system_service = connection.system_service()
+-    disks_service = system_service.disks_service()
+-
+-    if params['disk_format'] == "raw":
+-        disk_format = types.DiskFormat.RAW
+-    else:
+-        disk_format = types.DiskFormat.COW
+-
+-    disk = disks_service.add(
+-        disk=types.Disk(
+-            id=params['disk_uuid'],
+-            name=params['disk_name'],
+-            description="Uploaded by virt-v2v",
+-            format=disk_format,
+-            # XXX For qcow2 disk on block storage, we should use the estimated
+-            # size, based on qemu-img measure of the overlay.
+-            initial_size=params['disk_size'],
+-            provisioned_size=params['disk_size'],
+-            # Handling this properly will be complex, see:
+-            # https://www.redhat.com/archives/libguestfs/2018-March/msg00177.html
+-            sparse=True,
+-            storage_domains=[
+-                types.StorageDomain(
+-                    name=params['output_storage'],
+-                )
+-            ],
+-        )
+-    )
+-
+-    debug("disk.id = %r" % disk.id)
+-
+-    # Wait till the disk moved from LOCKED state to OK state, as the transfer
+-    # can't start if the disk is locked.
+-
+-    disk_service = disks_service.disk_service(disk.id)
+-    endt = time.monotonic() + timeout
+-    while True:
+-        time.sleep(1)
+-        disk = disk_service.get()
+-        if disk.status == types.DiskStatus.OK:
+-            break
+-        if time.monotonic() > endt:
+-            raise RuntimeError(
+-                "timed out waiting for disk %s to become unlocked" % disk.id)
+-
+-    return disk
+-
+-
+-def create_transfer(connection, disk, host):
+-    """
+-    Create image transfer and wait until the transfer is ready.
+-
+-    Returns a transfer object.
+-    """
+-    system_service = connection.system_service()
+-    transfers_service = system_service.image_transfers_service()
+-
+-    extra = {}
+-    if transfer_supports_format():
+-        extra["format"] = types.DiskFormat.RAW
+-
+-    transfer = transfers_service.add(
+-        types.ImageTransfer(
+-            disk=types.Disk(id=disk.id),
+-            host=host,
+-            inactivity_timeout=3600,
+-            **extra,
+-        )
+-    )
+-
+-    # At this point the transfer owns the disk and will delete the disk if the
+-    # transfer is canceled, or if finalizing the transfer fails.
+-
+-    debug("transfer.id = %r" % transfer.id)
+-
+-    # Get a reference to the created transfer service.
+-    transfer_service = transfers_service.image_transfer_service(transfer.id)
+-
+-    # Wait until transfer's phase change from INITIALIZING to TRANSFERRING. On
+-    # errors transfer's phase can change to PAUSED_SYSTEM or FINISHED_FAILURE.
+-    # If the transfer was paused, we need to cancel it to remove the disk,
+-    # otherwise the system will remove the disk and transfer shortly after.
+-
+-    endt = time.monotonic() + timeout
+-    while True:
+-        time.sleep(1)
+-        try:
+-            transfer = transfer_service.get()
+-        except sdk.NotFoundError:
+-            # The system has removed the disk and the transfer.
+-            raise RuntimeError("transfer %s was removed" % transfer.id)
+-
+-        if transfer.phase == types.ImageTransferPhase.FINISHED_FAILURE:
+-            # The system will remove the disk and the transfer soon.
+-            raise RuntimeError(
+-                "transfer %s has failed" % transfer.id)
+-
+-        if transfer.phase == types.ImageTransferPhase.PAUSED_SYSTEM:
+-            transfer_service.cancel()
+-            raise RuntimeError(
+-                "transfer %s was paused by system" % transfer.id)
+-
+-        if transfer.phase == types.ImageTransferPhase.TRANSFERRING:
+-            break
+-
+-        if transfer.phase != types.ImageTransferPhase.INITIALIZING:
+-            transfer_service.cancel()
+-            raise RuntimeError(
+-                "unexpected transfer %s phase %s"
+-                % (transfer.id, transfer.phase))
+-
+-        if time.monotonic() > endt:
+-            transfer_service.cancel()
+-            raise RuntimeError(
+-                "timed out waiting for transfer %s" % transfer.id)
+-
+-    return transfer
+-
+-
+-def transfer_supports_format():
+-    """
+-    Return True if transfer supports the "format" argument, enabing the NBD
+-    bakend on imageio side, which allows uploading to qcow2 images.
+-
+-    This feature was added in ovirt 4.3. We assume that the SDK version matches
+-    engine version.
+-    """
+-    sig = inspect.signature(types.ImageTransfer)
+-    return "format" in sig.parameters
+-
+-
+-def get_transfer_url(transfer):
+-    """
+-    Returns the transfer url, preferring direct transfer if possible.
+-    """
+-    if params['rhv_direct']:
+-        if transfer.transfer_url is None:
+-            raise RuntimeError("direct upload to host not supported, "
+-                               "requires ovirt-engine >= 4.2 and only works "
+-                               "when virt-v2v is run within the oVirt/RHV "
+-                               "environment, eg. on an oVirt node.")
+-        return transfer.transfer_url
+-    else:
+-        return transfer.proxy_url
+-
+-
+-# Parameters are passed in via a JSON doc from the OCaml code.
+-# Because this Python code ships embedded inside virt-v2v there
+-# is no formal API here.
+-params = None
+-
+-if len(sys.argv) != 2:
+-    raise RuntimeError("incorrect number of parameters")
+-
+-# Parameters are passed in via a JSON document.
+-with open(sys.argv[1], 'r') as fp:
+-    data = fp.read()
+-
+-try:
+-    params = json.loads(data)
+-except ValueError as e:
+-    raise RuntimeError(f"Cannot parse params {data!r}: {e}").with_traceback(
+-        e.__traceback__
+-    ) from None
+-
+-# What is passed in is a password file, read the actual password.
+-with open(params['output_password'], 'r') as fp:
+-    output_password = fp.read()
+-output_password = output_password.rstrip()
+-
+-# Parse out the username from the output_conn URL.
+-parsed = urlparse(params['output_conn'])
+-username = parsed.username or "admin@internal"
+-netloc = f"{parsed.hostname:parsed.port}" if parsed.port else parsed.hostname
+-
+-connection = sdk.Connection(
+-    url=urlunparse(parsed._replace(netloc=netloc)),
+-    username=username,
+-    password=output_password,
+-    ca_file=params['rhv_cafile'],
+-    log=logging.getLogger(),
+-    insecure=params['insecure'],
+-)
+-
+-with closing(connection):
+-    # Use the local host if possible.
+-    host = find_host(connection) if params['rhv_direct'] else None
+-    disk = create_disk(connection)
+-
+-    transfer = create_transfer(connection, disk, host)
+-    destination_url = get_transfer_url(transfer)
+-
+-# Send the destination URL, transfer ID, and host flag back to OCaml code.
+-results = {
+-    "transfer_id": transfer.id,
+-    "destination_url": destination_url,
+-    "is_ovirt_host": host is not None,
+-}
+-json.dump(results, sys.stdout)
+diff --git a/output/rhv-upload-vmcheck.py b/output/rhv-upload-vmcheck.py
+deleted file mode 100644
+index cd500574..00000000
+--- a/output/rhv-upload-vmcheck.py
++++ /dev/null
+@@ -1,72 +0,0 @@
+-# -*- python -*-
+-# oVirt or RHV VM existence check used by ‘virt-v2v -o rhv-upload’
+-# Copyright (C) 2018-2020 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License along
+-# with this program; if not, write to the Free Software Foundation, Inc.,
+-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-import json
+-import logging
+-import sys
+-
+-from urllib.parse import urlparse, urlunparse
+-
+-import ovirtsdk4 as sdk
+-import ovirtsdk4.types as types
+-
+-# Parameters are passed in via a JSON doc from the OCaml code.
+-# Because this Python code ships embedded inside virt-v2v there
+-# is no formal API here.
+-params = None
+-
+-if len(sys.argv) != 2:
+-    raise RuntimeError("incorrect number of parameters")
+-
+-# Parameters are passed in via a JSON document.
+-with open(sys.argv[1], 'r') as fp:
+-    params = json.load(fp)
+-
+-# What is passed in is a password file, read the actual password.
+-with open(params['output_password'], 'r') as fp:
+-    output_password = fp.read()
+-output_password = output_password.rstrip()
+-
+-# Parse out the username from the output_conn URL.
+-parsed = urlparse(params['output_conn'])
+-username = parsed.username or "admin@internal"
+-netloc = f"{parsed.hostname:parsed.port}" if parsed.port else parsed.hostname
+-
+-# Connect to the server.
+-connection = sdk.Connection(
+-    url=urlunparse(parsed._replace(netloc=netloc)),
+-    username=username,
+-    password=output_password,
+-    ca_file=params['rhv_cafile'],
+-    log=logging.getLogger(),
+-    insecure=params['insecure'],
+-)
+-
+-system_service = connection.system_service()
+-
+-# Find if a virtual machine already exists with that name.
+-vms_service = system_service.vms_service()
+-vms = vms_service.list(
+-    search=("name=%s" % params['output_name']),
+-)
+-if len(vms) > 0:
+-    vm = vms[0]
+-    raise RuntimeError("VM already exists with name ‘%s’, id ‘%s’" %
+-                       (params['output_name'], vm.id))
+-
+-# Otherwise everything is OK, exit with no error.
+diff --git a/tests/Makefile.am b/tests/Makefile.am
+index b41fed7f..2cf57248 100644
+--- a/tests/Makefile.am
++++ b/tests/Makefile.am
+@@ -70,8 +70,6 @@ TESTS = \
+ 	test-v2v-i-ova-two-disks.sh \
+ 	test-v2v-i-vmx.sh \
+ 	test-v2v-it-vddk-io-query.sh \
+-	test-v2v-o-rhv-upload-oo-query.sh \
+-	test-v2v-o-vdsm-oo-query.sh \
+ 	test-v2v-bad-networks-and-bridges.sh \
+ 	test-v2v-cdrom.sh \
+ 	test-v2v-floppy.sh \
+@@ -89,9 +87,6 @@ TESTS = \
+ 	test-v2v-o-null.sh \
+ 	test-v2v-o-openstack.sh \
+ 	test-v2v-o-qemu.sh \
+-	test-v2v-o-rhv.sh \
+-	test-v2v-o-rhv-upload.sh \
+-	test-v2v-o-vdsm-options.sh \
+ 	test-v2v-oa-option-qcow2.sh \
+ 	test-v2v-oa-option-raw.sh \
+ 	test-v2v-of-option.sh \
+@@ -258,16 +253,6 @@ EXTRA_DIST += \
+ 	test-v2v-o-null.sh \
+ 	test-v2v-o-openstack.sh \
+ 	test-v2v-o-qemu.sh \
+-	test-v2v-o-rhv.ovf.expected \
+-	test-v2v-o-rhv.sh \
+-	test-v2v-o-rhv-upload.sh \
+-	test-v2v-o-rhv-upload-module/imageio.py \
+-	test-v2v-o-rhv-upload-module/ovirtsdk4/__init__.py \
+-	test-v2v-o-rhv-upload-module/ovirtsdk4/types.py \
+-	test-v2v-o-rhv-upload-oo-query.sh \
+-	test-v2v-o-vdsm-oo-query.sh \
+-	test-v2v-o-vdsm-options.ovf.expected \
+-	test-v2v-o-vdsm-options.sh \
+ 	test-v2v-oa-option-qcow2.sh \
+ 	test-v2v-oa-option-raw.sh \
+ 	test-v2v-of-option.sh \
+diff --git a/tests/test-v2v-o-rhv-upload-module/imageio.py b/tests/test-v2v-o-rhv-upload-module/imageio.py
+deleted file mode 100755
+index b9a491d7..00000000
+--- a/tests/test-v2v-o-rhv-upload-module/imageio.py
++++ /dev/null
+@@ -1,71 +0,0 @@
+-#!/usr/bin/env python3
+-# -*- python -*-
+-# Copyright (C) 2018-2021 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License along
+-# with this program; if not, write to the Free Software Foundation, Inc.,
+-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-# Fake imageio web server used as a test harness.
+-# See v2v/test-v2v-o-rhv-upload.sh
+-
+-import sys
+-import threading
+-from http.server import HTTPServer, BaseHTTPRequestHandler
+-
+-class RequestHandler(BaseHTTPRequestHandler):
+-    protocol_version = 'HTTP/1.1'
+-
+-    def do_OPTIONS(self):
+-        self.discard_request()
+-
+-        # Advertize only flush and zero support.
+-        content = b'''{ "features": [ "flush", "zero" ] }'''
+-        length = len(content)
+-
+-        self.send_response(200)
+-        self.send_header("Content-type", "application/json; charset=UTF-8")
+-        self.send_header("Content-Length", length)
+-        self.end_headers()
+-        self.wfile.write(content)
+-
+-    # eg. zero request.  Just ignore it.
+-    def do_PATCH(self):
+-        self.discard_request()
+-        self.send_response(200)
+-        self.send_header("Content-Length", "0")
+-        self.end_headers()
+-
+-    # Flush request.  Ignore it.
+-    def do_PUT(self):
+-        self.discard_request()
+-        self.send_response(200)
+-        self.send_header("Content-Length", "0")
+-        self.end_headers()
+-
+-    def discard_request(self):
+-        length = self.headers.get('Content-Length')
+-        if length:
+-            length = int(length)
+-            content = self.rfile.read(length)
+-
+-server_address = ("", 0)
+-# XXX This should test HTTPS, not HTTP, because we are testing a
+-# different path through the main code.
+-httpd = HTTPServer(server_address, RequestHandler)
+-imageio_port = httpd.server_address[1]
+-
+-print("port: %d" % imageio_port)
+-sys.stdout.flush()
+-
+-httpd.serve_forever()
+diff --git a/tests/test-v2v-o-rhv-upload-module/ovirtsdk4/__init__.py b/tests/test-v2v-o-rhv-upload-module/ovirtsdk4/__init__.py
+deleted file mode 100644
+index e33d0714..00000000
+--- a/tests/test-v2v-o-rhv-upload-module/ovirtsdk4/__init__.py
++++ /dev/null
+@@ -1,150 +0,0 @@
+-# -*- python -*-
+-# Copyright (C) 2018 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License along
+-# with this program; if not, write to the Free Software Foundation, Inc.,
+-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-# Fake ovirtsdk4 module used as a test harness.
+-# See v2v/test-v2v-o-rhv-upload.sh
+-
+-class Error(Exception):
+-    pass
+-
+-
+-class NotFoundError(Error):
+-    pass
+-
+-
+-class Connection(object):
+-    def __init__(
+-            self,
+-            url=None,
+-            username=None,
+-            password=None,
+-            ca_file=None,
+-            log=None,
+-            insecure=False,
+-            debug=True,
+-    ):
+-        pass
+-
+-    def close(self):
+-        pass
+-
+-    def follow_link(self, objs):
+-        return objs
+-
+-    def system_service(self):
+-        return SystemService()
+-
+-
+-class SystemService(object):
+-    def clusters_service(self):
+-        return ClustersService()
+-
+-    def data_centers_service(self):
+-        return DataCentersService()
+-
+-    def disks_service(self):
+-        return DisksService()
+-
+-    def jobs_service(self):
+-        return JobsService()
+-
+-    def image_transfers_service(self):
+-        return ImageTransfersService()
+-
+-    def storage_domains_service(self):
+-        return StorageDomainsService()
+-
+-    def vms_service(self):
+-        return VmsService()
+-
+-
+-class ClusterService(object):
+-    def get(self):
+-        return types.Cluster()
+-
+-
+-class ClustersService(object):
+-    def cluster_service(self, id):
+-        return ClusterService()
+-
+-
+-class DataCentersService(object):
+-    def list(self, search=None, case_sensitive=False):
+-        return [types.DataCenter()]
+-
+-
+-class DiskService(object):
+-    def __init__(self, disk_id):
+-        self._disk_id = disk_id
+-
+-    def get(self):
+-        return types.Disk(id=self._disk_id)
+-
+-    def remove(self):
+-        pass
+-
+-
+-class DisksService(object):
+-    def add(self, disk=None):
+-        disk.id = "756d81b0-d5c0-41bc-9bbe-b343c3fa3490"
+-        return disk
+-
+-    def disk_service(self, disk_id):
+-        return DiskService(disk_id)
+-
+-
+-class JobsService(object):
+-    def list(self, search=None):
+-        return [types.Job()]
+-
+-
+-class ImageTransferService(object):
+-    def __init__(self):
+-        self._finalized = False
+-
+-    def cancel(self):
+-        pass
+-
+-    def get(self):
+-        if self._finalized:
+-            raise NotFoundError
+-        else:
+-            return types.ImageTransfer()
+-
+-    def finalize(self):
+-        self._finalized = True
+-
+-
+-class ImageTransfersService(object):
+-    def add(self, transfer):
+-        return transfer
+-
+-    def image_transfer_service(self, id):
+-        return ImageTransferService()
+-
+-
+-class StorageDomainsService(object):
+-    def list(self, search=None, case_sensitive=False):
+-        return [StorageDomain()]
+-
+-
+-class VmsService(object):
+-    def add(self, vm, query=None):
+-        return vm
+-
+-    def list(self, search=None):
+-        return []
+diff --git a/tests/test-v2v-o-rhv-upload-module/ovirtsdk4/types.py b/tests/test-v2v-o-rhv-upload-module/ovirtsdk4/types.py
+deleted file mode 100644
+index 38d89573..00000000
+--- a/tests/test-v2v-o-rhv-upload-module/ovirtsdk4/types.py
++++ /dev/null
+@@ -1,184 +0,0 @@
+-# -*- python -*-
+-# Copyright (C) 2018 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License along
+-# with this program; if not, write to the Free Software Foundation, Inc.,
+-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-# Fake ovirtsdk4 module used as a test harness.
+-# See v2v/test-v2v-o-rhv-upload.sh
+-
+-import os
+-from enum import Enum
+-
+-imageio_port = os.getenv("IMAGEIO_PORT")
+-assert imageio_port is not None
+-
+-
+-class Architecture(Enum):
+-    UNDEFINED = "undefined"
+-    X86_64 = "x86_64"
+-
+-    def __init__(self, arch):
+-        self._arch = arch
+-
+-    def __str__(self):
+-        return self._arch
+-
+-
+-class Cpu(object):
+-    architecture = Architecture.X86_64
+-
+-
+-class Cluster(object):
+-    id = "2e97537b-a783-4706-af9e-75cb2e032dcd"
+-    name = "Default"
+-    cpu = Cpu()
+-
+-
+-class Configuration(object):
+-    def __init__(self, type=None, data=None):
+-        pass
+-
+-
+-class ConfigurationType(Enum):
+-    OVA = 'ova'
+-    OVF = 'ovf'
+-
+-    def __init__(self, image):
+-        self._image = image
+-
+-    def __str__(self):
+-        return self._image
+-
+-
+-class DiskFormat(Enum):
+-    COW = "cow"
+-    RAW = "raw"
+-
+-    def __init__(self, image):
+-        self._image = image
+-
+-    def __str__(self):
+-        return self._image
+-
+-
+-class DiskStatus(Enum):
+-    ILLEGAL = "illegal"
+-    LOCKED = "locked"
+-    OK = "ok"
+-
+-    def __init__(self, image):
+-        self._image = image
+-
+-    def __str__(self):
+-        return self._image
+-
+-
+-class Disk(object):
+-    def __init__(
+-            self,
+-            id=None,
+-            name=None,
+-            description=None,
+-            format=None,
+-            initial_size=None,
+-            provisioned_size=None,
+-            sparse=False,
+-            storage_domains=None
+-    ):
+-        self.id = id
+-
+-    status = DiskStatus.OK
+-
+-
+-class ImageTransferPhase(Enum):
+-    CANCELLED = 'cancelled'
+-    FINALIZING_FAILURE = 'finalizing_failure'
+-    FINALIZING_SUCCESS = 'finalizing_success'
+-    FINISHED_FAILURE = 'finished_failure'
+-    FINISHED_SUCCESS = 'finished_success'
+-    INITIALIZING = 'initializing'
+-    PAUSED_SYSTEM = 'paused_system'
+-    PAUSED_USER = 'paused_user'
+-    RESUMING = 'resuming'
+-    TRANSFERRING = 'transferring'
+-    UNKNOWN = 'unknown'
+-
+-    def __init__(self, image):
+-        self._image = image
+-
+-    def __str__(self):
+-        return self._image
+-
+-
+-class ImageTransfer(object):
+-    def __init__(
+-            self,
+-            disk=None,
+-            host=None,
+-            inactivity_timeout=None,
+-    ):
+-        pass
+-
+-    id = "e26ac8ab-7090-4d5e-95ad-e707b511a359"
+-    phase = ImageTransferPhase.TRANSFERRING
+-    transfer_url = "http://localhost:" + imageio_port + "/"
+-
+-
+-class Initialization(object):
+-    def __init__(self, configuration):
+-        pass
+-
+-
+-class JobStatus(Enum):
+-    ABORTED = "aborted"
+-    FAILED = "failed"
+-    FINISHED = "finished"
+-    STARTED = "started"
+-    UNKNOWN = "unknown"
+-
+-    def __init__(self, image):
+-        self._image = image
+-
+-    def __str__(self):
+-        return self._image
+-
+-
+-class Job(object):
+-    description = "Fake job"
+-    status = JobStatus.FINISHED
+-
+-
+-class StorageDomain(object):
+-    def __init__(self, name=None):
+-        pass
+-
+-    id = "ba87af68-b630-4211-a73a-694c1a689405"
+-    name = "Storage"
+-
+-
+-class Vm(object):
+-    def __init__(
+-            self,
+-            cluster=None,
+-            initialization=None
+-    ):
+-        pass
+-
+-
+-class DataCenter(object):
+-    id = "31d8c73b-554b-4958-bb04-9ce97f0849e1"
+-    name = "DC"
+-    storage_domains = [StorageDomain()]
+-    clusters = [Cluster()]
+diff --git a/tests/test-v2v-o-rhv-upload-oo-query.sh b/tests/test-v2v-o-rhv-upload-oo-query.sh
+deleted file mode 100755
+index 5ef56b90..00000000
+--- a/tests/test-v2v-o-rhv-upload-oo-query.sh
++++ /dev/null
+@@ -1,41 +0,0 @@
+-#!/bin/bash -
+-# libguestfs virt-v2v test script
+-# Copyright (C) 2018 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License
+-# along with this program; if not, write to the Free Software
+-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-# Test -oo "?" option.
+-
+-set -e
+-
+-source ./functions.sh
+-set -e
+-set -x
+-
+-skip_if_skipped
+-
+-export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+-export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+-
+-f=test-v2v-o-rhv-upload-oo-query.actual
+-rm -f $f
+-
+-$VG virt-v2v --debug-gc \
+-    -o rhv-upload -oo "?" > $f
+-
+-grep -- "-oo rhv-cafile" $f
+-grep -- "-oo rhv-verifypeer" $f
+-
+-rm $f
+diff --git a/tests/test-v2v-o-rhv-upload.sh b/tests/test-v2v-o-rhv-upload.sh
+deleted file mode 100755
+index 15d5d028..00000000
+--- a/tests/test-v2v-o-rhv-upload.sh
++++ /dev/null
+@@ -1,74 +0,0 @@
+-#!/bin/bash -
+-# libguestfs virt-v2v test script
+-# Copyright (C) 2018 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License
+-# along with this program; if not, write to the Free Software
+-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-# Test -o rhv-upload.
+-#
+-# These uses a test harness (see
+-# tests/test-v2v-o-rhv-upload-module/ovirtsdk4) to fake responses from
+-# oVirt.
+-
+-set -e
+-set -x
+-
+-source ./functions.sh
+-set -e
+-set -x
+-
+-skip_if_skipped
+-requires python3 --version
+-requires nbdkit $VIRT_V2V_NBDKIT_PYTHON_PLUGIN --version
+-requires test -f ../test-data/phony-guests/windows.img
+-
+-libvirt_uri="test://$abs_top_builddir/test-data/phony-guests/guests.xml"
+-f=../test-data/phony-guests/windows.img
+-
+-export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+-export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+-export PYTHONPATH=$srcdir/test-v2v-o-rhv-upload-module:$PYTHONPATH
+-
+-# Run the imageio process and get the port number.
+-log=test-v2v-o-rhv-upload.webserver.log
+-rm -f $log
+-cleanup_fn rm -f $log
+-$srcdir/test-v2v-o-rhv-upload-module/imageio.py >$log 2>&1 &
+-pid=$!
+-cleanup_fn kill $pid
+-export IMAGEIO_PORT=
+-for i in {1..5}; do
+-    IMAGEIO_PORT=$( grep "^port:" $log | awk '{print $2}' )
+-    if [ -n "$IMAGEIO_PORT" ]; then break; fi
+-    sleep 3
+-done
+-if [ ! -n "$IMAGEIO_PORT" ]; then
+-    echo "$0: imageio process did not start up"
+-    cat $log
+-    exit 1
+-fi
+-echo IMAGEIO_PORT=$IMAGEIO_PORT
+-
+-# Run virt-v2v -o rhv-upload.
+-#
+-# The fake ovirtsdk4 module doesn't care about most of the options
+-# like -oc, -oo rhv-cafile, -op etc.  Any values may be used.
+-$VG virt-v2v --debug-gc -v -x \
+-    -i libvirt -ic "$libvirt_uri" windows \
+-    -o rhv-upload \
+-    -oc https://example.com/ovirt-engine/api \
+-    -oo rhv-cafile=/dev/null \
+-    -op /dev/null \
+-    -os Storage
+diff --git a/tests/test-v2v-o-rhv.ovf.expected b/tests/test-v2v-o-rhv.ovf.expected
+deleted file mode 100644
+index 4f437d88..00000000
+--- a/tests/test-v2v-o-rhv.ovf.expected
++++ /dev/null
+@@ -1,113 +0,0 @@
+-<?xml version='1.0' encoding='utf-8'?>
+-<ovf:Envelope xmlns:rasd='http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData' xmlns:vssd='http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:ovf='http://schemas.dmtf.org/ovf/envelope/1/' xmlns:ovirt='http://www.ovirt.org/ovf' ovf:version='0.9'>
+-  <!-- generated by virt-v2v -->
+-  <References>
+-    <File ovf:href='#DISK_ID#/#VOL_ID#' ovf:id='#VOL_ID#' ovf:description='generated by virt-v2v' ovf:size='#SIZE#'/>
+-  </References>
+-  <Section xsi:type='ovf:NetworkSection_Type'>
+-    <Info>List of networks</Info>
+-    <Network ovf:name='default'/>
+-  </Section>
+-  <Section xsi:type='ovf:DiskSection_Type'>
+-    <Info>List of Virtual Disks</Info>
+-    <Disk ovf:diskId='#VOL_ID#' ovf:size='1' ovf:capacity='536870912' ovf:fileRef='#DISK_ID#/#VOL_ID#' ovf:parentRef='' ovf:vm_snapshot_id='#UUID#' ovf:volume-format='RAW' ovf:volume-type='Sparse' ovf:format='http://en.wikipedia.org/wiki/Byte' ovf:disk-interface='VirtIO' ovf:disk-type='System' ovf:boot='True' ovf:actual_size='1'/>
+-  </Section>
+-  <Content ovf:id='out' xsi:type='ovf:VirtualSystem_Type'>
+-    <Name>windows</Name>
+-    <TemplateId>00000000-0000-0000-0000-000000000000</TemplateId>
+-    <TemplateName>Blank</TemplateName>
+-    <Description>generated by virt-v2v</Description>
+-    <Domain/>
+-    <CreationDate>#DATE#</CreationDate>
+-    <IsInitilized>True</IsInitilized>
+-    <IsAutoSuspend>False</IsAutoSuspend>
+-    <TimeZone/>
+-    <IsStateless>False</IsStateless>
+-    <VmType>1</VmType>
+-    <DefaultDisplayType>2</DefaultDisplayType>
+-    <BiosType>1</BiosType>
+-    <Section ovf:id='#VM_ID#' ovf:required='false' xsi:type='ovf:OperatingSystemSection_Type'>
+-      <Info>Windows Server 2022 Phony Edition</Info>
+-      <Description>windows_2022</Description>
+-    </Section>
+-    <Section xsi:type='ovf:VirtualHardwareSection_Type'>
+-      <Info>1 CPU, 1024 Memory</Info>
+-      <Item>
+-        <rasd:Caption>1 virtual cpu</rasd:Caption>
+-        <rasd:Description>Number of virtual CPU</rasd:Description>
+-        <rasd:InstanceId>1</rasd:InstanceId>
+-        <rasd:ResourceType>3</rasd:ResourceType>
+-        <rasd:num_of_sockets>1</rasd:num_of_sockets>
+-        <rasd:cpu_per_socket>1</rasd:cpu_per_socket>
+-      </Item>
+-      <Item>
+-        <rasd:Caption>1024 MB of memory</rasd:Caption>
+-        <rasd:Description>Memory Size</rasd:Description>
+-        <rasd:InstanceId>2</rasd:InstanceId>
+-        <rasd:ResourceType>4</rasd:ResourceType>
+-        <rasd:AllocationUnits>MegaBytes</rasd:AllocationUnits>
+-        <rasd:VirtualQuantity>1024</rasd:VirtualQuantity>
+-      </Item>
+-      <Item>
+-        <rasd:Caption>USB Controller</rasd:Caption>
+-        <rasd:InstanceId>3</rasd:InstanceId>
+-        <rasd:ResourceType>23</rasd:ResourceType>
+-        <rasd:UsbPolicy>Disabled</rasd:UsbPolicy>
+-      </Item>
+-      <Item>
+-        <rasd:Caption>Graphical Controller</rasd:Caption>
+-        <rasd:InstanceId>#UUID#</rasd:InstanceId>
+-        <rasd:ResourceType>20</rasd:ResourceType>
+-        <Type>video</Type>
+-        <rasd:VirtualQuantity>1</rasd:VirtualQuantity>
+-        <Device>vga</Device>
+-      </Item>
+-      <Item>
+-        <rasd:Caption>RNG Device</rasd:Caption>
+-        <rasd:InstanceId>#UUID#</rasd:InstanceId>
+-        <rasd:ResourceType>0</rasd:ResourceType>
+-        <Type>rng</Type>
+-        <Device>virtio</Device>
+-        <SpecParams>
+-          <source>urandom</source>
+-        </SpecParams>
+-      </Item>
+-      <Item>
+-        <rasd:Caption>Memory Ballooning Device</rasd:Caption>
+-        <rasd:InstanceId>#UUID#</rasd:InstanceId>
+-        <rasd:ResourceType>0</rasd:ResourceType>
+-        <Type>balloon</Type>
+-        <Device>memballoon</Device>
+-        <SpecParams>
+-          <model>virtio</model>
+-        </SpecParams>
+-      </Item>
+-      <Item>
+-        <rasd:Caption>Drive 1</rasd:Caption>
+-        <rasd:InstanceId>#VOL_ID#</rasd:InstanceId>
+-        <rasd:ResourceType>17</rasd:ResourceType>
+-        <Type>disk</Type>
+-        <rasd:HostResource>#DISK_ID#/#VOL_ID#</rasd:HostResource>
+-        <rasd:Parent>00000000-0000-0000-0000-000000000000</rasd:Parent>
+-        <rasd:Template>00000000-0000-0000-0000-000000000000</rasd:Template>
+-        <rasd:ApplicationList/>
+-        <rasd:StorageId>12345678-1234-1234-1234-123456789abc</rasd:StorageId>
+-        <rasd:StoragePoolId>00000000-0000-0000-0000-000000000000</rasd:StoragePoolId>
+-        <rasd:CreationDate>#DATE#</rasd:CreationDate>
+-        <rasd:LastModified>#DATE#</rasd:LastModified>
+-        <rasd:last_modified_date>#DATE#</rasd:last_modified_date>
+-        <BootOrder>1</BootOrder>
+-      </Item>
+-      <Item>
+-        <rasd:InstanceId>#UUID#</rasd:InstanceId>
+-        <rasd:Caption>Ethernet adapter on default</rasd:Caption>
+-        <rasd:ResourceType>10</rasd:ResourceType>
+-        <rasd:ResourceSubType>3</rasd:ResourceSubType>
+-        <Type>interface</Type>
+-        <rasd:Connection>default</rasd:Connection>
+-        <rasd:Name>eth0</rasd:Name>
+-        <rasd:MACAddress>00:11:22:33:44:55</rasd:MACAddress>
+-      </Item>
+-    </Section>
+-  </Content>
+-</ovf:Envelope>
+diff --git a/tests/test-v2v-o-rhv.sh b/tests/test-v2v-o-rhv.sh
+deleted file mode 100755
+index e6ec7c61..00000000
+--- a/tests/test-v2v-o-rhv.sh
++++ /dev/null
+@@ -1,87 +0,0 @@
+-#!/bin/bash -
+-# libguestfs virt-v2v test script
+-# Copyright (C) 2014 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License
+-# along with this program; if not, write to the Free Software
+-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-# Test -o rhv.
+-
+-set -e
+-
+-source ./functions.sh
+-set -e
+-set -x
+-
+-skip_if_skipped
+-requires test -f ../test-data/phony-guests/windows.img
+-
+-libvirt_uri="test://$abs_top_builddir/test-data/phony-guests/guests.xml"
+-f=../test-data/phony-guests/windows.img
+-
+-export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+-export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+-
+-d=test-v2v-o-rhv.d
+-rm -rf $d
+-cleanup_fn rm -r $d
+-mkdir $d
+-
+-# Create a dummy Export Storage Domain.
+-mkdir $d/12345678-1234-1234-1234-123456789abc
+-mkdir $d/12345678-1234-1234-1234-123456789abc/images
+-mkdir $d/12345678-1234-1234-1234-123456789abc/master
+-mkdir $d/12345678-1234-1234-1234-123456789abc/master/vms
+-
+-# $VG - XXX Disabled because the forking used to write files in -o rhv
+-# mode confuses valgrind.
+-virt-v2v --debug-gc -v -x \
+-    -i libvirt -ic "$libvirt_uri" windows \
+-    -o rhv -os $d
+-
+-# Test the OVF metadata was created.
+-test -f $d/12345678-1234-1234-1234-123456789abc/master/vms/*/*.ovf
+-
+-pushd $d/12345678-1234-1234-1234-123456789abc/images/*
+-
+-# Test the disk .meta was created.
+-test -f *.meta
+-
+-# Test the disk file was created.
+-vol=`basename *.meta .meta`
+-test -f $vol
+-
+-popd
+-
+-# Compare resulting OVF
+-VM_ID=$(basename $(ls -1d $d/12345678-1234-1234-1234-123456789abc/master/vms/*))
+-DISK_ID=$(basename $(ls -1d $d/12345678-1234-1234-1234-123456789abc/images/*))
+-VOL_ID=$(basename $(ls -1d $d/12345678-1234-1234-1234-123456789abc/images/$DISK_ID/*.meta) .meta)
+-OVF=$(ls -1d $d/12345678-1234-1234-1234-123456789abc/master/vms/$VM_ID/$VM_ID.ovf)
+-
+-RE_UUID='\<[0-9a-fA-F]\{8\}-[0-9a-fA-F]\{4\}-[0-9a-fA-F]\{4\}-[0-9a-fA-F]\{4\}-[0-9a-fA-F]\{12\}\>'
+-
+-# Filter variable strings
+-sed -i \
+-  -e "s/$DISK_ID/#DISK_ID#/g" \
+-  -e "s/$VM_ID/#VM_ID#/g" \
+-  -e "s/$VOL_ID/#VOL_ID#/g" \
+-  -e "s/\(<File.*ovf:size='\)[^']*/\1#SIZE#/g" \
+-  -e 's/\(\<generated by virt-v2v\) [^ <'"'\""']*/\1/' \
+-  -e 's/<rasd:InstanceId>'"$RE_UUID"'</<rasd:InstanceId>#UUID#</' \
+-  -e 's/<\(rasd:\)\?\(CreationDate\|LastModified\|last_modified_date\)>[^<]*</<\1\2>#DATE#</' \
+-  -e 's/\<ovf:vm_snapshot_id='"'$RE_UUID'/ovf:vm_snapshot_id='#UUID#'/g" \
+-  "$OVF"
+-
+-diff -u "$srcdir/test-v2v-o-rhv.ovf.expected" "$OVF"
+diff --git a/tests/test-v2v-o-vdsm-oo-query.sh b/tests/test-v2v-o-vdsm-oo-query.sh
+deleted file mode 100755
+index 7d4cae4e..00000000
+--- a/tests/test-v2v-o-vdsm-oo-query.sh
++++ /dev/null
+@@ -1,41 +0,0 @@
+-#!/bin/bash -
+-# libguestfs virt-v2v test script
+-# Copyright (C) 2018 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License
+-# along with this program; if not, write to the Free Software
+-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-# Test -oo "?" option.
+-
+-set -e
+-
+-source ./functions.sh
+-set -e
+-set -x
+-
+-skip_if_skipped
+-
+-export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+-export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+-
+-f=test-v2v-o-vdsm-oo-query.actual
+-rm -f $f
+-
+-$VG virt-v2v --debug-gc \
+-    -o vdsm -oo "?" > $f
+-
+-grep -- "-oo vdsm-compat" $f
+-grep -- "-oo vdsm-image-uuid" $f
+-
+-rm $f
+diff --git a/tests/test-v2v-o-vdsm-options.ovf.expected b/tests/test-v2v-o-vdsm-options.ovf.expected
+deleted file mode 100644
+index 9f71a44e..00000000
+--- a/tests/test-v2v-o-vdsm-options.ovf.expected
++++ /dev/null
+@@ -1,113 +0,0 @@
+-<?xml version='1.0' encoding='utf-8'?>
+-<ovf:Envelope xmlns:rasd='http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData' xmlns:vssd='http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:ovf='http://schemas.dmtf.org/ovf/envelope/1/' xmlns:ovirt='http://www.ovirt.org/ovf' ovf:version='0.9'>
+-  <!-- generated by virt-v2v -->
+-  <References>
+-    <File ovf:href='VOL' ovf:id='VOL' ovf:description='generated by virt-v2v'/>
+-  </References>
+-  <NetworkSection>
+-    <Info>List of networks</Info>
+-    <Network ovf:name='default'/>
+-  </NetworkSection>
+-  <DiskSection>
+-    <Info>List of Virtual Disks</Info>
+-    <Disk ovf:diskId='IMAGE' ovf:size='1' ovf:capacity='536870912' ovf:fileRef='VOL' ovf:parentRef='' ovf:vm_snapshot_id='#UUID#' ovf:volume-format='COW' ovf:volume-type='Sparse' ovf:format='http://en.wikipedia.org/wiki/Byte' ovf:disk-interface='VirtIO' ovf:disk-type='System' ovf:boot='True'/>
+-  </DiskSection>
+-  <VirtualSystem ovf:id='VM'>
+-    <Name>windows</Name>
+-    <TemplateId>00000000-0000-0000-0000-000000000000</TemplateId>
+-    <TemplateName>Blank</TemplateName>
+-    <Description>generated by virt-v2v</Description>
+-    <Domain/>
+-    <CreationDate>#DATE#</CreationDate>
+-    <IsInitilized>True</IsInitilized>
+-    <IsAutoSuspend>False</IsAutoSuspend>
+-    <TimeZone/>
+-    <IsStateless>False</IsStateless>
+-    <VmType>1</VmType>
+-    <DefaultDisplayType>2</DefaultDisplayType>
+-    <BiosType>1</BiosType>
+-    <OperatingSystemSection ovf:id='VM' ovf:required='false' ovirt:id='37'>
+-      <Info>Windows Server 2022 Phony Edition</Info>
+-      <Description>windows_2022</Description>
+-    </OperatingSystemSection>
+-    <VirtualHardwareSection>
+-      <Info>1 CPU, 1024 Memory</Info>
+-      <Item>
+-        <rasd:Caption>1 virtual cpu</rasd:Caption>
+-        <rasd:Description>Number of virtual CPU</rasd:Description>
+-        <rasd:InstanceId>1</rasd:InstanceId>
+-        <rasd:ResourceType>3</rasd:ResourceType>
+-        <rasd:num_of_sockets>1</rasd:num_of_sockets>
+-        <rasd:cpu_per_socket>1</rasd:cpu_per_socket>
+-      </Item>
+-      <Item>
+-        <rasd:Caption>1024 MB of memory</rasd:Caption>
+-        <rasd:Description>Memory Size</rasd:Description>
+-        <rasd:InstanceId>2</rasd:InstanceId>
+-        <rasd:ResourceType>4</rasd:ResourceType>
+-        <rasd:AllocationUnits>MegaBytes</rasd:AllocationUnits>
+-        <rasd:VirtualQuantity>1024</rasd:VirtualQuantity>
+-      </Item>
+-      <Item>
+-        <rasd:Caption>USB Controller</rasd:Caption>
+-        <rasd:InstanceId>3</rasd:InstanceId>
+-        <rasd:ResourceType>23</rasd:ResourceType>
+-        <rasd:UsbPolicy>Disabled</rasd:UsbPolicy>
+-      </Item>
+-      <Item>
+-        <rasd:Caption>Graphical Controller</rasd:Caption>
+-        <rasd:InstanceId>#UUID#</rasd:InstanceId>
+-        <rasd:ResourceType>32768</rasd:ResourceType>
+-        <Type>video</Type>
+-        <rasd:VirtualQuantity>1</rasd:VirtualQuantity>
+-        <Device>vga</Device>
+-      </Item>
+-      <Item>
+-        <rasd:Caption>RNG Device</rasd:Caption>
+-        <rasd:InstanceId>#UUID#</rasd:InstanceId>
+-        <rasd:ResourceType>0</rasd:ResourceType>
+-        <Type>rng</Type>
+-        <Device>virtio</Device>
+-        <SpecParams>
+-          <source>urandom</source>
+-        </SpecParams>
+-      </Item>
+-      <Item>
+-        <rasd:Caption>Memory Ballooning Device</rasd:Caption>
+-        <rasd:InstanceId>#UUID#</rasd:InstanceId>
+-        <rasd:ResourceType>0</rasd:ResourceType>
+-        <Type>balloon</Type>
+-        <Device>memballoon</Device>
+-        <SpecParams>
+-          <model>virtio</model>
+-        </SpecParams>
+-      </Item>
+-      <Item>
+-        <rasd:Caption>Drive 1</rasd:Caption>
+-        <rasd:InstanceId>VOL</rasd:InstanceId>
+-        <rasd:ResourceType>17</rasd:ResourceType>
+-        <Type>disk</Type>
+-        <rasd:HostResource>VOL</rasd:HostResource>
+-        <rasd:Parent>00000000-0000-0000-0000-000000000000</rasd:Parent>
+-        <rasd:Template>00000000-0000-0000-0000-000000000000</rasd:Template>
+-        <rasd:ApplicationList/>
+-        <rasd:StorageId>12345678-1234-1234-1234-123456789abc</rasd:StorageId>
+-        <rasd:StoragePoolId>00000000-0000-0000-0000-000000000000</rasd:StoragePoolId>
+-        <rasd:CreationDate>#DATE#</rasd:CreationDate>
+-        <rasd:LastModified>#DATE#</rasd:LastModified>
+-        <rasd:last_modified_date>#DATE#</rasd:last_modified_date>
+-        <BootOrder>1</BootOrder>
+-      </Item>
+-      <Item>
+-        <rasd:InstanceId>#UUID#</rasd:InstanceId>
+-        <rasd:Caption>Ethernet adapter on default</rasd:Caption>
+-        <rasd:ResourceType>10</rasd:ResourceType>
+-        <rasd:ResourceSubType>3</rasd:ResourceSubType>
+-        <Type>interface</Type>
+-        <rasd:Connection>default</rasd:Connection>
+-        <rasd:Name>eth0</rasd:Name>
+-        <rasd:MACAddress>00:11:22:33:44:55</rasd:MACAddress>
+-      </Item>
+-    </VirtualHardwareSection>
+-  </VirtualSystem>
+-</ovf:Envelope>
+diff --git a/tests/test-v2v-o-vdsm-options.sh b/tests/test-v2v-o-vdsm-options.sh
+deleted file mode 100755
+index e8f8c538..00000000
+--- a/tests/test-v2v-o-vdsm-options.sh
++++ /dev/null
+@@ -1,96 +0,0 @@
+-#!/bin/bash -
+-# libguestfs virt-v2v test script
+-# Copyright (C) 2014-2020 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License
+-# along with this program; if not, write to the Free Software
+-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-# Test -o vdsm options -oo vdsm-*-uuid
+-
+-set -e
+-set -x
+-
+-source ./functions.sh
+-set -e
+-set -x
+-
+-skip_if_skipped
+-requires test -f ../test-data/phony-guests/windows.img
+-
+-libvirt_uri="test://$abs_top_builddir/test-data/phony-guests/guests.xml"
+-f=../test-data/phony-guests/windows.img
+-
+-export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+-export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win"
+-
+-d=test-v2v-o-vdsm-options.d
+-rm -rf $d
+-cleanup_fn rm -r $d
+-mkdir $d
+-
+-# Create a dummy Export Storage Domain.
+-mkdir $d/12345678-1234-1234-1234-123456789abc
+-mkdir $d/12345678-1234-1234-1234-123456789abc/images
+-mkdir $d/12345678-1234-1234-1234-123456789abc/images/IMAGE
+-mkdir $d/12345678-1234-1234-1234-123456789abc/master
+-mkdir $d/12345678-1234-1234-1234-123456789abc/master/vms
+-mkdir $d/12345678-1234-1234-1234-123456789abc/master/vms/VM
+-
+-# The -oo vdsm-*-uuid options don't actually check that the
+-# parameter is a UUID, which is useful here.
+-
+-$VG virt-v2v --debug-gc \
+-    -i libvirt -ic "$libvirt_uri" windows \
+-    -o vdsm -os $d/12345678-1234-1234-1234-123456789abc \
+-    -of qcow2 \
+-    -oo vdsm-image-uuid=IMAGE \
+-    -oo vdsm-vol-uuid=VOL \
+-    -oo vdsm-vm-uuid=VM \
+-    -oo vdsm-ovf-output=$d/12345678-1234-1234-1234-123456789abc/master/vms/VM \
+-    -oo vdsm-compat=1.1 \
+-    -oo vdsm-ovf-flavour=ovirt
+-
+-# Test the OVF metadata was created.
+-test -f $d/12345678-1234-1234-1234-123456789abc/master/vms/VM/VM.ovf
+-
+-pushd $d/12345678-1234-1234-1234-123456789abc/images/IMAGE
+-
+-# Test the disk .meta was created.
+-test -f VOL.meta
+-
+-# Test the disk file was created.
+-test -f VOL
+-
+-# Test that a qcow2 file with compat=1.1 was generated.
+-test "$(guestfish disk-format VOL)" = "qcow2"
+-qemu-img info VOL | grep 'compat: 1.1'
+-
+-popd
+-
+-# Compare resulting OVF
+-OVF="$d/12345678-1234-1234-1234-123456789abc/master/vms/VM/VM.ovf"
+-
+-RE_UUID='\<[0-9a-fA-F]\{8\}-[0-9a-fA-F]\{4\}-[0-9a-fA-F]\{4\}-[0-9a-fA-F]\{4\}-[0-9a-fA-F]\{12\}\>'
+-
+-# Filter variable strings
+-sed -i \
+-  -e "s/\(<File.*ovf:size='\)[^']*/\1#SIZE#/g" \
+-  -e 's/\(\<generated by virt-v2v\) [^ <'"'\""']*/\1/' \
+-  -e 's/<rasd:InstanceId>'"$RE_UUID"'</<rasd:InstanceId>#UUID#</' \
+-  -e 's/<\(rasd:\)\?\(CreationDate\|LastModified\|last_modified_date\)>[^<]*</<\1\2>#DATE#</' \
+-  -e 's/\<ovf:vm_snapshot_id='"'$RE_UUID'/ovf:vm_snapshot_id='#UUID#'/g" \
+-  "$OVF"
+-
+-diff -u "$srcdir/test-v2v-o-vdsm-options.ovf.expected" \
+-  "$OVF"
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index d09c200c..8be1e5cb 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -201,11 +201,7 @@ let rec main () =
+     | "disk" | "local" -> output_mode := `Disk
+     | "null" -> output_mode := `Null
+     | "openstack" | "osp" | "rhosp" -> output_mode := `Openstack
+-    | "ovirt" | "rhv" | "rhev" -> output_mode := `RHV
+-    | "ovirt-upload" | "ovirt_upload" | "rhv-upload" | "rhv_upload" ->
+-       output_mode := `RHV_Upload
+     | "qemu" -> output_mode := `QEmu
+-    | "vdsm" -> output_mode := `VDSM
+     | s ->
+        error (f_"unknown -o option: %s") s
+   in
+@@ -245,7 +241,7 @@ let rec main () =
+       s_"Map network ‘in’ to ‘out’";
+     [ L"no-trim" ],  Getopt.String ("-", no_trim_warning),
+       s_"Ignored for backwards compatibility";
+-    [ S 'o' ],       Getopt.String ("kubevirt|libvirt|local|null|openstack|qemu|rhv|rhv-upload|vdsm", set_output_mode),
++    [ S 'o' ],       Getopt.String ("kubevirt|libvirt|local|null|openstack|qemu", set_output_mode),
+       s_"Set output mode (default: libvirt)";
+     [ M"oa" ],       Getopt.String ("sparse|preallocated", set_output_alloc),
+                                     s_"Set output allocation mode";
+@@ -283,18 +279,6 @@ let rec main () =
+       s_"Same as ‘-io vddk-thumbprint=thumbprint’";
+     [ L"vddk-transports" ], Getopt.String ("transports", set_input_option_compat "vddk-transports"),
+       s_"Same as ‘-io vddk-transports=transports’";
+-    [ L"vdsm-compat" ], Getopt.String ("0.10|1.1", set_output_option_compat "vdsm-compat"),
+-      s_"Same as ‘-oo vdsm-compat=0.10|1.1’";
+-    [ L"vdsm-image-uuid" ], Getopt.String ("uuid", set_output_option_compat "vdsm-image-uuid"),
+-      s_"Same as ‘-oo vdsm-image-uuid=uuid’";
+-    [ L"vdsm-vol-uuid" ], Getopt.String ("uuid", set_output_option_compat "vdsm-vol-uuid"),
+-      s_"Same as ‘-oo vdsm-vol-uuid=uuid’";
+-    [ L"vdsm-vm-uuid" ], Getopt.String ("uuid", set_output_option_compat "vdsm-vm-uuid"),
+-      s_"Same as ‘-oo vdsm-vm-uuid=uuid’";
+-    [ L"vdsm-ovf-output" ], Getopt.String ("dir", set_output_option_compat "vdsm-ovf-output"),
+-      s_"Same as ‘-oo vdsm-ovf-output=dir’";
+-    [ L"vdsm-ovf-flavour" ], Getopt.String ("ovirt|rhvexp", set_output_option_compat "vdsm-ovf-flavour"),
+-      s_"Same as ‘-oo vdsm-ovf-flavour=flavour’";
+     [ L"vmtype" ],   Getopt.String ("-", vmtype_warning),
+       s_"Ignored for backwards compatibility";
+   ] in
+@@ -314,9 +298,6 @@ let rec main () =
+ 
+ virt-v2v -ic vpx://vcenter.example.com/Datacenter/esxi -os imported esx_guest
+ 
+-virt-v2v -ic vpx://vcenter.example.com/Datacenter/esxi esx_guest \
+-         -o rhv -os rhv.nfs:/export_domain --network ovirtmgmt
+-
+ virt-v2v -i libvirtxml guest-domain.xml -o local -os /var/tmp
+ 
+ virt-v2v -i disk disk.img -o local -os /var/tmp
+@@ -380,7 +361,6 @@ read the man page virt-v2v(1).
+       pr "vcenter-https\n";
+       pr "vddk\n";
+       pr "colours-option\n";
+-      pr "vdsm-compat-option\n";
+       pr "io/oo\n";
+       pr "mac-option\n";
+       pr "bandwidth-option\n";
+@@ -397,9 +377,6 @@ read the man page virt-v2v(1).
+       pr "output:null\n";
+       pr "output:openstack\n";
+       pr "output:qemu\n";
+-      pr "output:rhv\n";
+-      pr "output:rhv-upload\n";
+-      pr "output:vdsm\n";
+       pr "convert:linux\n";
+       pr "convert:windows\n";
+       List.iter (pr "ovf:%s\n") Create_ovf.ovf_flavours;
+@@ -484,10 +461,7 @@ read the man page virt-v2v(1).
+     | `Null -> (module Output_null.Null)
+     | `QEmu -> (module Output_qemu.QEMU)
+     | `Kubevirt -> (module Output_kubevirt.Kubevirt)
+-    | `Openstack -> (module Output_openstack.Openstack)
+-    | `RHV_Upload -> (module Output_rhv_upload.RHVUpload)
+-    | `RHV -> (module Output_rhv.RHV)
+-    | `VDSM -> (module Output_vdsm.VDSM) in
++    | `Openstack -> (module Output_openstack.Openstack) in
+ 
+   let output_options = {
+     Output.output_alloc = output_alloc;
+@@ -512,7 +486,6 @@ read the man page virt-v2v(1).
+    *)
+   let remove_serial_console =
+     match output_mode with
+-    | `RHV | `VDSM -> true
+     | _ -> false in
+ 
+   (* Get the conversion options. *)

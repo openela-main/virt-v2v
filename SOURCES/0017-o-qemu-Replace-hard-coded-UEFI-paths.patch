@@ -1,0 +1,963 @@
+From 49e77856e1e127eabe14ac07ee9c33ce6b8c067b Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 15 Nov 2024 11:49:26 +0000
+Subject: [PATCH] -o qemu: Replace hard-coded UEFI paths
+
+Update the qemu shell script to simply find the UEFI paths as
+required.
+
+Remove lib/uefi.ml:find_uefi_firmware as this function is no longer
+needed.
+
+Remove common/mlv2v/ everywhere.  This contained a list of UEFI code
+and NVRAM files which is no longer used.
+
+Update common submodule.  This pulls in:
+
+  Richard W.M. Jones (5):
+      mlcustomize/customize_run.ml: Move 'in' to new line
+      mlstdutils/guestfs_config: Define host_os
+      mlcustomize, mltools: Check guest OS is compatible before allowing --run
+      Remove mlv2v/ subdirectory
+      qemuopts: Add ability to add raw, unquoted output to qemu scripts
+      qemuopts: Fix missing break statement
+
+(cherry picked from commit 69b4e83935b03e10c5da9b93f987eb8ddd2cde31)
+(cherry picked from commit faf29e12e7928345ca0178923f468fee34d067e8)
+---
+ Makefile.am           |   1 -
+ common                |   2 +-
+ configure.ac          |   1 -
+ convert/Makefile.am   |   2 -
+ in-place/Makefile.am  |   4 +-
+ input/Makefile.am     |   2 -
+ inspector/Makefile.am |   4 +-
+ lib/Makefile.am       |   1 -
+ lib/utils.ml          |  20 -------
+ lib/utils.mli         |   4 --
+ ocaml-dep.sh.in       |   1 -
+ output/Makefile.am    |   2 -
+ output/output_qemu.ml | 121 +++++++++++++++++++++++-------------------
+ output/qemuopts-c.c   |  12 +++++
+ output/qemuopts.ml    |   1 +
+ output/qemuopts.mli   |   4 ++
+ po/POTFILES-ml        |   1 -
+ v2v/Makefile.am       |   5 +-
+ 18 files changed, 87 insertions(+), 101 deletions(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index 51370188..4cc87324 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -37,7 +37,6 @@ SUBDIRS += common/mlxml
+ SUBDIRS += common/mltools
+ SUBDIRS += common/mlcustomize
+ SUBDIRS += common/mldrivers
+-SUBDIRS += common/mlv2v
+ SUBDIRS += lib
+ SUBDIRS += input
+ SUBDIRS += output
+Submodule common 2d42128e..faee2645:
+diff --git a/common/.gitignore b/common/.gitignore
+index 49915e31..44f49eb6 100644
+--- a/common/.gitignore
++++ b/common/.gitignore
+@@ -58,7 +58,6 @@ Makefile.in
+ /mlutils/.depend
+ /mlutils/c_utils_unit_tests
+ /mlutils/oUnit-*
+-/mlv2v/.depend
+ /mlvisit/.depend
+ /mlvisit/visit_tests
+ /mlxml/.depend
+diff --git a/common/mlcustomize/customize_run.ml b/common/mlcustomize/customize_run.ml
+index 1d7c13ea..5ec5ed11 100644
+--- a/common/mlcustomize/customize_run.ml
++++ b/common/mlcustomize/customize_run.ml
+@@ -44,21 +44,13 @@ let run (g : G.guestfs) root (ops : ops) =
+   let debug_logfile () =
+     try g#download logfile "/dev/stderr"
+     with exn ->
+-      warning (f_"log file %s: %s (ignored)") logfile (Printexc.to_string exn) in
++      warning (f_"log file %s: %s (ignored)") logfile (Printexc.to_string exn)
++  in
+ 
+   (* Useful wrapper for scripts. *)
+   let do_run ~display ?(warn_failed_no_network = false) cmd =
+-    let incompatible_fn () =
+-      let guest_arch = g#inspect_get_arch root in
+-      error (f_"host cpu (%s) and guest arch (%s) are not compatible, \
+-                so you cannot use command line options that involve \
+-                running commands in the guest.  Use --firstboot scripts \
+-                instead.")
+-            Guestfs_config.host_cpu guest_arch
+-    in
+-
+     try
+-      run_in_guest_command g root ~logfile ~incompatible_fn cmd
++      run_in_guest_command g root ~logfile cmd
+     with
+       G.Error msg ->
+         debug_logfile ();
+diff --git a/common/mlstdutils/guestfs_config.ml.in b/common/mlstdutils/guestfs_config.ml.in
+index 0ab95bd9..84929581 100644
+--- a/common/mlstdutils/guestfs_config.ml.in
++++ b/common/mlstdutils/guestfs_config.ml.in
+@@ -22,4 +22,5 @@ let package_version = "@PACKAGE_VERSION@"
+ let package_version_full = "@PACKAGE_VERSION_FULL@"
+ let prefix = "@prefix@"
+ let datadir = prefix ^ "/share"
++let host_os = "@host_os@"
+ let host_cpu = "@host_cpu@"
+diff --git a/common/mlstdutils/guestfs_config.mli b/common/mlstdutils/guestfs_config.mli
+index 78df3040..70161c01 100644
+--- a/common/mlstdutils/guestfs_config.mli
++++ b/common/mlstdutils/guestfs_config.mli
+@@ -31,5 +31,8 @@ val prefix : string
+ val datadir : string
+ (** The configure value [@datadir@] *)
+ 
++val host_os : string
++(** The configure value [@host_os@] *)
++
+ val host_cpu : string
+ (** The configure value [@host_cpu@] *)
+diff --git a/common/mltools/tools_utils.ml b/common/mltools/tools_utils.ml
+index 23f16c51..1ff72ff3 100644
+--- a/common/mltools/tools_utils.ml
++++ b/common/mltools/tools_utils.ml
+@@ -737,11 +737,21 @@ let run_in_guest_command g root ?logfile ?incompatible_fn cmd =
+   (* Is the host_cpu compatible with the guest arch?  ie. Can we
+    * run commands in this guest?
+    *)
++  let guest_os = g#inspect_get_type root in
++  let guest_os_compatible =
++    String.is_prefix Guestfs_config.host_os "linux" &&
++    guest_os = "linux" in
+   let guest_arch = g#inspect_get_arch root in
+   let guest_arch_compatible = guest_arch_compatible guest_arch in
+-  if not guest_arch_compatible then (
++  if not guest_os_compatible || not guest_arch_compatible then (
+     match incompatible_fn with
+-    | None -> ()
++    | None ->
++       error (f_"host (%s/%s) and guest (%s/%s) are not compatible, \
++                 so you cannot use command line options that involve \
++                 running commands in the guest.  Use --firstboot scripts \
++                 instead.")
++         Guestfs_config.host_os Guestfs_config.host_cpu
++         guest_os guest_arch
+     | Some fn -> fn ()
+   )
+   else (
+diff --git a/common/mltools/tools_utils.mli b/common/mltools/tools_utils.mli
+index 193ba7b6..4d627676 100644
+--- a/common/mltools/tools_utils.mli
++++ b/common/mltools/tools_utils.mli
+@@ -233,9 +233,15 @@ val with_timeout : string -> int -> ?sleep:int -> (unit -> 'a option) -> 'a
+ val run_in_guest_command : Guestfs.guestfs -> string -> ?logfile:string -> ?incompatible_fn:(unit -> unit) -> string -> unit
+ (** [run_in_guest_command g root ?incompatible_archs_fn cmd]
+     runs a command in the guest, which is already mounted for the
+-    specified [root].  The command is run directly in case the
+-    architecture of the host and the guest are compatible, optionally
+-    calling [?incompatible_fn] in case they are not.
++    specified [root].
++
++    The command is run directly in the case that the host and guest
++    are compatible.
++
++    If they are not compatible, the command is not run and an error
++    is printed.  However you can override the error by setting
++    [?incompatible_fn], which is called so you can do something else
++    (like install a firstboot script).
+ 
+     [?logfile] is an optional file in the guest to where redirect
+     stdout and stderr of the command. *)
+diff --git a/common/mlv2v/Makefile.am b/common/mlv2v/Makefile.am
+deleted file mode 100644
+index 945f9813..00000000
+--- a/common/mlv2v/Makefile.am
++++ /dev/null
+@@ -1,91 +0,0 @@
+-# libguestfs OCaml virt-v2v generated code
+-# Copyright (C) 2011-2019 Red Hat Inc.
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License
+-# along with this program; if not, write to the Free Software
+-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-
+-include $(top_srcdir)/subdir-rules.mk
+-
+-EXTRA_DIST = \
+-	$(generator_built) \
+-	$(SOURCES_MLI) \
+-	$(SOURCES_ML) \
+-	$(SOURCES_C)
+-
+-generator_built = \
+-	uefi.mli \
+-	uefi.ml
+-
+-SOURCES_MLI = \
+-	uefi.mli
+-
+-SOURCES_ML = \
+-	uefi.ml
+-
+-SOURCES_C = \
+-	dummy.c
+-
+-# We pretend that we're building a C library.  automake handles the
+-# compilation of the C sources for us.  At the end we take the C
+-# objects and OCaml objects and link them into the OCaml library.
+-# This C library is never used.
+-
+-noinst_LIBRARIES = libmlv2v.a
+-
+-if !HAVE_OCAMLOPT
+-MLV2V_CMA = mlv2v.cma
+-else
+-MLV2V_CMA = mlv2v.cmxa
+-endif
+-
+-noinst_DATA = $(MLV2V_CMA)
+-
+-libmlv2v_a_SOURCES = $(SOURCES_C)
+-libmlv2v_a_CPPFLAGS = \
+-	-DCAML_NAME_SPACE \
+-	-I. \
+-	-I$(top_builddir) \
+-	-I$(shell $(OCAMLC) -where)
+-libmlv2v_a_CFLAGS = \
+-	$(WARN_CFLAGS) $(WERROR_CFLAGS) \
+-	-fPIC
+-
+-BOBJECTS = $(SOURCES_ML:.ml=.cmo)
+-XOBJECTS = $(BOBJECTS:.cmo=.cmx)
+-
+-OCAMLPACKAGES = \
+-	-package str,unix \
+-	-I $(builddir)
+-OCAMLPACKAGES_TESTS = $(MLV2V_CMA)
+-
+-OCAMLFLAGS = $(OCAML_FLAGS) $(OCAML_WARN_ERROR) -ccopt '$(CFLAGS)'
+-
+-if !HAVE_OCAMLOPT
+-OBJECTS = $(BOBJECTS)
+-else
+-OBJECTS = $(XOBJECTS)
+-endif
+-
+-libmlv2v_a_DEPENDENCIES = $(OBJECTS)
+-
+-$(MLV2V_CMA): $(OBJECTS) libmlv2v.a
+-	$(OCAMLFIND) mklib $(OCAMLPACKAGES) \
+-	    $(OBJECTS) $(libmlv2v_a_OBJECTS) -o mlv2v
+-
+-# OCaml dependencies.
+-.depend: $(srcdir)/*.mli $(srcdir)/*.ml
+-	$(top_builddir)/ocaml-dep.sh $^
+--include .depend
+-
+-.PHONY: docs
+diff --git a/common/mlv2v/dummy.c b/common/mlv2v/dummy.c
+deleted file mode 100644
+index ebab6198..00000000
+--- a/common/mlv2v/dummy.c
++++ /dev/null
+@@ -1,2 +0,0 @@
+-/* Dummy source, to be used for OCaml-based tools with no C sources. */
+-enum { foo = 1 };
+diff --git a/common/mlv2v/uefi.ml b/common/mlv2v/uefi.ml
+deleted file mode 100644
+index 7a2610f2..00000000
+--- a/common/mlv2v/uefi.ml
++++ /dev/null
+@@ -1,71 +0,0 @@
+-(* libguestfs generated file
+- * WARNING: THIS FILE IS GENERATED
+- *          from the code in the generator/ subdirectory.
+- * ANY CHANGES YOU MAKE TO THIS FILE WILL BE LOST.
+- *
+- * Copyright (C) 2009-2023 Red Hat Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *)
+-
+-type uefi_firmware = {
+-  code : string;
+-  code_debug : string option;
+-  vars : string;
+-  flags : uefi_flags;
+-}
+-and uefi_flags = uefi_flag list
+-and uefi_flag = UEFI_FLAG_SECURE_BOOT_REQUIRED
+-
+-let uefi_aarch64_firmware = [
+-  { code = "/usr/share/AAVMF/AAVMF_CODE.fd";
+-    code_debug = Some "/usr/share/AAVMF/AAVMF_CODE.verbose.fd";
+-    vars = "/usr/share/AAVMF/AAVMF_VARS.fd";
+-    flags = [];
+-  };
+-  { code = "/usr/share/edk2/aarch64/QEMU_EFI-pflash.raw";
+-    code_debug = None;
+-    vars = "/usr/share/edk2/aarch64/vars-template-pflash.raw";
+-    flags = [];
+-  };
+-]
+-
+-let uefi_x86_64_firmware = [
+-  { code = "/usr/share/OVMF/OVMF_CODE.fd";
+-    code_debug = None;
+-    vars = "/usr/share/OVMF/OVMF_VARS.fd";
+-    flags = [];
+-  };
+-  { code = "/usr/share/OVMF/OVMF_CODE.secboot.fd";
+-    code_debug = None;
+-    vars = "/usr/share/OVMF/OVMF_VARS.fd";
+-    flags = [UEFI_FLAG_SECURE_BOOT_REQUIRED];
+-  };
+-  { code = "/usr/share/edk2/ovmf/OVMF_CODE.fd";
+-    code_debug = None;
+-    vars = "/usr/share/edk2/ovmf/OVMF_VARS.fd";
+-    flags = [];
+-  };
+-  { code = "/usr/share/edk2/ovmf/OVMF_CODE.secboot.fd";
+-    code_debug = None;
+-    vars = "/usr/share/edk2/ovmf/OVMF_VARS.fd";
+-    flags = [UEFI_FLAG_SECURE_BOOT_REQUIRED];
+-  };
+-  { code = "/usr/share/qemu/ovmf-x86_64-code.bin";
+-    code_debug = None;
+-    vars = "/usr/share/qemu/ovmf-x86_64-vars.bin";
+-    flags = [];
+-  };
+-]
+diff --git a/common/mlv2v/uefi.mli b/common/mlv2v/uefi.mli
+deleted file mode 100644
+index 33789979..00000000
+--- a/common/mlv2v/uefi.mli
++++ /dev/null
+@@ -1,35 +0,0 @@
+-(* libguestfs generated file
+- * WARNING: THIS FILE IS GENERATED
+- *          from the code in the generator/ subdirectory.
+- * ANY CHANGES YOU MAKE TO THIS FILE WILL BE LOST.
+- *
+- * Copyright (C) 2009-2023 Red Hat Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+- *)
+-
+-(** UEFI paths. *)
+-
+-type uefi_firmware = {
+-  code : string;                (** code file *)
+-  code_debug : string option;   (** code debug file *)
+-  vars : string;                (** vars template file *)
+-  flags : uefi_flags;           (** flags *)
+-}
+-and uefi_flags = uefi_flag list
+-and uefi_flag = UEFI_FLAG_SECURE_BOOT_REQUIRED
+-
+-val uefi_aarch64_firmware : uefi_firmware list
+-val uefi_x86_64_firmware : uefi_firmware list
+diff --git a/common/qemuopts/qemuopts.c b/common/qemuopts/qemuopts.c
+index b12fe38f..7dd9136d 100644
+--- a/common/qemuopts/qemuopts.c
++++ b/common/qemuopts/qemuopts.c
+@@ -76,13 +76,14 @@ enum qopt_type {
+   QOPT_FLAG,
+   QOPT_ARG,
+   QOPT_ARG_NOQUOTE,
++  QOPT_RAW,
+   QOPT_ARG_LIST,
+ };
+ 
+ struct qopt {
+   enum qopt_type type;
+   char *flag;             /* eg. "-m" */
+-  char *value;            /* Value, for QOPT_ARG, QOPT_ARG_NOQUOTE. */
++  char *value;            /* Value, for QOPT_ARG, QOPT_ARG_NOQUOTE, QOPT_RAW */
+   char **values;          /* List of values, for QOPT_ARG_LIST. */
+ };
+ 
+@@ -353,6 +354,27 @@ qemuopts_add_arg_noquote (struct qemuopts *qopts, const char *flag,
+   return 0;
+ }
+ 
++int
++qemuopts_add_raw (struct qemuopts *qopts, const char *str)
++{
++  struct qopt *qopt;
++  char *value_copy;
++
++  value_copy = strdup (str);
++  if (value_copy == NULL)
++    return -1;
++
++  if ((qopt = extend_options (qopts)) == NULL) {
++    free (value_copy);
++    return -1;
++  }
++
++  qopt->type = QOPT_RAW;
++  qopt->value = value_copy;
++
++  return 0;
++}
++
+ /**
+  * Start an argument that takes a comma-separated list of fields.
+  *
+@@ -724,6 +746,12 @@ qemuopts_to_channel (struct qemuopts *qopts, FILE *fp)
+         shell_and_comma_quote (qopts->options[i].values[j], fp);
+       }
+       break;
++
++    case QOPT_RAW:
++      fprintf (fp, "%s%s",
++               nl, qopts->options[i].value);
++      break;
++
+     }
+   }
+   fputc ('\n', fp);
+@@ -769,6 +797,12 @@ qemuopts_to_argv (struct qemuopts *qopts)
+     case QOPT_ARG:
+     case QOPT_ARG_LIST:
+       n += 2;
++      break;
++
++      /* Raw is incompatible with using argv. */
++    case QOPT_RAW:
++      errno = EINVAL;
++      return NULL;
+     }
+   }
+ 
+@@ -845,6 +879,10 @@ qemuopts_to_argv (struct qemuopts *qopts)
+       }
+       ret[n][len] = '\0';
+       n++;
++      break;
++
++    case QOPT_RAW:
++      abort ();
+     }
+   }
+ 
+@@ -924,7 +962,8 @@ qemuopts_to_config_channel (struct qemuopts *qopts, FILE *fp)
+       return -1;
+ 
+     case QOPT_ARG_NOQUOTE:
+-      /* arg_noquote is incompatible with this function. */
++    case QOPT_RAW:
++      /* arg_noquote and raw are incompatible with this function. */
+       errno = EINVAL;
+       return -1;
+ 
+@@ -960,6 +999,7 @@ qemuopts_to_config_channel (struct qemuopts *qopts, FILE *fp)
+     case QOPT_FLAG:
+     case QOPT_ARG_NOQUOTE:
+     case QOPT_ARG:
++    case QOPT_RAW:
+       abort ();
+ 
+     case QOPT_ARG_LIST:
+diff --git a/common/qemuopts/qemuopts.h b/common/qemuopts/qemuopts.h
+index 08efcd9a..29f81475 100644
+--- a/common/qemuopts/qemuopts.h
++++ b/common/qemuopts/qemuopts.h
+@@ -31,6 +31,7 @@ extern int qemuopts_add_flag (struct qemuopts *qopts, const char *flag);
+ extern int qemuopts_add_arg (struct qemuopts *qopts, const char *flag, const char *value);
+ extern int qemuopts_add_arg_format (struct qemuopts *qopts, const char *flag, const char *fs, ...) __attribute__((format (printf,3,4)));
+ extern int qemuopts_add_arg_noquote (struct qemuopts *qopts, const char *flag, const char *value);
++extern int qemuopts_add_raw (struct qemuopts *qopts, const char *str);
+ extern int qemuopts_start_arg_list (struct qemuopts *qopts, const char *flag);
+ extern int qemuopts_append_arg_list (struct qemuopts *qopts, const char *value);
+ extern int qemuopts_append_arg_list_format (struct qemuopts *qopts, const char *fs, ...) __attribute__((format (printf,2,3)));
+diff --git a/configure.ac b/configure.ac
+index 0c8473bd..8d6a506b 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -137,7 +137,6 @@ AC_CONFIG_FILES([Makefile
+                  common/mlstdutils/guestfs_config.ml
+                  common/mltools/Makefile
+                  common/mlutils/Makefile
+-                 common/mlv2v/Makefile
+                  common/mlxml/Makefile
+                  common/qemuopts/Makefile
+                  common/utils/Makefile
+diff --git a/convert/Makefile.am b/convert/Makefile.am
+index 2d34fe7c..2809c555 100644
+--- a/convert/Makefile.am
++++ b/convert/Makefile.am
+@@ -83,7 +83,6 @@ OCAMLPACKAGES = \
+ 	-I $(top_builddir)/common/mlpcre \
+ 	-I $(top_builddir)/common/mltools \
+ 	-I $(top_builddir)/common/mldrivers \
+-	-I $(top_builddir)/common/mlv2v \
+ 	-I $(top_builddir)/common/mlxml
+ if HAVE_OCAML_PKG_GETTEXT
+ OCAMLPACKAGES += -package gettext-stub
+@@ -113,7 +112,6 @@ OCAMLLINKFLAGS = \
+ 	mltools.$(MLARCHIVE) \
+ 	mlcustomize.$(MLARCHIVE) \
+ 	mldrivers.$(MLARCHIVE) \
+-	mlv2v.$(MLARCHIVE) \
+ 	mlv2vlib.$(MLARCHIVE) \
+ 	$(LINK_CUSTOM_OCAMLC_ONLY)
+ 
+diff --git a/in-place/Makefile.am b/in-place/Makefile.am
+index 2217ff40..2fecb3a7 100644
+--- a/in-place/Makefile.am
++++ b/in-place/Makefile.am
+@@ -64,8 +64,7 @@ OCAMLPACKAGES = \
+ 	-I $(top_builddir)/common/mlxml \
+ 	-I $(top_builddir)/common/mltools \
+ 	-I $(top_builddir)/common/mlcustomize \
+-	-I $(top_builddir)/common/mldrivers \
+-	-I $(top_builddir)/common/mlv2v
++	-I $(top_builddir)/common/mldrivers
+ if HAVE_OCAML_PKG_GETTEXT
+ OCAMLPACKAGES += -package gettext-stub
+ endif
+@@ -101,7 +100,6 @@ OCAMLLINKFLAGS = \
+ 	mllibvirt.$(MLARCHIVE) \
+ 	mlcustomize.$(MLARCHIVE) \
+ 	mldrivers.$(MLARCHIVE) \
+-	mlv2v.$(MLARCHIVE) \
+ 	mlv2vlib.$(MLARCHIVE) \
+ 	mlconvert.$(MLARCHIVE) \
+ 	mlinput.$(MLARCHIVE) \
+diff --git a/input/Makefile.am b/input/Makefile.am
+index 2f4ceb0c..0b97074a 100644
+--- a/input/Makefile.am
++++ b/input/Makefile.am
+@@ -102,7 +102,6 @@ OCAMLPACKAGES = \
+ 	-I $(top_builddir)/common/mlgettext \
+ 	-I $(top_builddir)/common/mlpcre \
+ 	-I $(top_builddir)/common/mltools \
+-	-I $(top_builddir)/common/mlv2v \
+ 	-I $(top_builddir)/common/mlxml
+ if HAVE_OCAML_PKG_GETTEXT
+ OCAMLPACKAGES += -package gettext-stub
+@@ -130,7 +129,6 @@ OCAMLLINKFLAGS = \
+ 	mlxml.$(MLARCHIVE) \
+ 	mltools.$(MLARCHIVE) \
+ 	mllibvirt.$(MLARCHIVE) \
+-	mlv2v.$(MLARCHIVE) \
+ 	mlv2vlib.$(MLARCHIVE) \
+ 	$(LINK_CUSTOM_OCAMLC_ONLY)
+ 
+diff --git a/inspector/Makefile.am b/inspector/Makefile.am
+index 51ac71f9..172b2dc0 100644
+--- a/inspector/Makefile.am
++++ b/inspector/Makefile.am
+@@ -64,8 +64,7 @@ OCAMLPACKAGES = \
+ 	-I $(top_builddir)/common/mlxml \
+ 	-I $(top_builddir)/common/mltools \
+ 	-I $(top_builddir)/common/mlcustomize \
+-	-I $(top_builddir)/common/mldrivers \
+-	-I $(top_builddir)/common/mlv2v
++	-I $(top_builddir)/common/mldrivers
+ if HAVE_OCAML_PKG_GETTEXT
+ OCAMLPACKAGES += -package gettext-stub
+ endif
+@@ -101,7 +100,6 @@ OCAMLLINKFLAGS = \
+ 	mllibvirt.$(MLARCHIVE) \
+ 	mlcustomize.$(MLARCHIVE) \
+ 	mldrivers.$(MLARCHIVE) \
+-	mlv2v.$(MLARCHIVE) \
+ 	mlv2vlib.$(MLARCHIVE) \
+ 	mlconvert.$(MLARCHIVE) \
+ 	mlinput.$(MLARCHIVE) \
+diff --git a/lib/Makefile.am b/lib/Makefile.am
+index a8776019..5cec771c 100644
+--- a/lib/Makefile.am
++++ b/lib/Makefile.am
+@@ -87,7 +87,6 @@ OCAMLPACKAGES = \
+ 	-I $(top_builddir)/common/mlstdutils \
+ 	-I $(top_builddir)/common/mltools \
+ 	-I $(top_builddir)/common/mlutils \
+-	-I $(top_builddir)/common/mlv2v \
+ 	-I $(top_builddir)/common/mlxml
+ OCAMLPACKAGES_TESTS = $(MLV2VLIB_CMA)
+ 
+diff --git a/lib/utils.ml b/lib/utils.ml
+index 4c9b7415..c4cfd89b 100644
+--- a/lib/utils.ml
++++ b/lib/utils.ml
+@@ -69,26 +69,6 @@ let qemu_supports_sound_card = function
+   | Types.USBAudio
+     -> false
+ 
+-(* Find the UEFI firmware. *)
+-let find_uefi_firmware guest_arch =
+-  let files =
+-    (* The lists of firmware are actually defined in common/utils/uefi.c. *)
+-    match guest_arch with
+-    | "x86_64" -> Uefi.uefi_x86_64_firmware
+-    | "aarch64" -> Uefi.uefi_aarch64_firmware
+-    | arch ->
+-       error (f_"don’t know how to convert UEFI guests for architecture %s")
+-             guest_arch in
+-  let rec loop = function
+-    | [] ->
+-       error (f_"cannot find firmware for UEFI guests.\n\nYou probably \
+-                 need to install OVMF (x86-64), or AAVMF (aarch64)")
+-    | ({ Uefi.code; vars = vars_template } as ret) :: rest ->
+-       if Sys.file_exists code && Sys.file_exists vars_template then ret
+-       else loop rest
+-  in
+-  loop files
+-
+ let compare_app2_versions app1 app2 =
+   let i = compare app1.Guestfs.app2_epoch app2.Guestfs.app2_epoch in
+   if i <> 0 then i
+diff --git a/lib/utils.mli b/lib/utils.mli
+index 46d05306..afe61a4e 100644
+--- a/lib/utils.mli
++++ b/lib/utils.mli
+@@ -36,10 +36,6 @@ val kvm_arch : string -> string
+ val qemu_supports_sound_card : Types.source_sound_model -> bool
+ (** Does qemu support the given sound card? *)
+ 
+-val find_uefi_firmware : string -> Uefi.uefi_firmware
+-(** Find the UEFI firmware for the guest architecture.
+-    This cannot return an error, it calls [error] and fails instead. *)
+-
+ val compare_app2_versions : Guestfs.application2 -> Guestfs.application2 -> int
+ (** Compare two app versions. *)
+ 
+diff --git a/ocaml-dep.sh.in b/ocaml-dep.sh.in
+index 7f3130e5..565f880f 100755
+--- a/ocaml-dep.sh.in
++++ b/ocaml-dep.sh.in
+@@ -41,7 +41,6 @@ common/mlprogress
+ common/mlstdutils
+ common/mltools
+ common/mlutils
+-common/mlv2v
+ common/mlvisit
+ common/mlxml
+ lib
+diff --git a/output/Makefile.am b/output/Makefile.am
+index 09638c25..e71891eb 100644
+--- a/output/Makefile.am
++++ b/output/Makefile.am
+@@ -107,7 +107,6 @@ OCAMLPACKAGES = \
+ 	-I $(top_builddir)/common/mlgettext \
+ 	-I $(top_builddir)/common/mlpcre \
+ 	-I $(top_builddir)/common/mltools \
+-	-I $(top_builddir)/common/mlv2v \
+ 	-I $(top_builddir)/common/mlxml
+ if HAVE_OCAML_PKG_GETTEXT
+ OCAMLPACKAGES += -package gettext-stub
+@@ -138,7 +137,6 @@ OCAMLLINKFLAGS = \
+ 	mlxml.$(MLARCHIVE) \
+ 	mltools.$(MLARCHIVE) \
+ 	mllibvirt.$(MLARCHIVE) \
+-	mlv2v.$(MLARCHIVE) \
+ 	mlv2vlib.$(MLARCHIVE) \
+ 	$(LINK_CUSTOM_OCAMLC_ONLY)
+ 
+diff --git a/output/output_qemu.ml b/output/output_qemu.ml
+index b6f24565..fd0182d6 100644
+--- a/output/output_qemu.ml
++++ b/output/output_qemu.ml
+@@ -105,30 +105,56 @@ module QEMU = struct
+ 
+     let { guestcaps; target_buses; target_firmware } = target_meta in
+ 
++    (* Start the shell script.  Write it to a temporary file
++     * which we rename at the end.
++     *)
+     let file = output_storage // output_name ^ ".sh" in
++    let tmpfile = file ^ ".tmp" in
++    On_exit.unlink tmpfile;
+ 
+-    let uefi_firmware =
+-      match target_firmware with
+-      | TargetBIOS -> None
+-      | TargetUEFI -> Some (find_uefi_firmware guestcaps.gcaps_arch) in
+-    let machine, secure_boot_required =
+-      match guestcaps.gcaps_machine, uefi_firmware with
+-      | _, Some { Uefi.flags }
+-           when List.mem Uefi.UEFI_FLAG_SECURE_BOOT_REQUIRED flags ->
+-         (* Force machine type to Q35 because PC does not support
+-          * secure boot.  We must remove this when we get the
+-          * correct machine type from libosinfo in future. XXX
+-          *)
+-         Q35, true
+-      | machine, _ ->
+-         machine, false in
+-    let smm = secure_boot_required in
++    let chan = open_out tmpfile in
++    let fpf fs = fprintf chan fs in
++    fpf "#!/bin/sh -\n";
++    fpf "\n";
+ 
+-    let machine_str =
+-      match machine with
+-      | I440FX -> "pc"
+-      | Q35 -> "q35"
+-      | Virt -> "virt" in
++    (* Allow the user to override our choice of machine type. *)
++    let () =
++      let machine_str =
++        match guestcaps.gcaps_machine with
++        | I440FX -> "pc"
++        | Q35 -> "q35"
++        | Virt -> "virt" in
++      fpf "machine=%s\n" machine_str;
++      fpf "\n" in
++
++    (* If the firmware is UEFI, locate the OVMF files. *)
++    (match target_firmware with
++     | TargetBIOS -> ()
++     | TargetUEFI ->
++        let prefix =
++          match guestcaps.gcaps_arch with
++          | "x86_64" ->
++             fpf "uefi_dir=/usr/share/OVMF\n"; "OVMF"
++          | "aarch64" ->
++             fpf "uefi_dir=/usr/share/AAVMF\n"; "AAVMF"
++          | arch ->
++             error (f_"don’t know how to convert UEFI guests \
++                       for architecture %s")
++               arch in
++        fpf "uefi_code=\"$( \
++             find $uefi_dir -name '%s_CODE*.fd' -print -quit )\"\n"
++          prefix;
++        fpf "uefi_vars_template=\"$( \
++             find $uefi_dir -name '%s_VARS.fd' -print -quit )\"\n"
++          prefix;
++        fpf "\n";
++        fpf "# Make a copy of the UEFI variables template\n";
++        fpf "uefi_vars=\"$(mktemp)\"\n";
++        fpf "cp \"$uefi_vars_template\" \"$uefi_vars\"\n";
++        fpf "\n";
++        fpf "# You may need to set this 'on' to use secure boot\n";
++        fpf "smm=off\n";
++    );
+ 
+     (* Construct the command line.  Note that the [Qemuopts]
+      * module deals with shell and qemu comma quoting.
+@@ -152,20 +178,17 @@ module QEMU = struct
+ 
+     if not guestcaps.gcaps_rtc_utc then arg "-rtc" "base=localtime";
+ 
+-    arg_list "-machine" (machine_str ::
+-                           (if smm then ["smm=on"] else []) @
+-                           ["accel=kvm:tcg"]);
++    arg_noquote "-machine" "$machine${smm:+,smm=$smm},accel=kvm:tcg";
+ 
+-    (match uefi_firmware with
+-     | None -> ()
+-     | Some { Uefi.code } ->
+-        if secure_boot_required then
+-          arg_list "-global"
+-            ["driver=cfi.pflash01"; "property=secure"; "value=on"];
+-        arg_list "-drive"
+-          ["if=pflash"; "format=raw"; "file=" ^ code; "readonly=on"];
+-        arg_noquote "-drive" "if=pflash,format=raw,file=\"$uefi_vars\"";
+-    );
++    fpf "if [ \"$uefi_code\" != \"\" ]; then\n";
++    fpf "    uefi_args=\"\\\n";
++    fpf "    -global driver=cfi.pflash01,property=secure,value=$smm \\\n";
++    fpf "    -drive if=pflash,format=raw,file=$uefi_code,readonly=on \\\n";
++    fpf "    -drive if=pflash,format=raw,file=$uefi_vars \\\n";
++    fpf "    \"\n";
++    fpf "fi\n";
++    fpf "\n";
++    Qemuopts.raw cmd "$uefi_args";
+ 
+     arg "-m" (Int64.to_string (source.s_memory /^ 1024L /^ 1024L));
+ 
+@@ -209,7 +232,7 @@ module QEMU = struct
+       Array.exists floppy_filter target_buses.target_floppy_bus in
+ 
+     if ide_ctrl_needed then (
+-      match machine with
++      match guestcaps.gcaps_machine with
+       | I440FX -> ()
+         (* The PC machine has a built-in controller of type "piix3-ide"
+          * providing buses "ide.0" and "ide.1", with each bus fitting two
+@@ -232,7 +255,7 @@ module QEMU = struct
+       arg_list "-device" [ "virtio-scsi-pci"; "id=scsi0" ];
+ 
+     if floppy_ctrl_needed then (
+-      match machine with
++      match guestcaps.gcaps_machine with
+       | I440FX -> ()
+         (* The PC machine has a built-in controller of type "isa-fdc"
+          * providing bus "floppy-bus.0", fitting two devices.
+@@ -283,7 +306,7 @@ module QEMU = struct
+        *)
+       let backend_name = sprintf "drive-ide-%d" frontend_ctr
+       and ide_bus, ide_unit =
+-        match machine with
++        match guestcaps.gcaps_machine with
+         | I440FX -> frontend_ctr / 2, frontend_ctr mod 2
+         | Q35 -> frontend_ctr, 0
+         | Virt -> 0, 0 (* should never happen, see warning above *) in
+@@ -450,25 +473,13 @@ module QEMU = struct
+     if inspect.i_type = "linux" then
+       arg "-serial" "stdio";
+ 
+-    (* Write the qemu script. *)
+-    with_open_out file (
+-      fun chan ->
+-        let fpf fs = fprintf chan fs in
+-        fpf "#!/bin/sh -\n";
+-        fpf "\n";
+-
+-        (match uefi_firmware with
+-         | None -> ()
+-         | Some { Uefi.vars = vars_template } ->
+-            fpf "# Make a copy of the UEFI variables template\n";
+-            fpf "uefi_vars=\"$(mktemp)\"\n";
+-            fpf "cp %s \"$uefi_vars\"\n" (quote vars_template);
+-            fpf "\n"
+-        );
+-
+-        Qemuopts.to_chan cmd chan
+-    );
++    (* Write the qemu command. *)
++    Qemuopts.to_chan cmd chan;
+ 
++    (* Finish off by renaming the temporary file to the final file
++     * and making it executable.
++     *)
++    Unix.rename tmpfile file;
+     Unix.chmod file 0o755;
+ 
+     (* If -oo qemu-boot option was specified then we should boot the guest. *)
+diff --git a/output/qemuopts-c.c b/output/qemuopts-c.c
+index 03c40206..1d080737 100644
+--- a/output/qemuopts-c.c
++++ b/output/qemuopts-c.c
+@@ -176,6 +176,18 @@ guestfs_int_qemuopts_arg_list (value qoptsv, value flagv, value valuesv)
+   CAMLreturn (Val_unit);
+ }
+ 
++value
++guestfs_int_qemuopts_raw (value qoptsv, value strv)
++{
++  CAMLparam2 (qoptsv, strv);
++  struct qemuopts *qopts = Qopts_val (qoptsv);
++
++  if (qemuopts_add_raw (qopts, String_val (strv)) == -1)
++    unix_error (errno, (char *) "qemuopts_add_raw", strv);
++
++  CAMLreturn (Val_unit);
++}
++
+ value
+ guestfs_int_qemuopts_to_script (value qoptsv, value strv)
+ {
+diff --git a/output/qemuopts.ml b/output/qemuopts.ml
+index 1ba57dba..bc4e33d7 100644
+--- a/output/qemuopts.ml
++++ b/output/qemuopts.ml
+@@ -25,6 +25,7 @@ external flag : t -> string -> unit = "guestfs_int_qemuopts_flag"
+ external arg : t -> string -> string -> unit = "guestfs_int_qemuopts_arg"
+ external arg_noquote : t -> string -> string -> unit = "guestfs_int_qemuopts_arg_noquote"
+ external arg_list : t -> string -> string list -> unit = "guestfs_int_qemuopts_arg_list"
++external raw : t -> string -> unit = "guestfs_int_qemuopts_raw"
+ external to_script : t -> string -> unit = "guestfs_int_qemuopts_to_script"
+ 
+ external _to_chan : t -> Unix.file_descr -> unit = "guestfs_int_qemuopts_to_chan"
+diff --git a/output/qemuopts.mli b/output/qemuopts.mli
+index 5c39a32f..bd65405f 100644
+--- a/output/qemuopts.mli
++++ b/output/qemuopts.mli
+@@ -53,6 +53,10 @@ val arg_list : t -> string -> string list -> unit
+ 
+     This does both qemu comma-quoting and shell-quoting as required. *)
+ 
++val raw : t -> string -> unit
++(** [raw "stuff"] adds [stuff] to the command line completely
++    unquoted.  Use with care. *)
++
+ val to_script : t -> string -> unit
+ (** [to_script t "./file.sh"] writes the resulting command line to
+     a file.  The file begins with [#!/bin/sh] and is chmod 0755. *)
+diff --git a/po/POTFILES-ml b/po/POTFILES-ml
+index e88a18b0..7f1d1cdb 100644
+--- a/po/POTFILES-ml
++++ b/po/POTFILES-ml
+@@ -42,7 +42,6 @@ common/mltools/urandom.ml
+ common/mltools/xpath_helpers.ml
+ common/mlutils/c_utils.ml
+ common/mlutils/unix_utils.ml
+-common/mlv2v/uefi.ml
+ common/mlxml/xml.ml
+ in-place/in_place.ml
+ input/OVA.ml
+diff --git a/v2v/Makefile.am b/v2v/Makefile.am
+index d609ab02..9378eb89 100644
+--- a/v2v/Makefile.am
++++ b/v2v/Makefile.am
+@@ -67,8 +67,7 @@ OCAMLPACKAGES = \
+ 	-I $(top_builddir)/common/mlxml \
+ 	-I $(top_builddir)/common/mltools \
+ 	-I $(top_builddir)/common/mlcustomize \
+-	-I $(top_builddir)/common/mldrivers \
+-	-I $(top_builddir)/common/mlv2v
++	-I $(top_builddir)/common/mldrivers
+ if HAVE_OCAML_PKG_GETTEXT
+ OCAMLPACKAGES += -package gettext-stub
+ endif
+@@ -104,7 +103,6 @@ OCAMLLINKFLAGS = \
+ 	mllibvirt.$(MLARCHIVE) \
+ 	mlcustomize.$(MLARCHIVE) \
+ 	mldrivers.$(MLARCHIVE) \
+-	mlv2v.$(MLARCHIVE) \
+ 	mlv2vlib.$(MLARCHIVE) \
+ 	mlconvert.$(MLARCHIVE) \
+ 	mlinput.$(MLARCHIVE) \
+@@ -164,7 +162,6 @@ v2v_unit_tests_DEPENDENCIES = \
+ 	../common/mltools/mltools.$(MLARCHIVE) \
+ 	../common/mlcustomize/mlcustomize.$(MLARCHIVE) \
+ 	../common/mldrivers/mldrivers.$(MLARCHIVE) \
+-	../common/mlv2v/mlv2v.$(MLARCHIVE) \
+ 	$(top_srcdir)/ocaml-link.sh
+ v2v_unit_tests_LINK = \
+ 	$(top_srcdir)/ocaml-link.sh -cclib '$(OCAMLCLIBS)' -- \

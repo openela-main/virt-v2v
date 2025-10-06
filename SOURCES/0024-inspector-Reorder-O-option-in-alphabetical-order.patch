@@ -1,0 +1,29 @@
+From 73bf9cb9a51f3112e8a80c57586442efcf53cfc1 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 5 Dec 2024 17:27:38 +0000
+Subject: [PATCH] inspector: Reorder -O option in alphabetical order
+
+Updates: commit 0805ea93796b8b57e7c9f0bc04f83ea76a9820a5
+(cherry picked from commit 8efb3ac06467f32901fa0447176311ff71aa53f9)
+(cherry picked from commit 908f4148d8479c0f5e74ec21471adc57696eed55)
+---
+ inspector/inspector.ml | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/inspector/inspector.ml b/inspector/inspector.ml
+index d7cbf449..3e039891 100644
+--- a/inspector/inspector.ml
++++ b/inspector/inspector.ml
+@@ -178,10 +178,10 @@ let rec main () =
+                                     s_"Map NIC to network or bridge or assign static IP";
+     [ S 'n'; L"network" ], Getopt.String ("in:out", add_network),
+                                     s_"Map network ‘in’ to ‘out’";
+-    [ L"root" ],     Getopt.String ("ask|... ", set_root_choice),
+-                                    s_"How to choose root filesystem";
+     [ S 'O' ],       Getopt.String ("output.xml", set_output_file_option),
+                                     s_"Set the output filename";
++    [ L"root" ],     Getopt.String ("ask|... ", set_root_choice),
++                                    s_"How to choose root filesystem";
+   ] in
+ 
+   (* Append virt-customize options. *)

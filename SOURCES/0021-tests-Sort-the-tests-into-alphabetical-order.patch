@@ -1,0 +1,244 @@
+From a661b06677d7fdd63b6e7315b759ded900f3a540 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 5 Dec 2024 15:19:15 +0000
+Subject: [PATCH] tests: Sort the tests into alphabetical order
+
+The list of tests had grown organically over a very long time.
+
+Also rename the "odd one out" rhbz* to test-rhbz*.
+
+(cherry picked from commit d80c05a27098c6affaca4363372cae2354d9bc4f)
+(cherry picked from commit a9d2eb43fdd5f1d115cc5b048a4b252a533d72cd)
+---
+ .gitignore                                    |  2 +-
+ configure.ac                                  |  2 +-
+ tests/Makefile.am                             | 58 +++++++++----------
+ tests/rhbz1232192.xml                         | 26 +++++++++
+ tests/{rhbz1232192.sh => test-rhbz1232192.sh} |  2 +-
+ ...1232192.xml.in => test-rhbz1232192.xml.in} |  0
+ 6 files changed, 58 insertions(+), 32 deletions(-)
+ create mode 100644 tests/rhbz1232192.xml
+ rename tests/{rhbz1232192.sh => test-rhbz1232192.sh} (95%)
+ rename tests/{rhbz1232192.xml.in => test-rhbz1232192.xml.in} (100%)
+
+diff --git a/.gitignore b/.gitignore
+index b8abc3f8..9dcd4611 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -121,13 +121,13 @@ Makefile.in
+ /test-data/phony-guests/windows-system
+ /tests/functions.sh
+ /tests/libvirt-is-version
+-/tests/rhbz1232192.xml
+ /tests/test-cdrom.xml
+ /tests/test-conversion-of-*.sh
+ /tests/test-floppy.xml
+ /tests/test-mac.xml
+ /tests/test-networks-and-bridges.xml
+ /tests/test-print-source.xml
++/tests/test-rhbz1232192.xml
+ /tests/test-sound.xml
+ /tests/windows.vmdk
+ /v2v/.depend
+diff --git a/configure.ac b/configure.ac
+index 300b421e..623c634d 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -163,12 +163,12 @@ AC_CONFIG_FILES([Makefile
+                  test-data/phony-guests/guests.xml
+                  tests/functions.sh
+                  tests/Makefile
+-                 tests/rhbz1232192.xml
+                  tests/test-cdrom.xml
+                  tests/test-floppy.xml
+                  tests/test-mac.xml
+                  tests/test-networks-and-bridges.xml
+                  tests/test-print-source.xml
++                 tests/test-rhbz1232192.xml
+                  tests/test-sound.xml
+                  v2v/Makefile])
+ 
+diff --git a/tests/Makefile.am b/tests/Makefile.am
+index c466b59a..fac18bbe 100644
+--- a/tests/Makefile.am
++++ b/tests/Makefile.am
+@@ -56,6 +56,17 @@ libvirt_is_version_CFLAGS = \
+ TESTS_ENVIRONMENT = $(top_builddir)/run --test
+ 
+ TESTS = \
++	test-bad-networks-and-bridges.sh \
++	test-cdrom.sh \
++	test-customize.sh \
++	test-fedora-btrfs-conversion.sh \
++	test-fedora-conversion.sh \
++	test-fedora-luks-on-lvm-conversion.sh \
++	test-fedora-lvm-on-luks-conversion.sh \
++	test-fedora-md-conversion.sh \
++	test-floppy.sh \
++	test-i-disk-parallel.sh \
++	test-i-disk.sh \
+ 	test-i-ova-bad-sha1.sh \
+ 	test-i-ova-bad-sha256.sh \
+ 	test-i-ova-directory.sh \
+@@ -68,16 +79,11 @@ TESTS = \
+ 	test-i-ova-subfolders.sh \
+ 	test-i-ova-tar.sh \
+ 	test-i-ova-two-disks.sh \
+-	test-i-vmx.sh \
+-	test-it-vddk-io-query.sh \
+-	test-bad-networks-and-bridges.sh \
+-	test-cdrom.sh \
+-	test-floppy.sh \
+-	test-i-disk.sh \
+-	test-i-disk-parallel.sh \
+ 	test-i-ova.sh \
++	test-i-vmx.sh \
+ 	test-in-place.sh \
+ 	test-inspector.sh \
++	test-it-vddk-io-query.sh \
+ 	test-mac.sh \
+ 	test-machine-readable.sh \
+ 	test-networks-and-bridges.sh \
+@@ -94,16 +100,10 @@ TESTS = \
+ 	test-of-option.sh \
+ 	test-on-option.sh \
+ 	test-print-source.sh \
++	test-rhbz1232192.sh \
+ 	test-sound.sh \
+ 	test-virtio-win-iso.sh \
+-	test-fedora-conversion.sh \
+-	test-fedora-btrfs-conversion.sh \
+-	test-fedora-luks-on-lvm-conversion.sh \
+-	test-fedora-lvm-on-luks-conversion.sh \
+-	test-fedora-md-conversion.sh \
+ 	test-windows-conversion.sh \
+-	test-customize.sh \
+-	rhbz1232192.sh \
+ 	$(SLOW_TESTS) \
+ 	$(ROOT_TESTS)
+ 
+@@ -179,16 +179,17 @@ EXTRA_DIST += \
+ 	test-bad-networks-and-bridges.sh \
+ 	test-cdrom.expected \
+ 	test-cdrom.sh \
++	test-conversion-of.sh \
+ 	test-customize.sh \
+-	test-fedora-conversion.sh \
+ 	test-fedora-btrfs-conversion.sh \
++	test-fedora-conversion.sh \
+ 	test-fedora-luks-on-lvm-conversion.sh \
+ 	test-fedora-lvm-on-luks-conversion.sh \
+ 	test-fedora-md-conversion.sh \
+ 	test-floppy.expected \
+ 	test-floppy.sh \
+-	test-i-disk.sh \
+ 	test-i-disk-parallel.sh \
++	test-i-disk.sh \
+ 	test-i-ova-as-root.ovf \
+ 	test-i-ova-as-root.sh \
+ 	test-i-ova-bad-sha1.sh \
+@@ -223,33 +224,33 @@ EXTRA_DIST += \
+ 	test-i-ova.ovf \
+ 	test-i-ova.sh \
+ 	test-i-ova.xml \
+-	test-i-vmx.sh \
+ 	test-i-vmx-1.expected \
+-	test-i-vmx-2.expected \
+-	test-i-vmx-3.expected \
+-	test-i-vmx-4.expected \
+-	test-i-vmx-5.expected \
+-	test-i-vmx-6.expected \
+-	test-i-vmx-7.expected \
+ 	test-i-vmx-1.vmx \
++	test-i-vmx-2.expected \
+ 	test-i-vmx-2.vmx \
++	test-i-vmx-3.expected \
+ 	test-i-vmx-3.vmx \
++	test-i-vmx-4.expected \
+ 	test-i-vmx-4.vmx \
++	test-i-vmx-5.expected \
+ 	test-i-vmx-5.vmx \
++	test-i-vmx-6.expected \
+ 	test-i-vmx-6.vmx \
++	test-i-vmx-7.expected \
+ 	test-i-vmx-7.vmx \
++	test-i-vmx.sh \
+ 	test-in-place.sh \
+ 	test-inspector.sh \
+ 	test-it-vddk-io-query.sh \
+-	test-machine-readable.sh \
+ 	test-mac-expected.xml \
+ 	test-mac.sh \
+-	test-networks-and-bridges.sh \
++	test-machine-readable.sh \
+ 	test-networks-and-bridges-expected.xml \
++	test-networks-and-bridges.sh \
+ 	test-o-glance.sh \
+ 	test-o-kubevirt-fedora.sh \
+-	test-o-kubevirt-windows.sh \
+ 	test-o-kubevirt-fedora.yaml.expected \
++	test-o-kubevirt-windows.sh \
+ 	test-o-kubevirt-windows.yaml.expected \
+ 	test-o-libvirt.sh \
+ 	test-o-local-qcow2-compressed.sh \
+@@ -262,9 +263,8 @@ EXTRA_DIST += \
+ 	test-on-option.sh \
+ 	test-print-source.expected \
+ 	test-print-source.sh \
+-	test-conversion-of.sh \
++	test-rhbz1232192.sh \
+ 	test-sound.sh \
+ 	test-trim.sh \
+ 	test-virtio-win-iso.sh \
+-	test-windows-conversion.sh \
+-	rhbz1232192.sh
++	test-windows-conversion.sh
+diff --git a/tests/rhbz1232192.xml b/tests/rhbz1232192.xml
+new file mode 100644
+index 00000000..cf0d7a45
+--- /dev/null
++++ b/tests/rhbz1232192.xml
+@@ -0,0 +1,26 @@
++<domain type='kvm'>
++  <name>rhbz1232192</name>
++  <memory>1048576</memory>
++  <vcpu>2</vcpu>
++  <os>
++    <type>hvm</type>
++    <boot dev='hd'/>
++  </os>
++  <features>
++    <acpi/>
++    <apic/>
++    <pae/>
++  </features>
++  <devices>
++    <disk type='file' device='disk'>
++      <driver name='qemu' type='raw'/>
++      <source file='/home/rjones/d/virt-v2v-rhel-9.6/test-data/phony-guests/windows.img'/>
++      <target dev='hda' bus='ide'/>
++    </disk>
++    <disk type='file' device='disk'>
++      <driver name='qemu' type='raw'/>
++      <source file='/home/rjones/d/virt-v2v-rhel-9.6/test-data/phony-guests/blank-disk.img'/>
++      <target dev='hdb' bus='ide'/>
++    </disk>
++  </devices>
++</domain>
+diff --git a/tests/rhbz1232192.sh b/tests/test-rhbz1232192.sh
+similarity index 95%
+rename from tests/rhbz1232192.sh
+rename to tests/test-rhbz1232192.sh
+index d2180439..21eb2dbd 100755
+--- a/tests/rhbz1232192.sh
++++ b/tests/test-rhbz1232192.sh
+@@ -32,4 +32,4 @@ requires test -f ../test-data/phony-guests/blank-disk.img
+ 
+ export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
+ 
+-virt-v2v -i libvirtxml rhbz1232192.xml -o null
++virt-v2v -i libvirtxml test-rhbz1232192.xml -o null
+diff --git a/tests/rhbz1232192.xml.in b/tests/test-rhbz1232192.xml.in
+similarity index 100%
+rename from tests/rhbz1232192.xml.in
+rename to tests/test-rhbz1232192.xml.in
