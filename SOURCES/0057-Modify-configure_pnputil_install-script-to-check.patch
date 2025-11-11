@@ -1,4 +1,4 @@
-From 4888b96dec2e9670f7d9f239ceb7c57a51114937 Mon Sep 17 00:00:00 2001
+From f93106129586d21c5326445b730113744d140ebd Mon Sep 17 00:00:00 2001
 From: Vadim Rozenfeld <vrozenfe@redhat.com>
 Date: Thu, 10 Jul 2025 10:12:56 +1000
 Subject: [PATCH] Modify configure_pnputil_install script to check pending
@@ -15,14 +15,12 @@ RWMJ:
 Cherry picked from commit 594b05d6940c8719167d10c0cdfaa253349060ab.
 I also updated the common submodule to cherry pick
 libguestfs-common commit b40e534fefb74af32bd496904e44ce9bca1a7b34
-
-(cherry picked from commit f93106129586d21c5326445b730113744d140ebd)
 ---
  common                     |  2 +-
  convert/convert_windows.ml | 48 +++++++++++++++++++++++++++++++++++---
  2 files changed, 46 insertions(+), 4 deletions(-)
 
-Submodule common 3da17d53..d7e9b334:
+Submodule common 3873d593..b48c7d00:
 diff --git a/common/mlcustomize/firstboot.ml b/common/mlcustomize/firstboot.ml
 index 6aca4c34..5f2642b0 100644
 --- a/common/mlcustomize/firstboot.ml

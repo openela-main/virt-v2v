@@ -1,11 +1,10 @@
-From c9015bccb28830cde9218d118ffe9ec42df4c29b Mon Sep 17 00:00:00 2001
+From 6c75a47977f16ed3ce533cd04f29ef2c30a3f2c1 Mon Sep 17 00:00:00 2001
 From: Vadim Rozenfeld <vrozenfe@redhat.com>
 Date: Fri, 18 Jul 2025 19:31:34 +1000
 Subject: [PATCH] remove timeout before installing virtio-win drivers
 
 Signed-off-by: Vadim Rozenfeld <vrozenfe@redhat.com>
 (cherry picked from commit 07192e2bf5e73dd4d3d7d3c1faa940c7a67e2d72)
-(cherry picked from commit 6c75a47977f16ed3ce533cd04f29ef2c30a3f2c1)
 ---
  convert/convert_windows.ml | 2 --
  1 file changed, 2 deletions(-)

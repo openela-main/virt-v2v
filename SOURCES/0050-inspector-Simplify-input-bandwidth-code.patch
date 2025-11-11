@@ -1,0 +1,40 @@
+From 8e3d1747271cdf112d05e099302de7520f7f8111 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Wed, 30 Apr 2025 13:26:54 +0100
+Subject: [PATCH] inspector: Simplify input bandwidth code
+
+We dropped the virt-v2v --bandwidth parameters from
+virt-v2v-inspector, but left some dead code around.  Simplify that
+code.
+
+(cherry picked from commit 7a96d82fb6a6330bc7e667677f62dea64a957188)
+---
+ inspector/inspector.ml | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/inspector/inspector.ml b/inspector/inspector.ml
+index ac26146f..16300d45 100644
+--- a/inspector/inspector.ml
++++ b/inspector/inspector.ml
+@@ -48,8 +48,6 @@ let rec main () =
+     else output_file := Some filename
+   in
+ 
+-  let bandwidth = ref None in
+-  let bandwidth_file = ref None in
+   let input_conn = ref None in
+   let input_format = ref None in
+   let input_password = ref None in
+@@ -313,11 +311,7 @@ read the man page virt-v2v-inspector(1).
+              (module Input_libvirt.Libvirt_) in
+ 
+   let input_options = {
+-    Input.bandwidth =
+-      (match !bandwidth, !bandwidth_file with
+-       | None, None -> None
+-       | Some rate, None -> Some (StaticBandwidth rate)
+-       | rate, Some filename -> Some (DynamicBandwidth (rate, filename)));
++    Input.bandwidth = None;
+     input_conn = input_conn;
+     input_format = !input_format;
+     input_options = !input_options;

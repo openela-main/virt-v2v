@@ -1,4 +1,4 @@
-From c941463a3b555dcd24b1b56abf1916ea273de982 Mon Sep 17 00:00:00 2001
+From ca1952901efe18f8ebdbe1aecd54cd8d86d2c890 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Thu, 15 May 2025 16:41:30 +0100
 Subject: [PATCH] docs: Document -io vddk-file in the main options listing
@@ -11,10 +11,10 @@ Fixes: commit 5328142e6a9faae1db99c646991d27badc6efe91
  1 file changed, 2 insertions(+)
 
 diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
-index 216e617d..886ae421 100644
+index b946758c..4495e53d 100644
 --- a/docs/virt-v2v.pod
 +++ b/docs/virt-v2v.pod
-@@ -328,6 +328,8 @@ See L<virt-v2v-input-vmware(1)> for details.
+@@ -324,6 +324,8 @@ See L<virt-v2v-input-vmware(1)> for details.
  
  =item B<-io vddk-cookie=>COOKIE
  

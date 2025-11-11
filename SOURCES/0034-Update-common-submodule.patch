@@ -1,0 +1,31 @@
+From b9259a577edf5532d936af491afd8789e5f7d874 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 11 Mar 2025 11:43:05 +0000
+Subject: [PATCH] Update common submodule
+
+  Richard W.M. Jones (1):
+      mlcustomize: Remove dnf --verbose option
+
+Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=2351282
+(cherry picked from commit 97b73320fe8f65e48c514064e4cb1acffa8e1573)
+---
+ common | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Submodule common 18310179..57c2b3f0:
+diff --git a/common/mlcustomize/guest_packages.ml b/common/mlcustomize/guest_packages.ml
+index 2602fc71..96614b6c 100644
+--- a/common/mlcustomize/guest_packages.ml
++++ b/common/mlcustomize/guest_packages.ml
+@@ -61,10 +61,7 @@ let install_command packages package_management =
+       apt-get $apt_opts update
+       apt-get $apt_opts install %s
+     " quoted_args
+-  | "dnf" ->
+-     sprintf "dnf%s -y install %s"
+-             (if verbose () then " --verbose" else "")
+-             quoted_args
++  | "dnf" ->    sprintf "dnf -y install %s" quoted_args
+   | "pisi" ->   sprintf "pisi it %s" quoted_args
+   | "pacman" -> sprintf "pacman -S --noconfirm %s" quoted_args
+   | "urpmi" ->  sprintf "urpmi %s" quoted_args

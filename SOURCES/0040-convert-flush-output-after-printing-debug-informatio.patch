@@ -1,0 +1,24 @@
+From 43dc900cee261bf5b090d63745b2ddcee6590583 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 28 Apr 2025 14:53:21 +0100
+Subject: [PATCH] convert: flush output after printing debug information
+
+Make sure this information gets into the log early.
+
+(cherry picked from commit b0494befae461f1f34f5d40a4fb901befbc8e380)
+---
+ convert/convert.ml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/convert/convert.ml b/convert/convert.ml
+index 604902d1..7a27467b 100644
+--- a/convert/convert.ml
++++ b/convert/convert.ml
+@@ -301,6 +301,7 @@ and debug_info source inspect
+     target_nics;
+   eprintf "mountpoint stats:\n";
+   List.iter debug_mpstat mpstats;
++  flush Stdlib.stderr
+ 
+ and debug_mpstat { mp_dev = dev; mp_path = path;
+                    mp_statvfs = s; mp_vfs = vfs } =

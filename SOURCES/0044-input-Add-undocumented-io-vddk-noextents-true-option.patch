@@ -1,0 +1,95 @@
+From 7ba9e7322e5828686fee9e71d7ffa17fe406c28a Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 29 Apr 2025 12:47:00 +0100
+Subject: [PATCH] input: Add undocumented -io vddk-noextents=true option
+
+This turns on the noextents filter, so that the slow VDDK API
+QueryAllocatedBlocks will never be called.  This is just so we can
+test in production if this is effective or not.
+
+(cherry picked from commit 191b8cf418076ae3766b134ffa96eee048c7eb9d)
+---
+ input/input_vddk.ml   | 8 +++++++-
+ input/nbdkit_vddk.ml  | 8 +++-----
+ input/nbdkit_vddk.mli | 1 +
+ 3 files changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/input/input_vddk.ml b/input/input_vddk.ml
+index 6444ce18..2edd7294 100644
+--- a/input/input_vddk.ml
++++ b/input/input_vddk.ml
+@@ -52,6 +52,7 @@ All other settings are optional:
+   -io vddk-cookie=COOKIE       VDDK cookie
+   -io vddk-libdir=LIBDIR       VDDK library parent directory
+   -io vddk-nfchostport=PORT    VDDK nfchostport
++  -io vddk-noextents=true      Avoid slow VDDK QueryAllocatedBlocks API
+   -io vddk-port=PORT           VDDK port
+   -io vddk-snapshot=SNAPSHOT-MOREF
+                                VDDK snapshot moref
+@@ -71,6 +72,7 @@ information on these settings.
+         "cookie";
+         "libdir";
+         "nfchostport";
++        "noextents";
+         "port";
+         "snapshot";
+         "thumbprint";
+@@ -173,6 +175,9 @@ information on these settings.
+       try Some (List.assoc "libdir" io_options) with Not_found -> None in
+     let nfchostport =
+       try Some (List.assoc "nfchostport" io_options) with Not_found -> None in
++    let noextents =
++      try bool_of_string (List.assoc "noextents" io_options)
++      with Not_found -> false in
+     let port =
+       try Some (List.assoc "port" io_options) with Not_found -> None in
+     let snapshot =
+@@ -204,7 +209,8 @@ information on these settings.
+              Nbdkit_vddk.create_vddk ?bandwidth:options.bandwidth
+                ?config ?cookie ~cor
+                ?libdir ~moref
+-               ?nfchostport ?password_file:options.input_password ?port
++               ?nfchostport ~noextents
++               ?password_file:options.input_password ?port
+                ~server ?snapshot ~thumbprint ?transports ?user
+                path in
+            let _, pid = Nbdkit.run_unix socket nbdkit in
+diff --git a/input/nbdkit_vddk.ml b/input/nbdkit_vddk.ml
+index 3ba00d55..5c23efd1 100644
+--- a/input/nbdkit_vddk.ml
++++ b/input/nbdkit_vddk.ml
+@@ -51,7 +51,7 @@ let libNN = sprintf "lib%d" Sys.word_size
+ 
+ (* Create an nbdkit module specialized for reading from VDDK sources. *)
+ let create_vddk ?bandwidth ?config ?cookie ?cor ?libdir ~moref
+-                ?nfchostport ?password_file ?port
++                ?nfchostport ~noextents ?password_file ?port
+                 ~server ?snapshot ~thumbprint ?transports ?user path =
+   if not (Nbdkit.is_installed ()) then
+     error (f_"nbdkit is not installed or not working");
+@@ -166,11 +166,9 @@ See also the virt-v2v-input-vmware(1) manual.") libNN
+    *
+    * If used, this filter should be close to the plugin and MUST
+    * be below the COW filter.
+-   *
+-   * XXX Add some kind of debugging flag so we can test how this
+-   * works in production.
+    *)
+-  (*Nbdkit.add_filter_if_available cmd "noextents";*)
++  if noextents then
++    Nbdkit.add_filter_if_available cmd "noextents";
+ 
+   (* Split very large requests to avoid out of memory errors on the
+    * server.  Since we're using this filter, also add minblock=512
+diff --git a/input/nbdkit_vddk.mli b/input/nbdkit_vddk.mli
+index 2345e6e2..ef2082db 100644
+--- a/input/nbdkit_vddk.mli
++++ b/input/nbdkit_vddk.mli
+@@ -25,6 +25,7 @@ val create_vddk : ?bandwidth:Types.bandwidth ->
+                   ?libdir:string ->
+                   moref:string ->
+                   ?nfchostport:string ->
++                  noextents:bool ->
+                   ?password_file:string ->
+                   ?port:string ->
+                   server:string ->

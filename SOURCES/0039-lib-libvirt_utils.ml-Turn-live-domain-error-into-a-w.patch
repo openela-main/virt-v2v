@@ -1,4 +1,4 @@
-From 314476e7aaf9c0d8e9a55239f6d4ea58a9d2ac27 Mon Sep 17 00:00:00 2001
+From cd55bd8d160cdcdfe21aaafc15f7a1cefee98b85 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Fri, 25 Apr 2025 11:44:15 +0100
 Subject: [PATCH] lib/libvirt_utils.ml: Turn live domain error into a warning

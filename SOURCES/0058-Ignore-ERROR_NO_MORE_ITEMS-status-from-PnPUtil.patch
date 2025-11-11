@@ -1,4 +1,4 @@
-From c655fbd1adb6ccc754b35cd669c4a99eab66883b Mon Sep 17 00:00:00 2001
+From 7c27641fc6d0ff1dfa8fe50b1a1ff9532d3c55ab Mon Sep 17 00:00:00 2001
 From: Vadim Rozenfeld <vrozenfe@redhat.com>
 Date: Tue, 15 Jul 2025 18:35:16 +1000
 Subject: [PATCH] Ignore ERROR_NO_MORE_ITEMS status from PnPUtil.
@@ -8,7 +8,6 @@ better or newer driver installed.
 
 Signed-off-by: Vadim Rozenfeld <vrozenfe@redhat.com>
 (cherry picked from commit 523aff28975532a4fe715193c28c2ede21741392)
-(cherry picked from commit 7c27641fc6d0ff1dfa8fe50b1a1ff9532d3c55ab)
 ---
  convert/convert_windows.ml | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

@@ -8,7 +8,7 @@
 Name:          virt-v2v
 Epoch:         1
 Version:       2.7.1
-Release:       10%{?dist}
+Release:       16%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -61,16 +61,32 @@ Patch0030:     0030-Update-common-submodule.patch
 Patch0031:     0031-convert-Use-yum-apt-.-for-package-removals-not-rpm-d.patch
 Patch0032:     0032-test-data-phony-fedora-Add-simple-static-bin-sh.patch
 Patch0033:     0033-convert-Handle-large-output-from-rpm-ql-command.patch
-Patch0034:     0034-build-Remove-with-virt-v2v-nbdkit-python-plugin.patch
-Patch0035:     0035-build-Use-nbdcopy-and-nbdinfo-from-.-configure.patch
-Patch0036:     0036-v2v-Use-nbdcopy-blkhash-in-verbose-mode.patch
-Patch0037:     0037-lib-libvirt_utils.ml-Turn-live-domain-error-into-a-w.patch
-Patch0038:     0038-input-nbdkit_vddk.ml-Rename-path-parameter-to-file.patch
-Patch0039:     0039-input-Add-io-vddk-file-.-option.patch
-Patch0040:     0040-docs-Document-io-vddk-file-in-the-main-options-listi.patch
-Patch0041:     0041-Modify-configure_pnputil_install-script-to-check.patch
-Patch0042:     0042-Ignore-ERROR_NO_MORE_ITEMS-status-from-PnPUtil.patch
-Patch0043:     0043-remove-timeout-before-installing-virtio-win-drivers.patch
+Patch0034:     0034-Update-common-submodule.patch
+Patch0035:     0035-build-Remove-with-virt-v2v-nbdkit-python-plugin.patch
+Patch0036:     0036-build-Use-nbdcopy-and-nbdinfo-from-.-configure.patch
+Patch0037:     0037-v2v-Use-nbdcopy-blkhash-in-verbose-mode.patch
+Patch0038:     0038-v2v-Print-nbdcopy-command-in-debug-output.patch
+Patch0039:     0039-lib-libvirt_utils.ml-Turn-live-domain-error-into-a-w.patch
+Patch0040:     0040-convert-flush-output-after-printing-debug-informatio.patch
+Patch0041:     0041-convert-Print-more-readable-mountpoint-stats.patch
+Patch0042:     0042-input-Remove-usage-of-nbdkit-cacheextents-filter.patch
+Patch0043:     0043-input-Document-my-findings-with-nbdkit-noextents-fil.patch
+Patch0044:     0044-input-Add-undocumented-io-vddk-noextents-true-option.patch
+Patch0045:     0045-v2v-Remove-vddk-vdsm-compressed-qemu-boot-compat-opt.patch
+Patch0046:     0046-v2v-Remove-no-trim-and-vmtype-options.patch
+Patch0047:     0047-v2v-Remove-password-file-option.patch
+Patch0048:     0048-input-nbdkit_vddk.ml-Rename-path-parameter-to-file.patch
+Patch0049:     0049-input-Add-io-vddk-file-.-option.patch
+Patch0050:     0050-inspector-Simplify-input-bandwidth-code.patch
+Patch0051:     0051-docs-Rearrange-root-titles.patch
+Patch0052:     0052-docs-Clarify-root-first-documentation.patch
+Patch0053:     0053-docs-Remove-old-paragraph-about-a-bug-in-Grub.patch
+Patch0054:     0054-Add-new-virt-v2v-open-tool.patch
+Patch0055:     0055-docs-Document-io-vddk-file-in-the-main-options-listi.patch
+Patch0056:     0056-vddk-Remove-io-vddk-noextents-option.patch
+Patch0057:     0057-Modify-configure_pnputil_install-script-to-check.patch
+Patch0058:     0058-Ignore-ERROR_NO_MORE_ITEMS-status-from-PnPUtil.patch
+Patch0059:     0059-remove-timeout-before-installing-virtio-win-drivers.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -339,6 +355,7 @@ make -C tests TESTS=test-fedora-luks-on-lvm-conversion.sh check
 %{_libexecdir}/virt-v2v-in-place
 %endif
 %{_bindir}/virt-v2v-inspector
+%{_bindir}/virt-v2v-open
 %{_mandir}/man1/virt-v2v.1*
 %{_mandir}/man1/virt-v2v-hacking.1*
 %{_mandir}/man1/virt-v2v-input-vmware.1*
@@ -347,6 +364,7 @@ make -C tests TESTS=test-fedora-luks-on-lvm-conversion.sh check
 %{_mandir}/man1/virt-v2v-in-place.1*
 %endif
 %{_mandir}/man1/virt-v2v-inspector.1*
+%{_mandir}/man1/virt-v2v-open.1*
 %{_mandir}/man1/virt-v2v-output-local.1*
 %{_mandir}/man1/virt-v2v-output-openstack.1*
 %{_mandir}/man1/virt-v2v-output-rhv.1*
@@ -372,17 +390,27 @@ make -C tests TESTS=test-fedora-luks-on-lvm-conversion.sh check
 
 
 %changelog
-* Fri Jul 18 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.7.1-10
-- Fix installation of drivers on firstboot with pending reboots
-  resolves: RHEL-103421
-
-* Fri May 16 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.7.1-8
-- Add -io vddk-file option
-  resolves: RHEL-91098
-
-* Wed Apr 02 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.7.1-6
+* Fri Jul 18 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.7.1-16
+- mlcustomize: Remove dnf --verbose option
+  resolves: RHEL-83289
 - Print blkhash of converted image in virt-v2v debugging output
-  resolves: RHEL-85833
+  resolves: RHEL-85512
+- Print nbdcopy command in debug output
+  resolves: RHEL-86022
+- Turn live domain error into a warning
+  resolves: RHEL-88543
+- Remove usage of nbdkit-cacheextents-filter
+  resolves: RHEL-88857
+- Print better mountpoint stats in debug output
+  resolves: RHEL-88861
+- Remove several ancient, deprecated options
+  resolves: RHEL-88866
+- New tool: virt-v2v-open
+  resolves: RHEL-88985
+- Remove virt-v2v -io vddk-noextents=true option
+  resolves: RHEL-102618
+- Fix installation of drivers on firstboot with pending reboots
+  resolves: RHEL-100682
 
 * Tue Feb 25 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.7.1-5
 - Rebase to upstream development version 2.7.1

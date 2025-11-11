@@ -1,4 +1,4 @@
-From 9197091bf47218ab2ce3ef31c2d83286bb3ca96b Mon Sep 17 00:00:00 2001
+From 7d36586c5a299ecf17ef241063988bc1b9ace2bb Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Mon, 31 Mar 2025 11:06:09 +0100
 Subject: [PATCH] v2v: Use nbdcopy --blkhash in verbose mode
@@ -23,7 +23,6 @@ Fixes: https://issues.redhat.com/browse/RHEL-85508
 Fixes: https://issues.redhat.com/browse/RHEL-85512
 Fixes: https://issues.redhat.com/browse/RHEL-85514
 (cherry picked from commit cffd129d8fd47554255d52ad611d58a30b6b9951)
-(cherry picked from commit 7d36586c5a299ecf17ef241063988bc1b9ace2bb)
 ---
  lib/utils.ml  | 8 ++++++++
  lib/utils.mli | 3 +++

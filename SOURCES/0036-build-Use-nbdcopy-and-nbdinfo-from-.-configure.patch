@@ -1,4 +1,4 @@
-From 134b7aa79cb617c5db5794904254cfb495a1635e Mon Sep 17 00:00:00 2001
+From 52bbbfed912b723f5a4618571fbab57cd9d459b7 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Mon, 2 Dec 2024 13:43:39 +0000
 Subject: [PATCH] build: Use nbdcopy and nbdinfo from ./configure
@@ -7,7 +7,6 @@ Use the configured binaries, so that (eg) ./configure NBDCOPY=...
 will do the right thing.
 
 (cherry picked from commit 5c866e7bb2c7a08a37bb71dea094141802e849e7)
-(cherry picked from commit 52bbbfed912b723f5a4618571fbab57cd9d459b7)
 ---
  input/ssh.ml     | 4 ++--
  lib/config.ml.in | 2 ++

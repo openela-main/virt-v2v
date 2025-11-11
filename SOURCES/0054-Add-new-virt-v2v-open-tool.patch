@@ -1,0 +1,1016 @@
+From 99e27f9670f7e0e6416bf76074ebd84bd3315c6b Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Wed, 30 Apr 2025 12:47:30 +0100
+Subject: [PATCH] Add new virt-v2v-open tool
+
+This can be used to open the virt-v2v input method and run an almost
+arbitrary program on it.  For example you can run virt-inspector to
+inspect the input (eg. to find root devices and other information for
+the virt-v2v --root option), or guestfish.
+
+Currently this only opens the input read-only, although read-write
+access might be added in future.
+
+Suggested-by: Martin Necas
+Fixes: https://issues.redhat.com/browse/RHEL-88985
+(cherry picked from commit cb7d1cd1cf1e6e29e9945227aff3162e3cc9fb6a)
+---
+ .gitignore                   |   3 +
+ Makefile.am                  |   4 +-
+ configure.ac                 |   1 +
+ docs/Makefile.am             |  15 ++
+ docs/virt-v2v-open.pod       | 183 +++++++++++++++++++++
+ docs/virt-v2v.pod            |   9 +-
+ open/Makefile.am             | 126 +++++++++++++++
+ open/dummy.c                 |   2 +
+ open/open.ml                 | 298 +++++++++++++++++++++++++++++++++++
+ open/open.mli                |  19 +++
+ run.in                       |   1 +
+ tests/Makefile.am            |   4 +
+ tests/test-open-encrypted.sh |  56 +++++++
+ tests/test-open.sh           |  77 +++++++++
+ 14 files changed, 795 insertions(+), 3 deletions(-)
+ create mode 100644 docs/virt-v2v-open.pod
+ create mode 100644 open/Makefile.am
+ create mode 100644 open/dummy.c
+ create mode 100644 open/open.ml
+ create mode 100644 open/open.mli
+ create mode 100755 tests/test-open-encrypted.sh
+ create mode 100755 tests/test-open.sh
+
+diff --git a/.gitignore b/.gitignore
+index 9dcd4611..f86caaee 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -52,6 +52,7 @@ Makefile.in
+ /docs/virt-v2v-input-vmware.1
+ /docs/virt-v2v-input-xen.1
+ /docs/virt-v2v-inspector.1
++/docs/virt-v2v-open.1
+ /docs/virt-v2v-output-local.1
+ /docs/virt-v2v-output-openstack.1
+ /docs/virt-v2v-output-rhv.1
+@@ -84,6 +85,8 @@ Makefile.in
+ /missing
+ /ocaml-dep.sh
+ /ocaml-link.sh
++/open/.depend
++/open/virt-v2v-open
+ /output/.depend
+ /output/oUnit-anon.cache
+ /output/output_rhv_upload_*_source.ml
+diff --git a/Makefile.am b/Makefile.am
+index 4cc87324..dcbde1b5 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -44,6 +44,7 @@ SUBDIRS += convert
+ SUBDIRS += v2v
+ SUBDIRS += inspector
+ SUBDIRS += in-place
++SUBDIRS += open
+ 
+ SUBDIRS += tests
+ 
+@@ -112,7 +113,8 @@ po/POTFILES: configure.ac
+ po/POTFILES-ml: configure.ac
+ 	rm -f $@ $@-t
+ 	cd $(srcdir); \
+-	find common/ml* lib in-place input inspector output v2v -name '*.ml' | \
++	find common/ml* lib in-place input inspector open output v2v \
++	    -name '*.ml' | \
+ 	grep -v '^common/mlprogress/' | \
+ 	grep -v '^common/mlvisit/' | \
+ 	grep -v '^lib/config.ml$$' | \
+diff --git a/configure.ac b/configure.ac
+index a99bcb75..e1e01742 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -145,6 +145,7 @@ AC_CONFIG_FILES([Makefile
+                  inspector/Makefile
+                  lib/Makefile
+                  lib/config.ml
++                 open/Makefile
+                  output/Makefile
+                  po-docs/Makefile
+                  po-docs/ja/Makefile
+diff --git a/docs/Makefile.am b/docs/Makefile.am
+index d86349f4..d3547b4d 100644
+--- a/docs/Makefile.am
++++ b/docs/Makefile.am
+@@ -25,6 +25,7 @@ EXTRA_DIST = \
+ 	virt-v2v-input-vmware.pod \
+ 	virt-v2v-input-xen.pod \
+ 	virt-v2v-inspector.pod \
++	virt-v2v-open.pod \
+ 	virt-v2v-output-local.pod \
+ 	virt-v2v-output-openstack.pod \
+ 	virt-v2v-output-rhv.pod \
+@@ -45,6 +46,7 @@ man_MANS = \
+ 	virt-v2v-input-vmware.1 \
+ 	virt-v2v-input-xen.1 \
+ 	virt-v2v-inspector.1 \
++	virt-v2v-open.1 \
+ 	virt-v2v-output-local.1 \
+ 	virt-v2v-output-openstack.1 \
+ 	virt-v2v-output-rhv.1 \
+@@ -62,6 +64,7 @@ noinst_DATA = \
+ 	$(top_builddir)/website/virt-v2v-input-vmware.1.html \
+ 	$(top_builddir)/website/virt-v2v-input-xen.1.html \
+ 	$(top_builddir)/website/virt-v2v-inspector.1.html \
++	$(top_builddir)/website/virt-v2v-open.1.html \
+ 	$(top_builddir)/website/virt-v2v-output-local.1.html \
+ 	$(top_builddir)/website/virt-v2v-output-openstack.1.html \
+ 	$(top_builddir)/website/virt-v2v-output-rhv.1.html \
+@@ -142,6 +145,18 @@ stamp-virt-v2v-inspector.pod: virt-v2v-inspector.pod
+ 	  $<
+ 	touch $@
+ 
++virt-v2v-open.1 $(top_builddir)/website/virt-v2v-open.1.html: stamp-virt-v2v-open.pod
++
++stamp-virt-v2v-open.pod: virt-v2v-open.pod
++	$(PODWRAPPER) \
++	  --man virt-v2v-open.1 \
++	  --html $(top_builddir)/website/virt-v2v-open.1.html \
++	  --path $(top_srcdir)/common/options \
++	  --license GPLv2+ \
++	  --warning safe \
++	  $<
++	touch $@
++
+ virt-v2v-output-local.1 $(top_builddir)/website/virt-v2v-output-local.1.html: stamp-virt-v2v-output-local.pod
+ 
+ stamp-virt-v2v-output-local.pod: virt-v2v-output-local.pod
+diff --git a/docs/virt-v2v-open.pod b/docs/virt-v2v-open.pod
+new file mode 100644
+index 00000000..660ac83e
+--- /dev/null
++++ b/docs/virt-v2v-open.pod
+@@ -0,0 +1,183 @@
++=head1 NAME
++
++virt-v2v-open - Open the virt-v2v input and run a program on it
++
++=head1 SYNOPSIS
++
++ virt-v2v-open [-i* options] guest --run 'program [--options] @@'
++
++ virt-v2v-open -i disk guest.img --run 'virt-inspector --format=raw @@'
++
++ virt-v2v-open -i disk guest.img --run 'guestfish --ro --format=raw @@ -i'
++
++=head1 DESCRIPTION
++
++Virt-v2v-open is a companion tool for L<virt-v2v(1)> and
++L<virt-v2v-inspector(1)> which can be used before conversion to open
++the input side of virt-v2v and run a program.
++
++Some uses for this include running L<virt-inspector(1)> directly on
++the source guest to find source operating systems (to use with the
++virt-v2v I<--root> option).  Or running guestfish to take a look
++inside the source guest before conversion.  You can follow that by
++running L<virt-v2v-inspector(1)> to estimate how much space would be
++needed to convert that guest, and if conversion of the guest is
++possible.
++
++This manual page only documents the program options, not all of the
++I<-i*> options which are the same as virt-v2v.  You should read
++L<virt-v2v(1)> first.
++
++Notes:
++
++=over 4
++
++=item *
++
++The source guest is always opened read-only.  You will not be able to
++make persistent changes.
++
++=item *
++
++L<virt-inspector(1)> can be used directly on local disk images.
++
++=back
++
++=head2 Selecting the input guest
++
++You can run virt-v2v-open with the same I<-i*> options as virt-v2v.
++(Don't use any I<-o*> options).  This will select the guest that you
++want to open.
++
++=head2 Running the program
++
++On the command line, put the program that you want to run on the
++source guest and any other parameters that program needs into the
++I<--run> parameter.  C<@@> in the parameter is substituted with
++I<-a DISK ...> for each source disk, in a way which is compatible with
++L<virt-inspector(1)> and L<guestfish(1)>.
++
++ virt-v2v-open [-i ...] guest \
++               --run 'virt-inspector --format=raw @@ > output.xml'
++
++ virt-v2v-open [-i ...] guest \
++               --run 'guestfish --ro --format=raw @@ -i'
++
++ virt-v2v-open [-i ...] guest \
++               --run 'guestfish --ro --format=raw @@ run : list-filesystems'
++
++=head1 OPTIONS
++
++=over 4
++
++=item B<--help>
++
++Display help.
++
++=item B<-v>
++
++=item B<--verbose>
++
++Enable verbose messages for debugging.
++
++=item B<-V>
++
++=item B<--version>
++
++Display version number and exit.
++
++=item B<-x>
++
++Enable tracing of libguestfs API calls.
++
++=item B<-i> ...
++
++=item B<-ic> ...
++
++=item B<-if> ...
++
++=item B<-io> ...
++
++=item B<-ip> ...
++
++=item B<-it> ...
++
++All of the I<-i*> options supported by virt-v2v are also supported by
++virt-v2v-open.
++
++=item B<--colors>
++
++=item B<--colours>
++
++=item B<--machine-readable>
++
++=item B<--machine-readable>=format
++
++=item B<-q>
++
++=item B<--quiet>
++
++=item B<--wrap>
++
++These options work in the same way as the equivalent virt-v2v options.
++
++=item B<--run> COMMAND
++
++The command that you want to run on the source guest.  C<@@> in the
++command is substituted with a list of I<-a DISK> options that is
++compatible with virt-inspector and guestfish.
++
++=back
++
++=head1 FILES
++
++Files used are the same as for virt-v2v.  See L<virt-v2v(1)/FILES>.
++
++=head1 ENVIRONMENT VARIABLES
++
++Environment variables used are the same as for virt-v2v.  See
++L<virt-v2v(1)/ENVIRONMENT VARIABLES>.
++
++=head1 SEE ALSO
++
++L<virt-v2v(1)>,
++L<virt-p2v(1)>,
++L<virt-inspector(1)>,
++L<virt-v2v-inspector(1)>,
++L<guestfs(3)>,
++L<guestfish(1)>,
++L<qemu-img(1)>,
++L<nbdkit(1)>,
++L<http://libguestfs.org/>.
++
++=head1 AUTHORS
++
++Matthew Booth
++
++Cédric Bosdonnat
++
++Laszlo Ersek
++
++Tomáš Golembiovský
++
++Shahar Havivi
++
++Richard W.M. Jones
++
++Roman Kagan
++
++Mike Latimer
++
++Nir Soffer
++
++Pino Toscano
++
++Xiaodai Wang
++
++Ming Xie
++
++Tingting Zheng
++
++=head1 COPYRIGHT
++
++Copyright (C) 2009-2025 Red Hat Inc.
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index d65e13ed..b946758c 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -784,6 +784,9 @@ Windows Recovery Console, certain attached DVD drives, and bugs in
+ libguestfs inspection heuristics, can make a guest look like a
+ multi-boot operating system.
+ 
++Either L<virt-inspector(1)> or L<virt-v2v-open(1)> can be used to list
++the roots for a dual-boot or multi-boot VM.
++
+ The default in virt-v2v E<le> 0.7.1 was S<I<--root single>>, which
+ causes virt-v2v to die if a multi-boot operating system is found.
+ 
+@@ -798,8 +801,8 @@ Choose the first root device in the case of a multi-boot operating
+ system.  Since this is a heuristic, it may sometimes choose the wrong
+ one, and it may not choose the default option from the guest
+ bootloader.  For predictable results it is better to use
+-L<virt-v2v-inspector(1)> to inspect the guest and then specify which
+-root you want to convert.
++L<virt-v2v-open(1)> and L<virt-inspector(1)> to inspect the guest and
++then specify which root you want to convert.
+ 
+ =item B<--root> /dev/sdX
+ 
+@@ -1670,9 +1673,11 @@ L<https://rwmj.wordpress.com/2015/09/18/importing-kvm-guests-to-ovirt-or-rhev/#c
+ 
+ L<virt-p2v(1)>,
+ L<virt-v2v-inspector(1)>,
++L<virt-v2v-open(1)>,
+ L<virt-customize(1)>,
+ L<virt-df(1)>,
+ L<virt-filesystems(1)>,
++L<virt-inspector(1)>,
+ L<virt-sparsify(1)>,
+ L<virt-sysprep(1)>,
+ L<guestfs(3)>,
+diff --git a/open/Makefile.am b/open/Makefile.am
+new file mode 100644
+index 00000000..e904eec9
+--- /dev/null
++++ b/open/Makefile.am
+@@ -0,0 +1,126 @@
++# libguestfs virt-v2v-open tool
++# Copyright (C) 2009-2025 Red Hat Inc.
++#
++# This program is free software; you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation; either version 2 of the License, or
++# (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program; if not, write to the Free Software
++# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++
++include $(top_srcdir)/subdir-rules.mk
++
++EXTRA_DIST = \
++	$(SOURCES_MLI) \
++	$(SOURCES_ML) \
++	$(SOURCES_C)
++
++SOURCES_MLI = \
++	open.mli
++
++SOURCES_ML = \
++	open.ml
++
++SOURCES_C = \
++	dummy.c
++
++bin_PROGRAMS = virt-v2v-open
++
++virt_v2v_open_SOURCES = $(SOURCES_C)
++virt_v2v_open_CPPFLAGS = \
++	-DCAML_NAME_SPACE \
++	-I. \
++	-I$(top_builddir) \
++	-I$(shell $(OCAMLC) -where) \
++	-I$(top_srcdir)/lib
++virt_v2v_open_CFLAGS = \
++	-pthread \
++	$(WARN_CFLAGS) $(WERROR_CFLAGS) \
++	$(LIBGUESTFS_CFLAGS) \
++	$(LIBVIRT_CFLAGS)
++
++BOBJECTS = $(SOURCES_ML:.ml=.cmo)
++XOBJECTS = $(BOBJECTS:.cmo=.cmx)
++
++OCAMLPACKAGES = \
++	-package str,unix,guestfs,libvirt,nbd \
++	-I $(top_builddir)/common/utils/.libs \
++	-I $(top_builddir)/common/qemuopts/.libs \
++	-I $(top_builddir)/gnulib/lib/.libs \
++	-I $(top_builddir)/lib \
++	-I $(top_builddir)/input \
++	-I $(top_builddir)/common/mlstdutils \
++	-I $(top_builddir)/common/mlutils \
++	-I $(top_builddir)/common/mlgettext \
++	-I $(top_builddir)/common/mlpcre \
++	-I $(top_builddir)/common/mlxml \
++	-I $(top_builddir)/common/mltools \
++	-I $(top_builddir)/common/mlcustomize \
++	-I $(top_builddir)/common/mldrivers
++if HAVE_OCAML_PKG_GETTEXT
++OCAMLPACKAGES += -package gettext-stub
++endif
++
++OCAMLCLIBS = \
++	-pthread \
++	-lqemuopts \
++	$(LIBGUESTFS_LIBS) \
++	$(LIBVIRT_LIBS) \
++	$(LIBCRYPT_LIBS) \
++	$(LIBXML2_LIBS) \
++	$(JSON_C_LIBS) \
++	$(LIBOSINFO_LIBS) \
++	$(LIBINTL) \
++	$(LIBNBD_LIBS) \
++	-lgnu
++
++OCAMLFLAGS = $(OCAML_FLAGS) $(OCAML_WARN_ERROR) -ccopt '$(CFLAGS)'
++
++if !HAVE_OCAMLOPT
++OBJECTS = $(BOBJECTS)
++else
++OBJECTS = $(XOBJECTS)
++endif
++
++OCAMLLINKFLAGS = \
++	mlstdutils.$(MLARCHIVE) \
++	mlgettext.$(MLARCHIVE) \
++	mlpcre.$(MLARCHIVE) \
++	mlxml.$(MLARCHIVE) \
++	mlcutils.$(MLARCHIVE) \
++	mltools.$(MLARCHIVE) \
++	mllibvirt.$(MLARCHIVE) \
++	mlcustomize.$(MLARCHIVE) \
++	mldrivers.$(MLARCHIVE) \
++	mlv2vlib.$(MLARCHIVE) \
++	mlinput.$(MLARCHIVE) \
++	$(LINK_CUSTOM_OCAMLC_ONLY)
++
++virt_v2v_open_DEPENDENCIES = \
++	$(OBJECTS) \
++	$(top_builddir)/input/mlinput.$(MLARCHIVE) \
++	$(top_builddir)/lib/mlv2vlib.$(MLARCHIVE) \
++	$(top_srcdir)/ocaml-link.sh
++virt_v2v_open_LINK = \
++	$(top_srcdir)/ocaml-link.sh -cclib '$(OCAMLCLIBS)' -- \
++	  $(OCAMLFIND) $(BEST) $(OCAMLFLAGS) $(OCAMLPACKAGES) $(OCAMLLINKFLAGS) \
++	  $(OBJECTS) -o $@
++
++# Data directory.
++
++virttoolsdatadir = $(datadir)/virt-tools
++
++# Dependencies.
++.depend: \
++	$(srcdir)/*.mli \
++	$(srcdir)/*.ml \
++	$(filter %.ml,$(BUILT_SOURCES))
++	$(top_builddir)/ocaml-dep.sh $^
++-include .depend
+diff --git a/open/dummy.c b/open/dummy.c
+new file mode 100644
+index 00000000..ebab6198
+--- /dev/null
++++ b/open/dummy.c
+@@ -0,0 +1,2 @@
++/* Dummy source, to be used for OCaml-based tools with no C sources. */
++enum { foo = 1 };
+diff --git a/open/open.ml b/open/open.ml
+new file mode 100644
+index 00000000..8a82b13e
+--- /dev/null
++++ b/open/open.ml
+@@ -0,0 +1,298 @@
++(* virt-v2v-open
++ * Copyright (C) 2009-2025 Red Hat Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ *)
++
++open Printf
++open Unix
++
++open Std_utils
++open Tools_utils
++open Unix_utils
++open Common_gettext.Gettext
++open Getopt.OptionName
++
++open Types
++open Utils
++
++let template_rex = PCRE.compile "@@"
++
++module G = Guestfs
++
++let rec main () =
++  let set_string_option_once optname optref arg =
++    match !optref with
++    | Some _ ->
++       error (f_"%s option used more than once on the command line") optname
++    | None ->
++       optref := Some arg
++  in
++
++  let input_conn = ref None in
++  let input_format = ref None in
++  let input_password = ref None in
++  let input_transport = ref None in
++  let input_options = ref [] in
++  let io_query = ref false in
++  let set_input_option_compat k v =
++    List.push_back input_options (k, v)
++  in
++  let set_input_option option =
++    if option = "?" then io_query := true
++    else (
++      let k, v = String.split "=" option in
++      set_input_option_compat k v
++    )
++  in
++
++  let input_mode = ref `Not_set in
++  let set_input_mode mode =
++    if !input_mode <> `Not_set then
++      error (f_"%s option used more than once on the command line") "-i";
++    match mode with
++    | "disk" | "local" -> input_mode := `Disk
++    | "libvirt" -> input_mode := `Libvirt
++    | "libvirtxml" -> input_mode := `LibvirtXML
++    | "ova" -> input_mode := `OVA
++    | "vmx" -> input_mode := `VMX
++    | s ->
++       error (f_"unknown -i option: %s") s
++  in
++
++  let command_template = ref None in
++
++  let argspec = [
++    [ S 'i' ],       Getopt.String ("disk|libvirt|libvirtxml|ova|vmx", set_input_mode),
++                                    s_"Set input mode (default: libvirt)";
++    [ M"ic" ],       Getopt.String ("uri", set_string_option_once "-ic" input_conn),
++                                    s_"Libvirt URI";
++    [ M"if" ],       Getopt.String ("format", set_string_option_once "-if" input_format),
++                                    s_"Input format";
++    [ M"io" ],       Getopt.String ("option[=value]", set_input_option),
++                                    s_"Set option for input mode";
++    [ M"ip" ],       Getopt.String ("filename", set_string_option_once "-ip" input_password),
++                                    s_"Use password from file to connect to input hypervisor";
++    [ M"it" ],       Getopt.String ("transport", set_string_option_once "-it" input_transport),
++                                    s_"Input transport";
++    [ L"run" ],      Getopt.String ("COMMAND", set_string_option_once "--run" command_template),
++                                    s_"External command to run";
++  ] in
++
++  let args = ref [] in
++  let anon_fun s = List.push_front s args in
++  let usage_msg =
++    sprintf (f_"\
++%s: open the virt-v2v input and run a program on it
++
++virt-v2v-open -i disk disk.img --run 'virt-inspector --format=raw @@'
++
++A short summary of the options is given below.  For detailed help please
++read the man page virt-v2v-open(1).
++")
++      prog in
++
++  let opthandle = create_standard_options argspec ~anon_fun ~key_opts:false
++                    ~machine_readable:true usage_msg in
++  Getopt.parse opthandle.getopt;
++
++  (* Print the version, easier than asking users to tell us. *)
++  debug "info: %s: %s %s (%s)"
++        prog Config.package_name Config.package_version_full
++        Config.host_cpu;
++
++  (* Print the libvirt version if debugging. *)
++  if verbose () then (
++    let major, minor, release = Libvirt_utils.libvirt_get_version () in
++    debug "info: libvirt version: %d.%d.%d" major minor release
++  );
++
++  (* Create the v2v directory to control conversion. *)
++  let v2vdir = create_v2v_directory () in
++
++  (* Dereference the arguments. *)
++  let args = List.rev !args in
++  let input_conn = !input_conn in
++  let input_mode = !input_mode in
++  let input_transport =
++    match !input_transport with
++    | None -> None
++    | Some "ssh" -> Some `SSH
++    | Some "vddk" -> Some `VDDK
++    | Some transport ->
++       error (f_"unknown input transport ‘-it %s’") transport in
++
++  let command_template =
++    match !command_template with
++    | None -> error (f_"you must supply the --run parameter")
++    | Some c -> c in
++
++  (* No arguments and machine-readable mode?  Print out some facts
++   * about what this binary supports.
++   *)
++  (match args, machine_readable () with
++   | [], Some { pr } ->
++      pr "virt-v2v-open\n";
++      pr "libguestfs-rewrite\n";
++      pr "colours-option\n";
++      pr "io\n";
++      pr "input:disk\n";
++      pr "input:libvirt\n";
++      pr "input:libvirtxml\n";
++      pr "input:ova\n";
++      pr "input:vmx\n";
++      exit 0
++   | _, _ -> ()
++  );
++
++  (* Get the input module. *)
++  let (module Input_module) =
++    match input_mode with
++    | `Disk -> (module Input_disk.Disk : Input.INPUT)
++    | `LibvirtXML -> (module Input_libvirt.LibvirtXML)
++    | `OVA -> (module Input_ova.OVA)
++    | `VMX -> (module Input_vmx.VMX)
++    | `Not_set | `Libvirt ->
++       match input_conn with
++       | None -> (module Input_libvirt.Libvirt_)
++       | Some orig_uri ->
++          let { Xml.uri_server = server; uri_scheme = scheme } =
++            try Xml.parse_uri orig_uri
++            with Invalid_argument msg ->
++              error (f_"could not parse '-ic %s'.  \
++                        Original error message was: %s")
++                orig_uri msg in
++
++          match server, scheme, input_transport with
++          | None, _, _
++            | Some "", _, _       (* Not a remote URI. *)
++
++            | Some _, None, _     (* No scheme? *)
++            | Some _, Some "", _ ->
++             (module Input_libvirt.Libvirt_)
++
++          (* vCenter over https. *)
++          | Some server, Some ("esx"|"gsx"|"vpx"), None ->
++             (module Input_vcenter_https.VCenterHTTPS)
++
++          (* vCenter or ESXi using nbdkit vddk plugin *)
++          | Some server, Some ("esx"|"gsx"|"vpx"), Some `VDDK ->
++             (module Input_vddk.VDDK)
++
++          (* Xen over SSH *)
++          | Some server, Some "xen+ssh", _ ->
++             (module Input_xen_ssh.XenSSH)
++
++          (* Old virt-v2v also supported qemu+ssh://.  However I am
++           * deliberately not supporting this in new virt-v2v.  Don't
++           * use virt-v2v if a guest already runs on KVM.
++           *)
++
++          (* Unknown remote scheme. *)
++          | Some _, Some _, _ ->
++             warning (f_"no support for remote libvirt connections \
++                         to '-ic %s'.  The conversion may fail when it \
++                         tries to read the source disks.") orig_uri;
++             (module Input_libvirt.Libvirt_) in
++
++  let input_options = {
++    Input.bandwidth = None;
++    input_conn = input_conn;
++    input_format = !input_format;
++    input_options = !input_options;
++    input_password = !input_password;
++    input_transport = input_transport;
++    (* This must always be true so that we do not modify the
++     * source.  This is set to [false] by in-place mode.
++     *)
++    read_only = true;
++  } in
++
++  (* If -io ? then we want to query input options supported in this mode. *)
++  if !io_query then (
++    Input_module.query_input_options ();
++    exit 0
++  );
++
++  (* Before starting the input module, check there is sufficient
++   * free space in the temporary directory on the host.
++   *)
++  check_host_free_space ();
++
++  (* Start the input module (runs an NBD server in the background). *)
++  message (f_"Setting up the source: %s")
++    (Input_module.to_string input_options args);
++  let source = Input_module.setup v2vdir input_options args in
++
++  message (f_"Running external command");
++
++  (* We're not really doing a conversion here, but write the 'convert'
++   * file around this to tune the input module correctly.
++   *)
++  with_open_out (v2vdir // "convert") (fun _ -> ());
++
++  (* Get the list of input sockets (NBD endpoints), formatted as
++   * a shell-quoted list of [-a] options.
++   *)
++  let add_params =
++    List.map (
++      fun { s_disk_id = i } ->
++        let socket = sprintf "nbd+unix://?socket=%s/in%d" v2vdir i in
++        sprintf "-a %s" (quote socket)
++    ) source.s_disks
++    |> String.concat " " in
++
++  (* Run external program. *)
++  debug "command template: %S" command_template;
++  let cmd = PCRE.replace template_rex add_params command_template in
++  let r = shell_command cmd in
++  if r <> 0 then exit r;
++
++  unlink (v2vdir // "convert");
++
++  (* Debug the v2vdir. *)
++  if verbose () then (
++    let cmd = sprintf "ls -alZ %s 1>&2" (quote v2vdir) in
++    ignore (Sys.command cmd)
++  );
++
++  message (f_"Finishing off");
++  (* As the last thing, write a file indicating success before
++   * we exit (so before we kill the helpers).  The helpers may
++   * use the presence or absence of the file to determine if
++   * on-success or on-fail cleanup is required.
++   *)
++  with_open_out (v2vdir // "done") (fun _ -> ())
++
++(* Some input modules use large_tmpdir to unpack OVAs or store qcow2
++ * overlays and some output modules use it to store temporary files.
++ * In addition the  500 MB guestfs appliance may be created there.
++ * (RHBZ#1316479, RHBZ#2051394)
++ *)
++and check_host_free_space () =
++  let free_space = StatVFS.free_space (StatVFS.statvfs large_tmpdir) in
++  debug "check_host_free_space: large_tmpdir=%s free_space=%Ld"
++        large_tmpdir free_space;
++  if free_space < 1_073_741_824L then
++    error (f_"insufficient free space in the conversion server \
++              temporary directory %s (%s).\n\nEither free up space \
++              in that directory, or set the LIBGUESTFS_CACHEDIR \
++              environment variable to point to another directory \
++              with more than 1GB of free space.\n\nSee also the \
++              virt-v2v(1) manual, section \
++              \"Minimum free space check in the host\".")
++      large_tmpdir (human_size free_space)
++
++let () = run_main_and_handle_errors main
+diff --git a/open/open.mli b/open/open.mli
+new file mode 100644
+index 00000000..9fd556f6
+--- /dev/null
++++ b/open/open.mli
+@@ -0,0 +1,19 @@
++(* virt-v2v-open
++ * Copyright (C) 2009-2025 Red Hat Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ *)
++
++(* Nothing is exported. *)
+diff --git a/run.in b/run.in
+index c75e4e0f..93a0f20f 100755
+--- a/run.in
++++ b/run.in
+@@ -71,6 +71,7 @@ chcon --reference=/tmp "$b/tmp" 2>/dev/null ||:
+ prepend PATH "$b/v2v"
+ prepend PATH "$b/in-place"
+ prepend PATH "$b/inspector"
++prepend PATH "$b/open"
+ export PATH
+ 
+ # This is a cheap way to find some use-after-free and uninitialized
+diff --git a/tests/Makefile.am b/tests/Makefile.am
+index 4d46daf9..97393d02 100644
+--- a/tests/Makefile.am
++++ b/tests/Makefile.am
+@@ -105,6 +105,8 @@ TESTS = \
+ 	test-oa-option-raw.sh \
+ 	test-of-option.sh \
+ 	test-on-option.sh \
++	test-open.sh \
++	test-open-encrypted.sh \
+ 	test-print-source.sh \
+ 	test-rhbz1232192.sh \
+ 	test-sound.sh \
+@@ -278,6 +280,8 @@ EXTRA_DIST += \
+ 	test-oa-option-raw.sh \
+ 	test-of-option.sh \
+ 	test-on-option.sh \
++	test-open.sh \
++	test-open-encrypted.sh \
+ 	test-print-source.expected \
+ 	test-print-source.sh \
+ 	test-rhbz1232192.sh \
+diff --git a/tests/test-open-encrypted.sh b/tests/test-open-encrypted.sh
+new file mode 100755
+index 00000000..1ff14c31
+--- /dev/null
++++ b/tests/test-open-encrypted.sh
+@@ -0,0 +1,56 @@
++#!/bin/bash -
++# libguestfs virt-v2v test script
++# Copyright (C) 2014-2025 Red Hat Inc.
++#
++# This program is free software; you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation; either version 2 of the License, or
++# (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program; if not, write to the Free Software
++# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++
++# Test virt-v2v-show-roots with an encrypted guest.
++
++unset CDPATH
++export LANG=C
++set -e
++
++source ./functions.sh
++set -e
++set -x
++
++skip_if_skipped
++f=../test-data/phony-guests/fedora-luks-on-lvm.img
++requires test -f $f
++
++requires virt-inspector --version
++
++d=$PWD/test-open-encrypted.d
++rm -rf $d
++cleanup_fn rm -r $d
++mkdir $d
++
++out="$d/out"
++
++keys="--key /dev/Volume-Group/Root:key:FEDORA-Root \
++      --key /dev/Volume-Group/Logical-Volume-1:key:FEDORA-LV1 \
++      --key /dev/Volume-Group/Logical-Volume-2:key:FEDORA-LV2 \
++      --key /dev/Volume-Group/Logical-Volume-3:key:FEDORA-LV3"
++
++$VG virt-v2v-open --debug-gc -i disk $f \
++    --run "virt-inspector --format=raw @@ $keys > $out"
++cat $out
++
++# Expect certain elements to be present.
++grep '^<operatingsystems>' $out
++grep '<operatingsystem>' $out
++grep '<root>/dev/mapper/luks-' $out
++grep '<distro>fedora</distro>' $out
++grep '<osinfo>fedora14</osinfo>' $out
+diff --git a/tests/test-open.sh b/tests/test-open.sh
+new file mode 100755
+index 00000000..9eddfbc7
+--- /dev/null
++++ b/tests/test-open.sh
+@@ -0,0 +1,77 @@
++#!/bin/bash -
++# libguestfs virt-v2v test script
++# Copyright (C) 2014-2025 Red Hat Inc.
++#
++# This program is free software; you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation; either version 2 of the License, or
++# (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program; if not, write to the Free Software
++# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++
++# Test virt-v2v-open + virt-inspector.
++
++unset CDPATH
++export LANG=C
++set -e
++
++source ./functions.sh
++set -e
++set -x
++
++skip_if_skipped
++img="$abs_top_builddir/test-data/phony-guests/windows.img"
++requires test -s $img
++
++requires virt-inspector --version
++
++export VIRT_TOOLS_DATA_DIR="$srcdir/../test-data/fake-virt-tools"
++export VIRTIO_WIN="$srcdir/../test-data/fake-virtio-win/drivers"
++
++d=$PWD/test-open.d
++rm -rf $d
++cleanup_fn rm -r $d
++mkdir $d
++
++out="$d/out"
++
++libvirt_xml="$d/test.xml"
++rm -f $libvirt_xml
++n=windows
++cat > $libvirt_xml <<EOF
++<node>
++  <domain type='test'>
++    <name>$n</name>
++    <memory>1048576</memory>
++    <os>
++      <type>hvm</type>
++      <boot dev='hd'/>
++    </os>
++    <devices>
++      <disk type='file' device='disk'>
++        <driver name='qemu' type='raw'/>
++        <source file='$img'/>
++        <target dev='vda' bus='virtio'/>
++      </disk>
++    </devices>
++  </domain>
++</node>
++EOF
++
++$VG virt-v2v-open --debug-gc -i libvirt -ic "test://$libvirt_xml" $n \
++    --run "virt-inspector --format=raw @@ > $out"
++cat $out
++
++# Expect certain elements to be present.
++grep '^<operatingsystems>' $out
++grep '<operatingsystem>' $out
++grep '<root>/dev/sda2</root>' $out
++grep '<distro>windows</distro>' $out
++grep '<osinfo>win2k22</osinfo>' $out

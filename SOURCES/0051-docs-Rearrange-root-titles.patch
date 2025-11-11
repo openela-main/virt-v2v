@@ -1,0 +1,49 @@
+From e1b9a34aa4e140d3fafea4d0883d0c29fcc204bb Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 11 Apr 2025 10:01:13 +0100
+Subject: [PATCH] docs: Rearrange --root titles
+
+Makes the documentation easier to read instead of having a big block
+of text.
+
+(cherry picked from commit c1d8ed9bac616c3ba8a807da350f24c7fa54e56a)
+---
+ docs/virt-v2v.pod | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index 57714022..1746afa7 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -774,12 +774,6 @@ This disables progress bars and other unnecessary output.
+ 
+ =item B<--root single>
+ 
+-=item B<--root first>
+-
+-=item B<--root> /dev/sdX
+-
+-=item B<--root> /dev/VG/LV
+-
+ Choose the root filesystem to be converted.
+ 
+ In the case where the virtual machine is dual-boot or multi-boot, or
+@@ -798,11 +792,17 @@ VM is found to be multi-boot, then virt-v2v will stop and list the
+ possible root filesystems and ask the user which to use.  This
+ requires that virt-v2v is run interactively.
+ 
++=item B<--root first>
++
+ S<I<--root first>> means to choose the first root device in the case
+ of a multi-boot operating system.  Since this is a heuristic, it may
+ sometimes choose the wrong one.
+ 
+-You can also name a specific root device, eg. S<I<--root /dev/sda2>>
++=item B<--root> /dev/sdX
++
++=item B<--root> /dev/VG/LV
++
++Name a specific root device to convert, eg. S<I<--root /dev/sda2>>
+ would mean to use the second partition on the first hard drive.  If
+ the named root device does not exist or was not detected as a root
+ device, then virt-v2v will fail.

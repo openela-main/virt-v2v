@@ -1,4 +1,4 @@
-From 96e4e9a036cfbf069b6383916687c3dac804f55a Mon Sep 17 00:00:00 2001
+From fb8a4d851946677d5c79afb575267f17a8b649a5 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Tue, 29 Apr 2025 13:44:07 +0100
 Subject: [PATCH] input: Add -io vddk-file=... option
@@ -22,7 +22,7 @@ Fixes: https://issues.redhat.com/browse/RHEL-88543
  input/input_vddk.ml            | 35 ++++++++++++++++++++++++++--------
  3 files changed, 33 insertions(+), 13 deletions(-)
 
-Submodule common 18310179..3da17d53:
+Submodule common 57c2b3f0..3873d593:
 diff --git a/common/mlstdutils/std_utils.ml b/common/mlstdutils/std_utils.ml
 index 212a1513..6880fce5 100644
 --- a/common/mlstdutils/std_utils.ml
@@ -56,6 +56,31 @@ index 72a2d44c..ae6004b2 100644
  end
  (** Override the List module from stdlib. *)
  
+diff --git a/common/mlstdutils/std_utils_tests.ml b/common/mlstdutils/std_utils_tests.ml
+index 4e368152..5f8c1440 100644
+--- a/common/mlstdutils/std_utils_tests.ml
++++ b/common/mlstdutils/std_utils_tests.ml
+@@ -179,6 +179,12 @@ let test_which ctx =
+   end;
+   ()
+ 
++(* Test List.make. *)
++let test_list_make ctx =
++  assert_equal_stringlist [] (List.make 0 "1");
++  assert_equal_stringlist ["1"; "1"; "1"] (List.make 3 "1");
++  assert_raises (Invalid_argument "make") (fun () -> List.make (-1) "1")
++
+ (* Suites declaration. *)
+ let suite =
+   "mllib Std_utils" >:::
+@@ -195,6 +201,7 @@ let suite =
+       "strings.span" >:: test_string_span;
+       "strings.chomp" >:: test_string_chomp;
+       "which" >:: test_which;
++      "list.make" >:: test_list_make;
+     ]
+ 
+ let () =
 diff --git a/docs/virt-v2v-input-vmware.pod b/docs/virt-v2v-input-vmware.pod
 index b28268c2..80ca560a 100644
 --- a/docs/virt-v2v-input-vmware.pod
@@ -77,7 +102,7 @@ index b28268c2..80ca560a 100644
  =head2 VDDK: Debugging VDDK failures
  
 diff --git a/input/input_vddk.ml b/input/input_vddk.ml
-index 982dff17..36d5d624 100644
+index 659ff08f..316fe5f8 100644
 --- a/input/input_vddk.ml
 +++ b/input/input_vddk.ml
 @@ -50,6 +50,7 @@ All other settings are optional:
@@ -87,16 +112,16 @@ index 982dff17..36d5d624 100644
 +  -io vddk-file=FILE           Override nbdkit-vddk-plugin file= parameter
    -io vddk-libdir=LIBDIR       VDDK library parent directory
    -io vddk-nfchostport=PORT    VDDK nfchostport
-   -io vddk-port=PORT           VDDK port
-@@ -69,6 +70,7 @@ information on these settings.
+   -io vddk-noextents=true      Avoid slow VDDK QueryAllocatedBlocks API
+@@ -70,6 +71,7 @@ information on these settings.
      let vddk_option_keys =
        [ "config";
          "cookie";
 +        "file";
          "libdir";
          "nfchostport";
-         "port";
-@@ -88,11 +90,6 @@ information on these settings.
+         "noextents";
+@@ -90,11 +92,6 @@ information on these settings.
            (key, value)
        ) options.input_options in
  
@@ -108,7 +133,7 @@ index 982dff17..36d5d624 100644
      (* thumbprint is mandatory. *)
      if not (List.mem_assoc "thumbprint" io_options) then
        error (f_"You must pass the ‘-io vddk-thumbprint’ option with the \
-@@ -135,6 +132,7 @@ information on these settings.
+@@ -137,6 +134,7 @@ information on these settings.
  
      (* Parse the libvirt XML. *)
      let source, disks, xml = parse_libvirt_domain conn guest in
@@ -116,7 +141,7 @@ index 982dff17..36d5d624 100644
  
      (* Find the <vmware:moref> element from the XML.  This was added
       * in libvirt >= 3.7 and is required.
-@@ -183,9 +181,27 @@ information on these settings.
+@@ -188,9 +186,27 @@ information on these settings.
      let transports =
        try Some (List.assoc "transports" io_options) with Not_found -> None in
  
@@ -145,7 +170,7 @@ index 982dff17..36d5d624 100644
          let socket = sprintf "%s/in%d" dir i in
          On_exit.unlink socket;
  
-@@ -193,7 +209,10 @@ information on these settings.
+@@ -198,7 +214,10 @@ information on these settings.
          | BlockDev _ | NBD _ | HTTP _ -> (* These should never happen? *)
             assert false
  
@@ -157,7 +182,7 @@ index 982dff17..36d5d624 100644
             (* The <source file=...> attribute returned by the libvirt
              * VMX driver looks like "[datastore] path".  We can use it
              * directly as the nbdkit file= parameter, and it is passed
-@@ -209,7 +228,7 @@ information on these settings.
+@@ -215,7 +234,7 @@ information on these settings.
                 file in
             let _, pid = Nbdkit.run_unix socket nbdkit in
             On_exit.kill pid

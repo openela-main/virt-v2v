@@ -1,0 +1,69 @@
+From d382827a7342a9ee9835d95ed86f864c960d8c71 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 28 Apr 2025 14:53:52 +0100
+Subject: [PATCH] convert: Print more readable mountpoint stats
+
+Print mountpoint stats which are more similar to what 'virt-df -h'
+prints.  This makes them easier to follow.
+
+Before this change:
+
+  mountpoint stats:
+    mountpoint statvfs /dev/sda1 /boot/efi (vfat):
+        bsize=4096 blocks=65467 bfree=63058 bavail=63058
+    mountpoint statvfs /dev/sda2 /boot (xfs):
+        bsize=4096 blocks=130219 bfree=90268 bavail=90268
+    mountpoint statvfs /dev/vg00/lv_root / (xfs):
+        bsize=4096 blocks=24956001 bfree=22727257 bavail=22727257
+
+After this change:
+
+  mountpoint stats:
+                     Size             Used             Available      Use%
+  /dev/sda1 /boot (ext4):
+                     510873600        81379328         391917568
+                     487.2M           77.6M            373.8M         15.9%
+  /dev/sda3 / (xfs): 4820303872       898846720        3921457152
+                     4.5G             857.2M           3.7G           18.6%
+
+(cherry picked from commit 9b786f36ddbb76b1c7857a94c53a8b8479c57ac4)
+---
+ convert/convert.ml | 24 ++++++++++++++++++++----
+ 1 file changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/convert/convert.ml b/convert/convert.ml
+index 7a27467b..d4d28f68 100644
+--- a/convert/convert.ml
++++ b/convert/convert.ml
+@@ -300,11 +300,27 @@ and debug_info source inspect
+   List.iter (fun nic -> eprintf "%s\n" (string_of_source_nic nic))
+     target_nics;
+   eprintf "mountpoint stats:\n";
++  eprintf "%20s %-16s %-16s %-16s %s\n" "" "Size" "Used" "Available" "Use%";
+   List.iter debug_mpstat mpstats;
+   flush Stdlib.stderr
+ 
++(* The calculations here are similar to virt-df df/output.c *)
+ and debug_mpstat { mp_dev = dev; mp_path = path;
+-                   mp_statvfs = s; mp_vfs = vfs } =
+-  eprintf "    mountpoint statvfs %s %s (%s):\n" dev path vfs;
+-  eprintf "        bsize=%Ld blocks=%Ld bfree=%Ld bavail=%Ld\n"
+-    s.Guestfs.bsize s.Guestfs.blocks s.Guestfs.bfree s.Guestfs.bavail
++                   mp_statvfs = { G.bsize; G.blocks; G.bfree; G.bavail };
++                   mp_vfs = vfs } =
++  let label = sprintf "%s %s (%s):" dev path vfs
++  and size = blocks *^ bsize
++  and used = (blocks -^ bfree) *^ bsize
++  and avail = bavail *^ bsize
++  and percent =
++    if blocks <> 0_L then
++      100. -. 100. *. (Int64.to_float bfree /. Int64.to_float blocks)
++    else
++      0. in
++  if String.length label > 20 then
++    eprintf "%s\n%20s " label ""
++  else
++    eprintf "%-20s " label;
++  eprintf "%-16Ld %-16Ld %-16Ld\n" size used avail;
++  eprintf "%20s %-16s %-16s %-16s %.1f%%\n"
++    "" (human_size size) (human_size used) (human_size avail) percent

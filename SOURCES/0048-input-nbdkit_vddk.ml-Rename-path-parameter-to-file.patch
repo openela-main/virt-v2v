@@ -1,4 +1,4 @@
-From 7b2641bd22350802261b657df5e3d0de92784521 Mon Sep 17 00:00:00 2001
+From 63c3d929e947a3c7a37dafd6ba188f38ef8a2bd0 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Tue, 29 Apr 2025 13:16:41 +0100
 Subject: [PATCH] input/nbdkit_vddk.ml: Rename 'path' parameter to 'file'
@@ -8,14 +8,14 @@ The nbdkit parameter is called 'file'.  There is no actual change here.
 (cherry picked from commit 5acc67d454add0b75f6671c06979a0cc90562f7e)
 ---
  input/input_vddk.ml  | 4 ++--
- input/nbdkit_vddk.ml | 4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ input/nbdkit_vddk.ml | 6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/input/input_vddk.ml b/input/input_vddk.ml
-index 6444ce18..982dff17 100644
+index 2edd7294..659ff08f 100644
 --- a/input/input_vddk.ml
 +++ b/input/input_vddk.ml
-@@ -193,7 +193,7 @@ information on these settings.
+@@ -198,7 +198,7 @@ information on these settings.
          | BlockDev _ | NBD _ | HTTP _ -> (* These should never happen? *)
             assert false
  
@@ -24,9 +24,9 @@ index 6444ce18..982dff17 100644
             (* The <source file=...> attribute returned by the libvirt
              * VMX driver looks like "[datastore] path".  We can use it
              * directly as the nbdkit file= parameter, and it is passed
-@@ -206,7 +206,7 @@ information on these settings.
-                ?libdir ~moref
-                ?nfchostport ?password_file:options.input_password ?port
+@@ -212,7 +212,7 @@ information on these settings.
+                ?nfchostport ~noextents
+                ?password_file:options.input_password ?port
                 ~server ?snapshot ~thumbprint ?transports ?user
 -               path in
 +               file in
@@ -34,15 +34,17 @@ index 6444ce18..982dff17 100644
             On_exit.kill pid
      ) disks;
 diff --git a/input/nbdkit_vddk.ml b/input/nbdkit_vddk.ml
-index 0cb45e89..597ae88f 100644
+index 5c23efd1..801182d1 100644
 --- a/input/nbdkit_vddk.ml
 +++ b/input/nbdkit_vddk.ml
-@@ -52,7 +52,7 @@ let libNN = sprintf "lib%d" Sys.word_size
+@@ -51,8 +51,8 @@ let libNN = sprintf "lib%d" Sys.word_size
+ 
  (* Create an nbdkit module specialized for reading from VDDK sources. *)
  let create_vddk ?bandwidth ?config ?cookie ?cor ?libdir ~moref
-                 ?nfchostport ?password_file ?port
+-                ?nfchostport ~noextents ?password_file ?port
 -                ~server ?snapshot ~thumbprint ?transports ?user path =
-+                ~server ?snapshot ~thumbprint ?transports ?user file =
++      ?nfchostport ~noextents ?password_file ?port
++      ~server ?snapshot ~thumbprint ?transports ?user file =
    if not (Nbdkit.is_installed ()) then
      error (f_"nbdkit is not installed or not working");
  

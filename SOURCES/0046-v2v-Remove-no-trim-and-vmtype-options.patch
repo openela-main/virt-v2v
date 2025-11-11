@@ -1,0 +1,87 @@
+From 0fab89ac2c144dc521b9b2cd803801cdbb94fb5c Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 29 Apr 2025 12:57:29 +0100
+Subject: [PATCH] v2v: Remove --no-trim and --vmtype options
+
+These were removed and changed so the otions do nothing a long time ago:
+
+Related: commit 740c5b10cb ("v2v: Remove --no-trim option.", Apr 2016)
+Related: commit 6086c0ffcf ("v2v: Remove the --vmtype option.", Apr 2016)
+(cherry picked from commit 3fe878c36f23889426ef9b032a7516a94c1f9af4)
+---
+ bash/virt-v2v     |  3 ---
+ docs/test-docs.sh |  2 --
+ v2v/v2v.ml        | 12 ------------
+ 3 files changed, 17 deletions(-)
+
+diff --git a/bash/virt-v2v b/bash/virt-v2v
+index cddd0739..1234134c 100644
+--- a/bash/virt-v2v
++++ b/bash/virt-v2v
+@@ -34,9 +34,6 @@ _virt_v2v ()
+         -oa)
+             COMPREPLY=( $( compgen -W "sparse preallocated" -- "$cur") )
+             return ;;
+-        --vmtype)
+-            COMPREPLY=( $( compgen -W "server desktop" -- "$cur") )
+-            return ;;
+     esac
+ 
+     case "$cur" in
+diff --git a/docs/test-docs.sh b/docs/test-docs.sh
+index 59df4344..1037bf7e 100755
+--- a/docs/test-docs.sh
++++ b/docs/test-docs.sh
+@@ -78,7 +78,6 @@ $srcdir/../podcheck.pl virt-v2v.pod virt-v2v \
+ --ip,\
+ --it,\
+ --in-place,\
+---no-trim,\
+ --password-file,\
+ --oa,\
+ --oc,\
+@@ -87,7 +86,6 @@ $srcdir/../podcheck.pl virt-v2v.pod virt-v2v \
+ --oo,\
+ --op,\
+ --os,\
+---vmtype,\
+ $virt_customize_options
+ 
+ $srcdir/../podcheck.pl virt-v2v-in-place.pod virt-v2v-in-place \
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index 5f36be1c..30f317ee 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -205,14 +205,6 @@ let rec main () =
+        error (f_"unknown -o option: %s") s
+   in
+ 
+-  (* Options that are ignored for backwards compatibility. *)
+-  let no_trim_warning _ =
+-    warning (f_"the --no-trim option has been removed and now does nothing")
+-  in
+-  let vmtype_warning _ =
+-    warning (f_"the --vmtype option has been removed and now does nothing")
+-  in
+-
+   let argspec = [
+     [ L"bandwidth" ], Getopt.String ("bps", set_string_option_once "--bandwidth" bandwidth),
+                                     s_"Set bandwidth to bits per sec";
+@@ -236,8 +228,6 @@ let rec main () =
+       s_"Map NIC to network or bridge or assign static IP";
+     [ S 'n'; L"network" ], Getopt.String ("in:out", add_network),
+       s_"Map network ‘in’ to ‘out’";
+-    [ L"no-trim" ],  Getopt.String ("-", no_trim_warning),
+-      s_"Ignored for backwards compatibility";
+     [ S 'o' ],       Getopt.String ("kubevirt|libvirt|local|null|openstack|qemu|rhv|rhv-upload|vdsm", set_output_mode),
+       s_"Set output mode (default: libvirt)";
+     [ M"oa" ],       Getopt.String ("sparse|preallocated", set_output_alloc),
+@@ -262,8 +252,6 @@ let rec main () =
+       s_"Print source and stop";
+     [ L"root" ],     Getopt.String ("ask|... ", set_root_choice),
+       s_"How to choose root filesystem";
+-    [ L"vmtype" ],   Getopt.String ("-", vmtype_warning),
+-      s_"Ignored for backwards compatibility";
+   ] in
+ 
+   (* Append virt-customize options. *)

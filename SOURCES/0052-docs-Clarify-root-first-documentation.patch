@@ -1,0 +1,39 @@
+From bd20b2429f04d8c7b37fbcce243687413dbe434f Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 11 Apr 2025 09:49:06 +0100
+Subject: [PATCH] docs: Clarify --root first documentation
+
+Clarify that we don't necessarily choose the default bootloader option
+(since we don't collect that information).  It's just the first in the
+list of roots returned by libguestfs.
+
+What is intentionally not documented here is that libguestfs doesn't
+necessarily return the roots in any particular order (eg. it's not
+sorted alphabetically).  If we fix that in future, we might break how
+this option works, so don't document any expectations.
+
+(cherry picked from commit bc936379e20e1aab5f569a577663082411f56dc2)
+---
+ docs/virt-v2v.pod | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index 1746afa7..84a7d6ac 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -794,9 +794,12 @@ requires that virt-v2v is run interactively.
+ 
+ =item B<--root first>
+ 
+-S<I<--root first>> means to choose the first root device in the case
+-of a multi-boot operating system.  Since this is a heuristic, it may
+-sometimes choose the wrong one.
++Choose the first root device in the case of a multi-boot operating
++system.  Since this is a heuristic, it may sometimes choose the wrong
++one, and it may not choose the default option from the guest
++bootloader.  For predictable results it is better to use
++L<virt-v2v-inspector(1)> to inspect the guest and then specify which
++root you want to convert.
+ 
+ =item B<--root> /dev/sdX
+ 

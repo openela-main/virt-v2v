@@ -1,4 +1,4 @@
-From f3fc9875d1c9449a74ad8444703bd65f79d47d5d Mon Sep 17 00:00:00 2001
+From d42726148753250e741b030a1aff09310fb9938a Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Mon, 2 Dec 2024 13:25:49 +0000
 Subject: [PATCH] build: Remove --with-virt-v2v-nbdkit-python-plugin=...
@@ -18,7 +18,6 @@ allowed you to override the default nbdkit-python-plugin name (usually
  parameter).
 
 (cherry picked from commit 9e25b211a48804b27228e17d8e123b5f1d44df8b)
-(cherry picked from commit d42726148753250e741b030a1aff09310fb9938a)
 ---
  config.sh.in               |  1 -
  configure.ac               |  4 ----

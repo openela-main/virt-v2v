@@ -1,0 +1,97 @@
+From 212beda84cd9366b65f73d71664f1a2aaeafc9f8 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 29 Apr 2025 10:29:08 +0100
+Subject: [PATCH] input: Remove usage of nbdkit-cacheextents-filter
+
+The caching in this filter
+(https://libguestfs.org/nbdkit-cacheextents-filter.1.html) is very
+simple.  It is basically designed so that if a client asks for one
+extent at a time (using the NBD flag NBD_CMD_FLAG_REQ_ONE) then we ask
+for all the extents that the underlying plugin will give us, and cache
+those.  However only a single contiguous set of extents is cached, and
+any non-contiguous read will blow away the cache.
+
+This was designed entirely to work around the buggy behaviour of
+'qemu-img convert', which makes lots of req_one requests like this.
+
+nbdcopy works completely differently, and doesn't have this problem.
+nbdcopy also reads non-contiguous stretches of the input from multiple
+threads.  The filter in this case isn't effective (it doesn't do
+anything bad since nbdcopy doesn't use the req_one flag).
+
+In addition, the infamously slow QueryAllocatedBlocks API is only
+called from the copy stage, and never (or maybe almost never) from the
+conversion stage, so nothing that qemu does could justify caching
+extents.
+
+As this filter is essentially useless with current virt-v2v / nbdcopy,
+remove its use completely.
+
+(cherry picked from commit 48c4ce8e6cf6f1c390a48245ef0f99233f80cfe8)
+---
+ README               | 1 -
+ input/nbdkit_curl.ml | 5 -----
+ input/nbdkit_ssh.ml  | 5 -----
+ input/nbdkit_vddk.ml | 5 -----
+ 4 files changed, 16 deletions(-)
+
+diff --git a/README b/README
+index 4354754f..e4785166 100644
+--- a/README
++++ b/README
+@@ -69,7 +69,6 @@ REQUIREMENTS
+   + nbdkit-ssh-plugin
+   + nbdkit-vddk-plugin
+ 
+-  + nbdkit-cacheextents-filter
+   + nbdkit-cow-filter
+   + nbdkit-multi-conn-filter
+   + nbdkit-rate-filter
+diff --git a/input/nbdkit_curl.ml b/input/nbdkit_curl.ml
+index 7e13c205..695f6d7c 100644
+--- a/input/nbdkit_curl.ml
++++ b/input/nbdkit_curl.ml
+@@ -71,11 +71,6 @@ let create_curl ?bandwidth ?cookie_script ?cookie_script_renew ?cor
+    *)
+   Nbdkit.add_filter_if_available cmd "retry";
+ 
+-  (* Caching extents speeds up qemu-img, especially its consecutive
+-   * block_status requests with req_one=1.
+-   *)
+-  Nbdkit.add_filter_if_available cmd "cacheextents";
+-
+   (* IMPORTANT! Add the COW filter.  It must be furthest away
+    * except for the rate filter.
+    *)
+diff --git a/input/nbdkit_ssh.ml b/input/nbdkit_ssh.ml
+index 1a2d2b56..4aba74f3 100644
+--- a/input/nbdkit_ssh.ml
++++ b/input/nbdkit_ssh.ml
+@@ -69,11 +69,6 @@ let create_ssh ?bandwidth ?cor ?(retry=true)
+   if retry then
+     Nbdkit.add_filter_if_available cmd "retry";
+ 
+-  (* Caching extents speeds up qemu-img, especially its consecutive
+-   * block_status requests with req_one=1.
+-   *)
+-  Nbdkit.add_filter_if_available cmd "cacheextents";
+-
+   (* IMPORTANT! Add the COW filter.  It must be furthest away
+    * except for the rate filter.
+    *)
+diff --git a/input/nbdkit_vddk.ml b/input/nbdkit_vddk.ml
+index 0cb45e89..b79c28cc 100644
+--- a/input/nbdkit_vddk.ml
++++ b/input/nbdkit_vddk.ml
+@@ -140,11 +140,6 @@ See also the virt-v2v-input-vmware(1) manual.") libNN
+    *)
+   Nbdkit.add_filter_if_available cmd "retry";
+ 
+-  (* Caching extents speeds up qemu-img, especially its consecutive
+-   * block_status requests with req_one=1.
+-   *)
+-  Nbdkit.add_filter_if_available cmd "cacheextents";
+-
+   (* Split very large requests to avoid out of memory errors on the
+    * server.  Since we're using this filter, also add minblock=512
+    * although it will make no difference.

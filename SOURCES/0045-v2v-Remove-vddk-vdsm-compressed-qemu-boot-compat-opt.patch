@@ -1,0 +1,136 @@
+From 510f8a451723303d2af527e66c73ff18a03330e8 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 29 Apr 2025 12:48:51 +0100
+Subject: [PATCH] v2v: Remove --vddk-*, --vdsm-*, --compressed, --qemu-boot
+ compat options
+
+These were deprecated in commit 0802485f2e ("v2v: Add general
+mechanism for input and output options (-io/-oo).", March 2018), and
+most of them haven't appeared in any documentation for a long time.
+It's time to remove them now.
+
+(cherry picked from commit 471607b01543debfb2f44d9a8aa0dc7a592f5c06)
+---
+ docs/test-docs.sh | 14 --------------
+ docs/virt-v2v.pod |  4 ----
+ v2v/v2v.ml        | 40 ++--------------------------------------
+ 3 files changed, 2 insertions(+), 56 deletions(-)
+
+diff --git a/docs/test-docs.sh b/docs/test-docs.sh
+index 4537e774..59df4344 100755
+--- a/docs/test-docs.sh
++++ b/docs/test-docs.sh
+@@ -87,20 +87,6 @@ $srcdir/../podcheck.pl virt-v2v.pod virt-v2v \
+ --oo,\
+ --op,\
+ --os,\
+---vddk-config,\
+---vddk-cookie,\
+---vddk-libdir,\
+---vddk-nfchostport,\
+---vddk-port,\
+---vddk-snapshot,\
+---vddk-thumbprint,\
+---vddk-transports,\
+---vdsm-compat,\
+---vdsm-image-uuid,\
+---vdsm-ovf-flavour,\
+---vdsm-ovf-output,\
+---vdsm-vm-uuid,\
+---vdsm-vol-uuid,\
+ --vmtype,\
+ $virt_customize_options
+ 
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index 216e617d..57714022 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -217,10 +217,6 @@ when the output is a tty.  If the output of the program is redirected
+ to a file, ANSI colour sequences are disabled unless you use this
+ option.
+ 
+-=item B<--compressed>
+-
+-This is the same as I<-oo compressed>.
+-
+ =item B<--echo-keys>
+ 
+ When prompting for keys and passphrases, virt-v2v normally turns
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index 10d24364..5f36be1c 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -55,27 +55,21 @@ let rec main () =
+ 
+   let input_options = ref [] in
+   let io_query = ref false in
+-  let set_input_option_compat k v =
+-    List.push_back input_options (k, v)
+-  in
+   let set_input_option option =
+     if option = "?" then io_query := true
+     else (
+       let k, v = String.split "=" option in
+-      set_input_option_compat k v
++      List.push_back input_options (k, v)
+     )
+   in
+ 
+   let output_options = ref [] in
+   let oo_query = ref false in
+-  let set_output_option_compat k v =
+-    List.push_back output_options (k, v)
+-  in
+   let set_output_option option =
+     if option = "?" then oo_query := true
+     else (
+       let k, v = String.split "=" option in
+-      set_output_option_compat k v
++      List.push_back output_options (k, v)
+     )
+   in
+ 
+@@ -226,8 +220,6 @@ let rec main () =
+                                     s_"Set bandwidth dynamically from file";
+     [ S 'b'; L"bridge" ], Getopt.String ("in:out", add_bridge),
+       s_"Map bridge ‘in’ to ‘out’";
+-    [ L"compressed" ], Getopt.Unit (fun () -> set_output_option_compat "compressed" ""),
+-      s_"Compress output file (-of qcow2 only)";
+     [ S 'i' ],       Getopt.String ("disk|libvirt|libvirtxml|ova|vmx", set_input_mode),
+       s_"Set input mode (default: libvirt)";
+     [ M"ic" ],       Getopt.String ("uri", set_string_option_once "-ic" input_conn),
+@@ -270,34 +262,6 @@ let rec main () =
+       s_"Print source and stop";
+     [ L"root" ],     Getopt.String ("ask|... ", set_root_choice),
+       s_"How to choose root filesystem";
+-    [ L"vddk-config" ], Getopt.String ("filename", set_input_option_compat "vddk-config"),
+-      s_"Same as ‘-io vddk-config=filename’";
+-    [ L"vddk-cookie" ], Getopt.String ("cookie", set_input_option_compat "vddk-cookie"),
+-      s_"Same as ‘-io vddk-cookie=filename’";
+-    [ L"vddk-libdir" ], Getopt.String ("libdir", set_input_option_compat "vddk-libdir"),
+-      s_"Same as ‘-io vddk-libdir=libdir’";
+-    [ L"vddk-nfchostport" ], Getopt.String ("nfchostport", set_input_option_compat "vddk-nfchostport"),
+-      s_"Same as ‘-io vddk-nfchostport=nfchostport’";
+-    [ L"vddk-port" ], Getopt.String ("port", set_input_option_compat "vddk-port"),
+-      s_"Same as ‘-io vddk-port=port’";
+-    [ L"vddk-snapshot" ], Getopt.String ("snapshot-moref", set_input_option_compat "vddk-snapshot"),
+-      s_"Same as ‘-io vddk-snapshot=snapshot-moref’";
+-    [ L"vddk-thumbprint" ], Getopt.String ("thumbprint", set_input_option_compat "vddk-thumbprint"),
+-      s_"Same as ‘-io vddk-thumbprint=thumbprint’";
+-    [ L"vddk-transports" ], Getopt.String ("transports", set_input_option_compat "vddk-transports"),
+-      s_"Same as ‘-io vddk-transports=transports’";
+-    [ L"vdsm-compat" ], Getopt.String ("0.10|1.1", set_output_option_compat "vdsm-compat"),
+-      s_"Same as ‘-oo vdsm-compat=0.10|1.1’";
+-    [ L"vdsm-image-uuid" ], Getopt.String ("uuid", set_output_option_compat "vdsm-image-uuid"),
+-      s_"Same as ‘-oo vdsm-image-uuid=uuid’";
+-    [ L"vdsm-vol-uuid" ], Getopt.String ("uuid", set_output_option_compat "vdsm-vol-uuid"),
+-      s_"Same as ‘-oo vdsm-vol-uuid=uuid’";
+-    [ L"vdsm-vm-uuid" ], Getopt.String ("uuid", set_output_option_compat "vdsm-vm-uuid"),
+-      s_"Same as ‘-oo vdsm-vm-uuid=uuid’";
+-    [ L"vdsm-ovf-output" ], Getopt.String ("dir", set_output_option_compat "vdsm-ovf-output"),
+-      s_"Same as ‘-oo vdsm-ovf-output=dir’";
+-    [ L"vdsm-ovf-flavour" ], Getopt.String ("ovirt|rhvexp", set_output_option_compat "vdsm-ovf-flavour"),
+-      s_"Same as ‘-oo vdsm-ovf-flavour=flavour’";
+     [ L"vmtype" ],   Getopt.String ("-", vmtype_warning),
+       s_"Ignored for backwards compatibility";
+   ] in

@@ -1,0 +1,30 @@
+From 26d2ba8c21fefb14b6ad2efb380ef08bff0b3b46 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 11 Apr 2025 10:07:20 +0100
+Subject: [PATCH] docs: Remove old paragraph about a bug in Grub
+
+This paragraph dates back to 2011 and is unlikely to be relevant now:
+
+https://github.com/rwmjones/old-virt-v2v/commit/36cc57baf395c5b05cc2174d1c04b386b94aaefd
+(cherry picked from commit 3019f70565727fb7f03d475be154b1578ea2c51f)
+---
+ docs/virt-v2v.pod | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index 84a7d6ac..d65e13ed 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -810,12 +810,6 @@ would mean to use the second partition on the first hard drive.  If
+ the named root device does not exist or was not detected as a root
+ device, then virt-v2v will fail.
+ 
+-Note that there is a bug in grub which prevents it from successfully
+-booting a multiboot system if virtio is enabled.  Grub is only able to
+-boot an operating system from the first virtio disk.  Specifically,
+-F</boot> must be on the first virtio disk, and it cannot chainload an
+-OS which is not in the first virtio disk.
+-
+ =item B<-v>
+ 
+ =item B<--verbose>

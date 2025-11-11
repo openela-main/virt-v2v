@@ -1,0 +1,35 @@
+From 193ed2a762bf3182d760370739c7add83e89f21c Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 4 Apr 2025 14:47:09 +0100
+Subject: [PATCH] v2v: Print nbdcopy command in debug output
+
+Commit fd1148f795 ("v2v: Implement --parallel=N for parallel disk
+copies") changed how we run nbdcopy from using Tools_utils.run_command
+to calling Unix.execvp directly.  However a side effect of this is
+that we no longer printed the nbdcopy command that we were about to
+run in verbose mode.  Fix this by printing it in debug output.
+
+Reported-by: Ming Xie
+Fixes: https://issues.redhat.com/browse/RHEL-86022
+Fixes: commit fd1148f79581b148525eb12154aef7603ccf0baa
+(cherry picked from commit 802172c1a868e9287416d26e77a94d01c2d7b871)
+---
+ v2v/v2v.ml | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index 3436ce14..10d24364 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -713,7 +713,10 @@ and nbdcopy ?request_size output_alloc input_uri output_uri =
+   if not (quiet ()) then List.push_back cmd "--progress";
+   if output_alloc = Types.Preallocated then List.push_back cmd "--allocated";
+ 
+-  let args = Array.of_list !cmd in
++  let args = !cmd in
++  debug "%s" (stringify_args args);
++
++  let args = Array.of_list args in
+   match fork () with
+   | 0 ->
+      (* Child process (nbdcopy). *)
