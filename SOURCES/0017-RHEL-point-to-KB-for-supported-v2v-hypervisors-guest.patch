@@ -1,4 +1,4 @@
-From 6b7b2934d54d5273bb6c444ddabccef3a64c5eee Mon Sep 17 00:00:00 2001
+From a3ca5d7c85f44c55bccc8b964e00e4937a54a3b4 Mon Sep 17 00:00:00 2001
 From: Pino Toscano <ptoscano@redhat.com>
 Date: Tue, 26 Mar 2019 09:42:25 +0100
 Subject: [PATCH] RHEL: point to KB for supported v2v hypervisors/guests
@@ -8,7 +8,7 @@ Subject: [PATCH] RHEL: point to KB for supported v2v hypervisors/guests
  1 file changed, 4 insertions(+), 92 deletions(-)
 
 diff --git a/docs/virt-v2v-support.pod b/docs/virt-v2v-support.pod
-index e6415692..1ffc0f9d 100644
+index f8ba7e13..e1c5c1eb 100644
 --- a/docs/virt-v2v-support.pod
 +++ b/docs/virt-v2v-support.pod
 @@ -8,98 +8,10 @@ systems and guests in virt-v2v
@@ -70,7 +70,7 @@ index e6415692..1ffc0f9d 100644
 -
 -=item OpenStack
 -
--=item Red Hat Virtualization (RHV) 4.1 and up
+-=item oVirt 4.1 and up
 -
 -=item Local libvirt
 -

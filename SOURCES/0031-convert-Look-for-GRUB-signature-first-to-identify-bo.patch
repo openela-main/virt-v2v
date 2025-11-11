@@ -1,0 +1,239 @@
+From f221fc8b697335bbb5b90df25f14e0e998b29e57 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Wed, 10 Sep 2025 14:39:18 +0100
+Subject: [PATCH] convert: Look for GRUB signature first to identify boot
+ device
+
+In commit ca6ec6317e ("convert: Detect target boot device for Linux
+guests") we tried to identify the boot order by looking for the device
+containing the /boot filesystem.  However during our testing we found
+a guest where GRUB was installed on /dev/sda but the /boot partition
+was found on /dev/sdd.  This guest would not boot with the boot order
+indicating that disk 4 (sdd) was the boot disk.
+
+Change how we search for the boot device by first trying to find a
+GRUB signature in the boot sector of any disk.  The first matching
+disk (if any) would then be picked as the boot device.  If this fails
+then we fall back to looking at the device containing /boot as before.
+
+This also updates the common module to get:
+
+  Richard W.M. Jones (1):
+      mlstdutils: Export List.find_opt
+
+Reported-by: Ming Xie
+Thanks: Gerd Hoffmann
+Fixes: commit ca6ec6317e20a633315f783a8ba4ece3c2fc01f2
+Fixes: https://issues.redhat.com/browse/RHEL-108991
+See-also: https://thestarman.pcministry.com/asm/mbr/GRUB.htm
+(cherry picked from commit 06fa7bf0f9078d8035eab7ad4689a5018136e712)
+---
+ common             |  2 +-
+ convert/convert.ml | 77 +++++++++++++++++++++++++++++-----------------
+ 2 files changed, 49 insertions(+), 30 deletions(-)
+
+Submodule common 89f1eb2d..5be8d552:
+diff --git a/common/mlcustomize/firstboot.ml b/common/mlcustomize/firstboot.ml
+index 5f2642b0..360c33d6 100644
+--- a/common/mlcustomize/firstboot.ml
++++ b/common/mlcustomize/firstboot.ml
+@@ -35,8 +35,7 @@ let sanitize_name =
+ module Linux = struct
+   let firstboot_dir = "/usr/lib/virt-sysprep"
+ 
+-  let firstboot_sh = sprintf "\
+-#!/bin/sh -
++  let firstboot_sh = sprintf {|#!/bin/sh -
+ 
+ ### BEGIN INIT INFO
+ # Provides:          virt-sysprep
+@@ -57,14 +56,14 @@ d=%s/scripts
+ d_done=%s/scripts-done
+ logfile=~root/virt-sysprep-firstboot.log
+ 
+-echo \"$0\" \"$@\" 2>&1 | tee -a $logfile
+-echo \"Scripts dir: $d\" 2>&1 | tee -a $logfile
++echo "$0" "$@" 2>&1 | tee -a $logfile
++echo "Scripts dir: $d" 2>&1 | tee -a $logfile
+ 
+-if test \"$1\" = \"start\"
++if test "$1" = "start"
+ then
+   mkdir -p $d_done
+   for f in $d/* ; do
+-    if test -x \"$f\"
++    if test -x "$f"
+     then
+       # move the script to the 'scripts-done' directory, so it is not
+       # executed again at the next boot
+@@ -75,7 +74,7 @@ then
+   done
+   rm -f $d_done/*
+ fi
+-" firstboot_dir firstboot_dir
++|} firstboot_dir firstboot_dir
+ 
+   let systemd_target = "multi-user.target"
+ 
+@@ -282,38 +281,37 @@ module Windows = struct
+      * XXX It would be better to use powershell here.  For some ideas see
+      * https://github.com/HCK-CI/HLK-Setup-Scripts/
+      *)
+-    let firstboot_script = sprintf "\
+-@echo off
++    let firstboot_script = sprintf {|@echo off
+ 
+ setlocal EnableDelayedExpansion
+ set firstboot=%s
+-set log=%%firstboot%%\\log.txt
++set log=%%firstboot%%\log.txt
+ 
+-set scripts=%%firstboot%%\\scripts
+-set scripts_done=%%firstboot%%\\scripts-done
++set scripts=%%firstboot%%\scripts
++set scripts_done=%%firstboot%%\scripts-done
+ 
+-call :main >> \"%%log%%\" 2>&1
++call :main >> "%%log%%" 2>&1
+ exit /b
+ 
+ :main
+ echo starting firstboot service
+ 
+-if not exist \"%%scripts_done%%\" (
+-  mkdir \"%%scripts_done%%\"
++if not exist "%%scripts_done%%" (
++  mkdir "%%scripts_done%%"
+ )
+ 
+ :: Pick the next script to run.
+-for %%%%f in (\"%%scripts%%\"\\*.bat) do (
+-  echo running \"%%%%f\"
+-  pushd \"%%scripts%%\"
+-  call \"%%%%~nf\"
++for %%%%f in ("%%scripts%%"\*.bat) do (
++  echo running "%%%%f"
++  pushd "%%scripts%%"
++  call "%%%%~nf"
+   set elvl=!errorlevel!
+   echo .... exit code !elvl!
+   popd
+ 
+   if !elvl! NEQ 249 (
+     echo Script succeeded, moving to scripts-done
+-    move \"%%%%f\" \"%%scripts_done%%\"
++    move "%%%%f" "%%scripts_done%%"
+   ) else (
+     echo Script failed, will retry on next boot
+   )
+@@ -329,8 +327,8 @@ for %%%%f in (\"%%scripts%%\"\\*.bat) do (
+ 
+ :: Fallthrough here if there are no scripts.
+ echo uninstalling firstboot service
+-\"%%firstboot%%\\%s\" -s firstboot uninstall
+-" firstboot_dir_win srvany in
++"%%firstboot%%\%s" -s firstboot uninstall
++|} firstboot_dir_win srvany in
+ 
+     g#write (firstboot_dir // "firstboot.bat")
+             (String.unix2dos firstboot_script);
+diff --git a/common/mlstdutils/std_utils.mli b/common/mlstdutils/std_utils.mli
+index a20e720c..6c1911da 100644
+--- a/common/mlstdutils/std_utils.mli
++++ b/common/mlstdutils/std_utils.mli
+@@ -46,6 +46,7 @@ module List : sig
+     val mem : 'a -> 'a list -> bool
+     val memq : 'a -> 'a list -> bool
+     val find : ('a -> bool) -> 'a list -> 'a
++    val find_opt : ('a -> bool) -> 'a list -> 'a option
+     val filter : ('a -> bool) -> 'a list -> 'a list
+     val find_all : ('a -> bool) -> 'a list -> 'a list
+     val partition : ('a -> bool) -> 'a list -> 'a list * 'a list
+diff --git a/convert/convert.ml b/convert/convert.ml
+index 728ea5a1..6c78bd99 100644
+--- a/convert/convert.ml
++++ b/convert/convert.ml
+@@ -367,35 +367,54 @@ and get_target_firmware i_firmware guestcaps source output =
+   target_firmware
+ 
+ and get_target_boot_device g inspect =
+-  (* We only do it for Linux, as most likely Windows never(?) boots
+-   * from any drive other than C:.  We can revisit this decision
+-   * if someone reports a bug.
+-   *)
+-  match inspect.i_type with
+-  | "linux" ->
+-     (try
+-        (* In sane cases, the Grub stage1/boot.img (ie. the boot sector) is
+-         * always on the same drive as /boot.  So we can just find out
+-         * where /boot is mounted and use that.
+-         *)
+-        let boot_mountpoint = List.assoc "/boot" inspect.i_mountpoints in
+-        let boot_device = g#part_to_dev boot_mountpoint in
+-        let boot_device = g#device_index boot_device in
+-        Some boot_device
+-      with
+-      | Not_found -> None
+-      | G.Error msg
+-           (* Returned by part_to_dev if the /boot mountpoint is not
+-            * a partition name.
+-            *)
+-           when String.find msg "device name is not a partition" >= 0 -> None
+-      | G.Error msg
+-           (* Returned by device_index if the /boot device is not
+-            * a normal drive name (eg. /dev/mdX).
+-            *)
+-           when String.find msg "device not found" >= 0 -> None
+-     )
+-  | _ -> None
++  with_return (fun {return} ->
++    (* We only do it for Linux, as most likely Windows never(?) boots
++     * from any drive other than C:.  We can revisit this decision
++     * if someone reports a bug.
++     *)
++    if inspect.i_type <> "linux" then return None;
++
++    (* Look for "GRUB" signature in the boot sector of each disk.
++     * If we find it, choose that disk.
++     *)
++    let devices = g#list_devices () |> Array.to_list in
++    let boot_device = List.find_opt (has_grub_signature g) devices in
++    let boot_device = Option.map g#device_index boot_device in
++    if boot_device <> None then return boot_device;
++
++    (* If that fails, in sane cases, the Grub stage1/boot.img (ie. the boot
++     * sector) is always on the same drive as /boot.  So we can just find
++     * out where /boot is mounted and use that.
++     *)
++    get_device_of_boot_filesystem g inspect
++  )
++
++and has_grub_signature g dev =
++  let boot_sector = g#pread_device dev 512 0_L in
++  let r = String.find boot_sector "GRUB" >= 0 in
++  debug "has_grub_signature: \"GRUB\" signature on %s? %b" dev r;
++  r
++
++and get_device_of_boot_filesystem g inspect =
++  try
++    let boot_mountpoint = List.assoc "/boot" inspect.i_mountpoints in
++    let boot_device = g#part_to_dev boot_mountpoint in
++    debug "get_device_of_boot_filesystem: found /boot filesystem on device %s"
++      boot_device;
++    let boot_device = g#device_index boot_device in
++    Some boot_device
++  with
++  | Not_found -> None
++    (* Returned by part_to_dev if the /boot mountpoint is not
++     * a partition name.
++     *)
++  | G.Error msg
++       when String.find msg "device name is not a partition" >= 0 -> None
++    (* Returned by device_index if the /boot device is not
++     * a normal drive name (eg. /dev/mdX).
++     *)
++  | G.Error msg
++       when String.find msg "device not found" >= 0 -> None
+ 
+ (* After conversion we dump as much information about the guest
+  * as we can in one place.  Note this is only called when verbose

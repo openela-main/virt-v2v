@@ -1,0 +1,184 @@
+From e7abf2e39ed17e324b54c00f2386f56152660522 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 21 Aug 2025 09:53:42 +0100
+Subject: [PATCH] output: Add boot order depending on target boot device
+
+If no target boot device was specified, we number them <boot order='1'>
+through <boot order='N'> for each disk.
+
+If a target boot device was specified, then that disk has
+<boot order='1'>, and the remaining disks are numbered sequentially
+starting at 2.
+
+(cherry picked from commit 08e57a392aa5e0720e8787968a562808cb0a31fe)
+---
+ lib/create_ovf.ml            | 19 ++++++++-----------
+ output/create_libvirt_xml.ml | 16 +++++++++++++++-
+ output/output_qemu.ml        | 16 +++++++++++++---
+ tests/test-cdrom.expected    |  1 +
+ tests/test-floppy.expected   |  1 +
+ tests/test-i-ova.xml         |  1 +
+ 6 files changed, 39 insertions(+), 15 deletions(-)
+
+diff --git a/lib/create_ovf.ml b/lib/create_ovf.ml
+index 0af62c88..f74ba3a7 100644
+--- a/lib/create_ovf.ml
++++ b/lib/create_ovf.ml
+@@ -544,7 +544,7 @@ let create_meta_files output_alloc output_format sd_uuid image_uuids sizes =
+ 
+ (* Create the OVF file. *)
+ let rec create_ovf source inspect
+-          { guestcaps; target_firmware; target_nics }
++          { guestcaps; target_nics; target_firmware; target_boot_device }
+           sizes
+           output_alloc output_format
+           output_name
+@@ -763,7 +763,7 @@ let rec create_ovf source inspect
+     ] in
+ 
+   (* Add disks to the OVF XML. *)
+-  add_disks sizes guestcaps output_alloc output_format
++  add_disks sizes guestcaps target_boot_device output_alloc output_format
+     sd_uuid image_uuids vol_uuids need_actual_sizes output_disks
+     ovf_flavour ovf;
+ 
+@@ -813,7 +813,7 @@ and get_flavoured_section ovf ovirt_path esd_path esd_path_attr = function
+      with Not_found -> assert false
+ 
+ (* This modifies the OVF DOM, adding a section for each disk. *)
+-and add_disks sizes guestcaps output_alloc output_format
++and add_disks sizes guestcaps target_boot_device output_alloc output_format
+     sd_uuid image_uuids vol_uuids need_actual_sizes output_disks
+     ovf_flavour ovf =
+   let references =
+@@ -838,14 +838,11 @@ and add_disks sizes guestcaps output_alloc output_format
+   (* Iterate over the disks, adding them to the OVF document. *)
+   List.iteri (
+     fun i (size, image_uuid, vol_uuid, output_uri) ->
+-      (* This sets the boot order to boot the first disk first.  This
+-       * isn't generally correct.  We should copy over the boot order
+-       * from the source hypervisor.  See long discussion in
+-       * https://bugzilla.redhat.com/show_bug.cgi?id=1308535 for
+-       * what we should be doing.  (XXX)
+-       *)
+-      let is_bootable_drive = i == 0 in
+-      let boot_order = i+1 in
++      let is_bootable_drive, boot_order =
++        match target_boot_device with
++        | None -> i = 0, i+1
++        | Some disk_index when disk_index = i -> true, 1
++        | Some _ -> false, i+2 in
+ 
+       let fileref =
+         match ovf_flavour with
+diff --git a/output/create_libvirt_xml.ml b/output/create_libvirt_xml.ml
+index 7ab8d34c..59f2f1f8 100644
+--- a/output/create_libvirt_xml.ml
++++ b/output/create_libvirt_xml.ml
+@@ -41,7 +41,8 @@ let get_osinfo_id inspect =
+     None
+ 
+ let create_libvirt_xml ?pool source inspect
+-      { guestcaps; target_buses; target_firmware; target_nics }
++      { guestcaps; target_buses; target_nics; target_firmware;
++        target_boot_device }
+       target_features outdisk_name output_format output_name =
+   (* The main body of the libvirt XML document. *)
+   let body = ref [] in
+@@ -206,6 +207,18 @@ let create_libvirt_xml ?pool source inspect
+     | BusSlotDisk d ->
+        let outdisk = outdisk_name d.s_disk_id in
+ 
++       let boot_order =
++         match target_boot_device with
++         | None ->
++            (* No known boot device, just number them sequentially. *)
++            i+1
++         | Some disk_index when disk_index = i ->
++            (* For the boot disk, use order 1. *)
++            1
++         | Some _ ->
++            (* For the others number them sequentially starting at 2. *)
++            i+2 in
++
+         e "disk" (
+           [
+             "type", if pool = None then "file" else "volume";
+@@ -231,6 +244,7 @@ let create_libvirt_xml ?pool source inspect
+             "dev", drive_prefix ^ drive_name i;
+             "bus", bus_name;
+           ] [];
++          e "boot" [ "order", string_of_int boot_order ] [];
+         ]
+ 
+     | BusSlotRemovable { s_removable_type = CDROM } ->
+diff --git a/output/output_qemu.ml b/output/output_qemu.ml
+index 37371aad..dff08b66 100644
+--- a/output/output_qemu.ml
++++ b/output/output_qemu.ml
+@@ -108,7 +108,8 @@ module QEMU = struct
+     let _, qemu_boot, output_alloc, output_format,
+         output_name, output_storage = options in
+ 
+-    let { guestcaps; target_buses; target_firmware } = target_meta in
++    let { guestcaps; target_buses;
++          target_firmware; target_boot_device } = target_meta in
+ 
+     (* Start the shell script.  Write it to a temporary file
+      * which we rename at the end.
+@@ -282,8 +283,17 @@ module QEMU = struct
+        * "disk_id".
+        *)
+       let outdisk = disk_path output_storage output_name disk_id in
+-      arg_list "-drive" [ "file=" ^ outdisk; "format=" ^ output_format;
+-                          "if=none"; "id=" ^ backend_name; "media=disk" ]
++      let bootindex =
++         match target_boot_device with
++         | None -> disk_id+1
++         | Some disk_index when disk_index = disk_id -> 1
++         | Some _ -> disk_id+2 in
++      arg_list "-drive" [ "file=" ^ outdisk;
++                          "format=" ^ output_format;
++                          "if=none";
++                          "id=" ^ backend_name;
++                          "media=disk";
++                          sprintf "bootindex=%d" bootindex ]
+ 
+     and add_cdrom_backend backend_name =
+       (* Add a drive (back-end) for an "ide-cd" or "scsi-cd" device (front-end).
+diff --git a/tests/test-cdrom.expected b/tests/test-cdrom.expected
+index 17bd152d..806461e7 100644
+--- a/tests/test-cdrom.expected
++++ b/tests/test-cdrom.expected
+@@ -1,6 +1,7 @@
+     <disk type='file' device='disk'>
+       <driver name='qemu' type='raw'/>
+       <target dev='vda' bus='virtio'/>
++      <boot order='1'/>
+     </disk>
+     <disk device='cdrom' type='file'>
+       <driver name='qemu' type='raw'/>
+diff --git a/tests/test-floppy.expected b/tests/test-floppy.expected
+index a718c21f..c5bd913b 100644
+--- a/tests/test-floppy.expected
++++ b/tests/test-floppy.expected
+@@ -1,6 +1,7 @@
+     <disk type='file' device='disk'>
+       <driver name='qemu' type='raw'/>
+       <target dev='vda' bus='virtio'/>
++      <boot order='1'/>
+     </disk>
+     <disk device='floppy' type='file'>
+       <driver name='qemu' type='raw'/>
+diff --git a/tests/test-i-ova.xml b/tests/test-i-ova.xml
+index f1d8f2e3..08b5b9f2 100644
+--- a/tests/test-i-ova.xml
++++ b/tests/test-i-ova.xml
+@@ -27,6 +27,7 @@
+       <driver name='qemu' type='raw'/>
+       <source file='TestOva-sda'/>
+       <target dev='vda' bus='virtio'/>
++      <boot order='1'/>
+     </disk>
+     <disk device='cdrom' type='file'>
+       <driver name='qemu' type='raw'/>

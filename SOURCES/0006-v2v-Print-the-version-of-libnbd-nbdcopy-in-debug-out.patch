@@ -1,0 +1,50 @@
+From 4835c9c91cff55f1411a0413c1469e212124ba03 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Wed, 16 Jul 2025 13:10:01 +0100
+Subject: [PATCH] v2v: Print the version of libnbd / nbdcopy in debug output
+
+We didn't previously log the version of libnbd or nbdcopy, and nbdcopy
+itself won't tell us (because we don't use the nbdcopy --verbose
+option).  However this information can be useful to know.  This commit
+enhances the verbose output of virt-v2v to include this.
+
+With current versions of nbdcopy it will look like this:
+
+  info: nbdcopy version:
+  nbdcopy 1.23.4
+  libnbd 1.23.4
+
+Note the second line is the version of the installed library, which in
+some (very unusual, and probably broken) situations might be different
+from the version of the nbdcopy binary, which is why both are logged.
+
+libnbd 1.23.5 will soon enhance the output to include the downstream
+package version (such as the RPM version) which is even more useful.
+In future the output will look like:
+
+  info: nbdcopy version:
+  nbdcopy 1.23.5 (libnbd-1.23.5-1.fc43)
+  libnbd 1.23.5 (libnbd-1.23.5-1.fc43)
+
+See: https://gitlab.com/nbdkit/libnbd/-/merge_requests/28
+(cherry picked from commit a8a0caf54ccaf52db70988494b6f5a397a1af105)
+---
+ v2v/v2v.ml | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index d32993d4..c780ab1d 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -469,6 +469,11 @@ read the man page virt-v2v(1).
+   (* Do the copy. *)
+   with_open_out (v2vdir // "copy") (fun _ -> ());
+ 
++  if verbose () then (
++    eprintf "info: nbdcopy version:\n%!";
++    ignore (Sys.command (sprintf "%s --version >&2" Config.nbdcopy))
++  );
++
+   (* Get the list of disks and corresponding NBD URIs. *)
+   let disks =
+     List.combine input_disks output_disks |>

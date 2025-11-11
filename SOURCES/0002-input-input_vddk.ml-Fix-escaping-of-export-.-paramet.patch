@@ -1,0 +1,67 @@
+From c2c829eb22add09de338da065214c9b6aced42e2 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 10 Jul 2025 09:13:54 +0100
+Subject: [PATCH] input/input_vddk.ml: Fix escaping of export=... parameter
+
+Commit b49ee14368 ("input: vddk: Use single nbdkit-vddk-plugin
+instance with exports") switched to using the new nbdkit-vddk-plugin
+export feature, where we can run a single nbdkit instance and choose
+which disk we want to see using the NBD protocol exportname feature.
+
+As part of this, we are required to set an export parameter, which is
+a wildcard that all exportnames must match.  This is a safety feature
+so that nbdkit will only serve a subset of the VMware files, instead
+of allowing anyone who can attach to the nbdkit socket to read any
+file on the server.  (The socket is further protected by not being
+readable to users other than the user running virt-v2v.)
+
+We compute this by doing a longest common prefix of all the disk names
+associated with a guest.
+
+Ming Xie found a case where this failed.  Given two names called:
+
+  "[datastore1 (3)] esx8.0-win11-efi-secureboot-with-vtpm-and-turn-on-bitlocker/esx8.0-win11-efi-secureboot-with-vtpm-and-turn-on-bitlocker.vmdk"
+  "[datastore1 (3)] esx8.0-win11-efi-secureboot-with-vtpm-and-turn-on-bitlocker/esx8.0-win11-efi-secureboot-with-vtpm-and-turn-on-bitlocker_1.vmdk"
+
+we computed the wildcard:
+
+  "\[datastore1 (3)\] esx8.0-win11-efi-secureboot-with-vtpm-and-turn-on-bitlocker/esx8.0-win11-efi-secureboot-with-vtpm-and-turn-on-bitlocker\*.vmdk"
+
+However the escaping is wrong.  We correctly escape the '[' and ']'
+characters, but incorrectly escape the '*' character (which is meant
+to be a wildcard).
+
+This caused failure to convert when a guest has multiple disks and
+nbdkit >= 1.44 is installed.
+
+Reported-by: Ming Xie
+Fixes: commit 076727e55f4d4fed246097d3f89ebfe83e3de88f
+Fixes: https://issues.redhat.com/browse/RHEL-102734
+(cherry picked from commit 5461976e229873a203062848c0de30e70067b3fb)
+---
+ input/input_vddk.ml | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/input/input_vddk.ml b/input/input_vddk.ml
+index b70d76fb..39356129 100644
+--- a/input/input_vddk.ml
++++ b/input/input_vddk.ml
+@@ -446,7 +446,7 @@ See also the virt-v2v-input-vmware(1) manual.") libNN
+         let wildcard =
+           match files with
+           | [] -> assert false (* can't happen, see assert above *)
+-          | [f] -> f
++          | [f] -> fnmatch_escape f
+           | files ->
+              (* Calculate the longest common prefix across all the files,
+               * then set the wildcard to this.
+@@ -454,8 +454,7 @@ See also the virt-v2v-input-vmware(1) manual.") libNN
+               * XXX Is every file we want to read called *.vmdk?
+               *)
+              let prefix = String.longest_common_prefix files in
+-             prefix ^ "*.vmdk" in
+-        let wildcard = fnmatch_escape wildcard in
++             fnmatch_escape prefix ^ "*.vmdk" in
+ 
+         let socket = sprintf "%s/in0" dir in
+         On_exit.unlink socket;

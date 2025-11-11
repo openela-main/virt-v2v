@@ -2,12 +2,12 @@
 %global verify_tarball_signature 1
 
 # The source directory.
-%global source_directory 2.7-development
+%global source_directory 2.8-stable
 
 Name:          virt-v2v
 Epoch:         1
-Version:       2.7.1
-Release:       4%{?dist}
+Version:       2.8.1
+Release:       10%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -24,40 +24,41 @@ Source2:       libguestfs.keyring
 Source3:       copy-patches.sh
 
 # Patches are maintained in the following repository:
-# https://github.com/libguestfs/virt-v2v/commits/rhel-10.0
+# https://github.com/libguestfs/virt-v2v/commits/rhel-10.1
 
 # Patches.
-Patch0001:     0001-lib-OVF-Add-preliminary-support-for-Windows-Server-2.patch
-Patch0002:     0002-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
-Patch0003:     0003-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
-Patch0004:     0004-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
-Patch0005:     0005-RHEL-Fixes-for-libguestfs-winsupport.patch
-Patch0006:     0006-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
-Patch0007:     0007-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
-Patch0008:     0008-RHEL-Remove-input-from-Xen.patch
-Patch0009:     0009-RHEL-Remove-o-glance.patch
-Patch0010:     0010-RHEL-Remove-the-in-place-option.patch
-Patch0011:     0011-RHEL-tests-Remove-btrfs-test.patch
-Patch0012:     0012-RHEL-Remove-block-driver-option.patch
-Patch0013:     0013-RHEL-Remove-o-rhv-o-rhv-upload-and-o-vdsm-modes.patch
-Patch0014:     0014-RHEL-Add-warning-about-virt-v2v-in-place-not-being-s.patch
-Patch0015:     0015-in-place-Add-a-warning-about-checking-the-exit-code.patch
-Patch0016:     0016-i-libvirt-Trim-whitespace-around-name.patch
-Patch0017:     0017-o-qemu-Replace-hard-coded-UEFI-paths.patch
-Patch0018:     0018-o-qemu-Add-set-e-x-at-the-top-of-the-output-script.patch
-Patch0019:     0019-v2v-Implement-parallel-N-for-parallel-disk-copies.patch
-Patch0020:     0020-tests-Rename-all-test-v2v-to-test.patch
-Patch0021:     0021-tests-Sort-the-tests-into-alphabetical-order.patch
-Patch0022:     0022-docs-Embolden-whole-O.patch
-Patch0023:     0023-in-place-Fix-name-of-program-in-the-help-output.patch
-Patch0024:     0024-inspector-Reorder-O-option-in-alphabetical-order.patch
-Patch0025:     0025-v2v-Ensure-parallel-1.patch
-Patch0026:     0026-inspector-Move-the-code-that-creates-XML-output-to-a.patch
-Patch0027:     0027-build-Define-MLOBJECT-OCaml-object-file-as-either-cm.patch
-Patch0028:     0028-in-place-Add-new-O-option-to-write-inspector-XML.patch
-Patch0029:     0029-convert-Mention-operating-system-in-error-message.patch
-Patch0030:     0030-Update-common-submodule.patch
-Patch0031:     0031-convert-Use-yum-apt-.-for-package-removals-not-rpm-d.patch
+Patch0001:     0001-docs-Move-oo-verify-server-certificate-docs-to-alpha.patch
+Patch0002:     0002-input-input_vddk.ml-Fix-escaping-of-export-.-paramet.patch
+Patch0003:     0003-Modify-configure_pnputil_install-script-to-check.patch
+Patch0004:     0004-Update-the-common-submodule.patch
+Patch0005:     0005-Ignore-ERROR_NO_MORE_ITEMS-status-from-PnPUtil.patch
+Patch0006:     0006-v2v-Print-the-version-of-libnbd-nbdcopy-in-debug-out.patch
+Patch0007:     0007-vddk-Remove-io-vddk-noextents-option.patch
+Patch0008:     0008-curl-ssh-vddk-file-Add-nbdkit-count-filter.patch
+Patch0009:     0009-o-kubevirt-Add-oo-disk-to-allow-disk-names-to-be-ove.patch
+Patch0010:     0010-output-Add-optional-create-parameter.patch
+Patch0011:     0011-o-kubevirt-Add-oo-create-false-to-avoid-disk-creatio.patch
+Patch0012:     0012-RHEL-Fixes-for-libguestfs-winsupport.patch
+Patch0013:     0013-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
+Patch0014:     0014-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
+Patch0015:     0015-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
+Patch0016:     0016-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
+Patch0017:     0017-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
+Patch0018:     0018-RHEL-Remove-input-from-Xen.patch
+Patch0019:     0019-RHEL-Remove-o-glance.patch
+Patch0020:     0020-RHEL-tests-Remove-btrfs-test.patch
+Patch0021:     0021-RHEL-Remove-block-driver-option.patch
+Patch0022:     0022-RHEL-Remove-o-ovirt-o-ovirt-upload-and-o-vdsm-modes.patch
+Patch0023:     0023-RHEL-Add-warning-about-virt-v2v-in-place-not-being-s.patch
+Patch0024:     0024-remove-timeout-before-installing-virtio-win-drivers.patch
+Patch0025:     0025-v2v-Fix-SELinux-relabelling.patch
+Patch0026:     0026-RHEL-10-m4-Depend-on-libguestfs-1.56.1-2.el10-for-gu.patch
+Patch0027:     0027-convert-Model-target-boot-device.patch
+Patch0028:     0028-output-Add-boot-order-depending-on-target-boot-devic.patch
+Patch0029:     0029-convert-Detect-target-boot-device-for-Linux-guests.patch
+Patch0030:     0030-output-kubevirt-Add-bootOrder-to-Kubevirt-YAML.patch
+Patch0031:     0031-convert-Look-for-GRUB-signature-first-to-identify-bo.patch
+Patch0032:     0032-lib-types.ml-Fix-formatting-of-debug-message.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -80,18 +81,19 @@ BuildRequires: autoconf, automake, libtool
 BuildRequires: make
 BuildRequires: /usr/bin/pod2man
 BuildRequires: gcc
-BuildRequires: ocaml >= 4.04
+BuildRequires: ocaml >= 4.08
 
-BuildRequires: libguestfs-devel >= 1:1.49.8-1
+BuildRequires: libguestfs-devel >= 1:1.56.1-2.el10
 BuildRequires: augeas-devel
 BuildRequires: bash-completion
-BuildRequires: file-devel
+BuildRequires: file
 BuildRequires: gettext-devel
 BuildRequires: json-c-devel
-BuildRequires: libnbd-devel
+BuildRequires: libnbd-devel >= 1.14
 BuildRequires: libosinfo-devel
 BuildRequires: libvirt-daemon-kvm
 BuildRequires: libvirt-devel
+BuildRequires: libxcrypt-devel
 BuildRequires: libxml2-devel
 BuildRequires: pcre2-devel
 BuildRequires: perl(Sys::Guestfs)
@@ -105,9 +107,6 @@ BuildRequires: ocaml-libvirt-devel
 BuildRequires: ocaml-libnbd-devel
 BuildRequires: ocaml-fileutils-devel
 BuildRequires: ocaml-gettext-devel
-%if !0%{?rhel}
-BuildRequires: ocaml-ounit-devel
-%endif
 
 # These are for running our limited test.
 BuildRequires: glibc-utils
@@ -129,7 +128,7 @@ BuildRequires: glibc-static
 BuildRequires: gnupg2
 %endif
 
-Requires:      libguestfs%{?_isa} >= 1:1.49.8-1
+Requires:      libguestfs%{?_isa} >= 1:1.56.1-2.el10
 Requires:      guestfs-tools >= 1.49.7-1
 
 # XFS is the default filesystem in Fedora and RHEL.
@@ -157,10 +156,12 @@ Requires:      edk2-aarch64
 %endif
 
 %if !0%{?rhel}
-Requires:      python3
-%elif %{?rhel} == 9
+Requires:      /usr/bin/python3
+%else
+%if 0%{?rhel} == 9
 Requires:      platform-python
 # Python is not needed by RHEL 10.
+%endif
 %endif
 Requires:      libnbd >= 1.10
 Requires:      %{_bindir}/qemu-nbd
@@ -179,9 +180,9 @@ Requires:      nbdkit-ssh-plugin
 Requires:      nbdkit-vddk-plugin
 %endif
 Requires:      nbdkit-blocksize-filter
-Requires:      nbdkit-cacheextents-filter
 Requires:      nbdkit-cow-filter >= 1.28.3-1.el9
 Requires:      nbdkit-multi-conn-filter
+Requires:      nbdkit-noextents-filter
 Requires:      nbdkit-rate-filter
 Requires:      nbdkit-retry-filter
 
@@ -199,9 +200,9 @@ Recommends:    virtio-win
 Virt-v2v converts a single guest from a foreign hypervisor to run on
 KVM.  It can read Linux and Windows guests running on VMware, Xen,
 Hyper-V and some other hypervisors, and convert them to KVM managed by
-libvirt, OpenStack, oVirt, Red Hat Virtualisation (RHV) or several
-other targets.  It can modify the guest to make it bootable on KVM and
-install virtio drivers so it will run quickly.
+libvirt, OpenStack or several other targets.  It can modify the guest
+to make it bootable on KVM and install virtio drivers so it will run
+quickly.
 
 
 %package bash-completion
@@ -268,6 +269,9 @@ find $RPM_BUILD_ROOT -name '*.la' -delete
 mkdir -p $RPM_BUILD_ROOT%{_libexecdir}
 mv $RPM_BUILD_ROOT%{_bindir}/virt-v2v-in-place $RPM_BUILD_ROOT%{_libexecdir}/
 rm $RPM_BUILD_ROOT%{_mandir}/man1/virt-v2v-in-place.1*
+# these are also not supported on RHEL
+rm -f $RPM_BUILD_ROOT%{_mandir}/man1/virt-v2v-input-xen.1*
+rm -f $RPM_BUILD_ROOT%{_mandir}/man1/virt-v2v-output-ovirt.1*
 %endif
 
 # Find locale files.
@@ -309,6 +313,7 @@ done
 %{_libexecdir}/virt-v2v-in-place
 %endif
 %{_bindir}/virt-v2v-inspector
+%{_bindir}/virt-v2v-open
 %{_mandir}/man1/virt-v2v.1*
 %{_mandir}/man1/virt-v2v-hacking.1*
 %{_mandir}/man1/virt-v2v-input-vmware.1*
@@ -317,10 +322,11 @@ done
 %{_mandir}/man1/virt-v2v-in-place.1*
 %endif
 %{_mandir}/man1/virt-v2v-inspector.1*
+%{_mandir}/man1/virt-v2v-open.1*
 %{_mandir}/man1/virt-v2v-output-local.1*
 %{_mandir}/man1/virt-v2v-output-openstack.1*
 %if !0%{?rhel}
-%{_mandir}/man1/virt-v2v-output-rhv.1*
+%{_mandir}/man1/virt-v2v-output-ovirt.1*
 %endif
 %{_mandir}/man1/virt-v2v-release-notes-1.42.1*
 %{_mandir}/man1/virt-v2v-release-notes-2.*.1*
@@ -343,6 +349,58 @@ done
 
 
 %changelog
+* Sep 25 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-10
+- Fix setting boot order for Linux BIOS guests
+  resolves: RHEL-108991
+- Set boot order for guests in -o kubevirt output mode
+  resolves: RHEL-110742
+
+* Aug 21 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-9
+- Rebase to virt-v2v 2.8.1
+  related: RHEL-81735
+- Fix virt-v2v -v --install dnf5 error
+  resolves: RHEL-83288
+- Print blkhash of converted image in virt-v2v debugging output
+  resolves: RHEL-85514
+- Document dracut network-legacy conversion failure
+  resolves: RHEL-55732
+- Print nbdcopy command in debug output
+  resolves: RHEL-86088
+- Remove usage of nbdkit-cacheextents-filter
+  resolves: RHEL-88860
+- Print better mountpoint stats in debug output
+  resolves: RHEL-88862
+- Remove several ancient, deprecated options
+  resolves: RHEL-88867
+- virt-v2v-inspector is failing on snapshots of running VMs
+  resolves: RHEL-88544
+- Add virt-v2v-open tool
+  resolves: RHEL-89993
+- Run filesystem check before and after conversion
+  resolves: RHEL-91931
+- virt-v2v fails to convert XFS guest with dirty filesystem
+  resolves: RHEL-95365
+- virt-v2v fails to convert guests with e2fsck errors
+  resolves: RHEL-97600
+- Improve layout of man page
+  resolves: RHEL-99745
+- Fix xfs_repair out of memory error
+  resolves: RHEL-99313
+- Remove virt-v2v -io vddk-noextents=true option
+  resolves: RHEL-102619
+- Add -o kubevirt -oo disk and -oo create options
+  resolves: RHEL-101599
+- Fix escaping of nbdkit-vddk-plugin export parameter
+  resolves: RHEL-102734
+- Fix installation of drivers on firstboot with pending reboots
+  resolves: RHEL-103356
+- Log the version of libnbd / nbdcopy in virt-v2v output
+  resolves: RHEL-104018
+- Fix SELinux relabelling in Linux split-/usr
+  resolves: RHEL-109130
+- Set boot order for Linux guests based on grub location
+  resolves: RHEL-108991
+
 * Tue Feb 11 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.7.1-4
 - Rebase to virt-v2v 2.7.1
   resolves: RHEL-56814

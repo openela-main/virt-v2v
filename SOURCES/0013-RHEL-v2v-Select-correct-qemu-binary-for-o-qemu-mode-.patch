@@ -1,4 +1,4 @@
-From 8d792ee85d5fc188cba79faff477ef5f73d73022 Mon Sep 17 00:00:00 2001
+From de879aad4bd0d17e884d571da3348965a9d02756 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Sun, 28 Sep 2014 19:14:43 +0100
 Subject: [PATCH] RHEL: v2v: Select correct qemu binary for -o qemu mode
@@ -16,10 +16,10 @@ support cases.
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/output/output_qemu.ml b/output/output_qemu.ml
-index 26c1ba48..07dae8c2 100644
+index 47a6f4ff..909b6e10 100644
 --- a/output/output_qemu.ml
 +++ b/output/output_qemu.ml
-@@ -131,7 +131,7 @@ module QEMU = struct
+@@ -164,7 +164,7 @@ module QEMU = struct
       * module deals with shell and qemu comma quoting.
       *)
      let cmd = Qemuopts.create () in

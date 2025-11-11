@@ -1,4 +1,4 @@
-From e0af932e291fdb9f87b071a873152f757f8ad71c Mon Sep 17 00:00:00 2001
+From 0c2aebab2d1c3cf7a02c16dd6a5af4ae55a69995 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Fri, 28 Apr 2023 12:28:19 +0100
 Subject: [PATCH] RHEL: Remove --block-driver option
@@ -16,10 +16,10 @@ Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=2190387
  5 files changed, 2 insertions(+), 41 deletions(-)
 
 diff --git a/docs/virt-v2v-in-place.pod b/docs/virt-v2v-in-place.pod
-index 4304c0d6..b7384210 100644
+index 6c02a99c..3d0d1b28 100644
 --- a/docs/virt-v2v-in-place.pod
 +++ b/docs/virt-v2v-in-place.pod
-@@ -51,16 +51,6 @@ Display help.
+@@ -72,16 +72,6 @@ Display help.
  
  See I<--network> below.
  
@@ -37,10 +37,10 @@ index 4304c0d6..b7384210 100644
  
  =item B<--colours>
 diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
-index 2230a556..eb7da9ca 100644
+index fde60a8c..0e68de10 100644
 --- a/docs/virt-v2v.pod
 +++ b/docs/virt-v2v.pod
-@@ -202,16 +202,6 @@ The options are silently ignored for other input methods.
+@@ -212,16 +212,6 @@ The options are silently ignored for other input methods.
  
  See I<--network> below.
  
@@ -58,10 +58,10 @@ index 2230a556..eb7da9ca 100644
  
  =item B<--colours>
 diff --git a/in-place/in_place.ml b/in-place/in_place.ml
-index 8286dbc5..2dc406e2 100644
+index 604a662d..a91ee39d 100644
 --- a/in-place/in_place.ml
 +++ b/in-place/in_place.ml
-@@ -43,7 +43,6 @@ let rec main () =
+@@ -49,7 +49,6 @@ let rec main () =
  
    let bandwidth = ref None in
    let bandwidth_file = ref None in
@@ -69,16 +69,16 @@ index 8286dbc5..2dc406e2 100644
    let input_conn = ref None in
    let input_format = ref None in
    let input_password = ref None in
-@@ -159,8 +158,6 @@ let rec main () =
+@@ -162,8 +161,6 @@ let rec main () =
    let argspec = [
      [ S 'b'; L"bridge" ], Getopt.String ("in:out", add_bridge),
                                      s_"Map bridge ‘in’ to ‘out’";
 -    [ L"block-driver" ], Getopt.String ("driver", set_string_option_once "--block-driver" block_driver),
 -                                    s_"Prefer 'virtio-blk' or 'virtio-scsi'";
-     [ S 'i' ],       Getopt.String ("disk|libvirt|libvirtxml|ova|vmx", set_input_mode),
+     [ S 'i' ],       Getopt.String (input_modes, set_input_mode),
                                      s_"Set input mode (default: libvirt)";
      [ M"ic" ],       Getopt.String ("uri", set_string_option_once "-ic" input_conn),
-@@ -225,12 +222,6 @@ read the man page virt-v2v-in-place(1).
+@@ -230,12 +227,6 @@ read the man page virt-v2v-in-place(1).
  
    (* Dereference the arguments. *)
    let args = List.rev !args in
@@ -91,7 +91,7 @@ index 8286dbc5..2dc406e2 100644
    let customize_ops = get_customize_ops () in
    let input_conn = !input_conn in
    let input_mode = !input_mode in
-@@ -316,7 +307,7 @@ read the man page virt-v2v-in-place(1).
+@@ -298,7 +289,7 @@ read the man page virt-v2v-in-place(1).
  
    (* Get the conversion options. *)
    let conv_options = {
@@ -101,19 +101,19 @@ index 8286dbc5..2dc406e2 100644
      ks = opthandle.ks;
      network_map;
 diff --git a/tests/Makefile.am b/tests/Makefile.am
-index ddecdfbf..b41fed7f 100644
+index f9c748ed..c0aa8498 100644
 --- a/tests/Makefile.am
 +++ b/tests/Makefile.am
-@@ -77,7 +77,6 @@ TESTS = \
- 	test-v2v-floppy.sh \
- 	test-v2v-i-disk.sh \
- 	test-v2v-i-ova.sh \
--	test-v2v-block-driver.sh \
- 	test-v2v-inspector.sh \
- 	test-v2v-mac.sh \
- 	test-v2v-machine-readable.sh \
+@@ -57,7 +57,6 @@ TESTS_ENVIRONMENT = $(top_builddir)/run --test
+ 
+ TESTS = \
+ 	test-bad-networks-and-bridges.sh \
+-	test-block-driver.sh \
+ 	test-cdrom.sh \
+ 	test-checksum-bad.sh \
+ 	test-checksum-good-qcow2.sh \
 diff --git a/v2v/v2v.ml b/v2v/v2v.ml
-index c18aeaa1..d09c200c 100644
+index 5d3a9dbb..2e8071db 100644
 --- a/v2v/v2v.ml
 +++ b/v2v/v2v.ml
 @@ -48,7 +48,6 @@ let rec main () =
@@ -124,16 +124,16 @@ index c18aeaa1..d09c200c 100644
    let input_conn = ref None in
    let input_format = ref None in
    let input_password = ref None in
-@@ -226,8 +225,6 @@ let rec main () =
+@@ -201,8 +200,6 @@ let rec main () =
                                      s_"Set bandwidth dynamically from file";
      [ S 'b'; L"bridge" ], Getopt.String ("in:out", add_bridge),
        s_"Map bridge ‘in’ to ‘out’";
 -    [ L"block-driver" ], Getopt.String ("driver", set_string_option_once "--block-driver" block_driver),
 -                                    s_"Prefer 'virtio-blk' or 'virtio-scsi'";
-     [ L"compressed" ], Getopt.Unit (fun () -> set_output_option_compat "compressed" ""),
-       s_"Compress output file (-of qcow2 only)";
-     [ S 'i' ],       Getopt.String ("disk|libvirt|libvirtxml|ova|vmx", set_input_mode),
-@@ -352,12 +349,6 @@ read the man page virt-v2v(1).
+     [ S 'i' ],       Getopt.String (input_modes, set_input_mode),
+       s_"Set input mode (default: libvirt)";
+     [ M"ic" ],       Getopt.String ("uri", set_string_option_once "-ic" input_conn),
+@@ -295,12 +292,6 @@ read the man page virt-v2v(1).
  
    (* Dereference the arguments. *)
    let args = List.rev !args in
@@ -146,7 +146,7 @@ index c18aeaa1..d09c200c 100644
    let customize_ops = get_customize_ops () in
    let input_conn = !input_conn in
    let input_mode = !input_mode in
-@@ -526,7 +517,7 @@ read the man page virt-v2v(1).
+@@ -413,7 +404,7 @@ read the man page virt-v2v(1).
  
    (* Get the conversion options. *)
    let conv_options = {

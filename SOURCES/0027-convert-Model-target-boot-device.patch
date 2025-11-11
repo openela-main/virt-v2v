@@ -1,0 +1,98 @@
+From c00234c61eb2a49b2961b24672e41f15d8d734b8 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 21 Aug 2025 09:45:44 +0100
+Subject: [PATCH] convert: Model target boot device
+
+SeaBIOS recently changed how it works so it no longer initializes all
+disks at boot.  To get around this, for some Linux BIOS guests, we
+will have to assign a boot order to the disks, with <boot order='1'>
+for the disk that contains the GRUB bootloader, and higher boot orders
+assigned to the other disks.
+
+As the first step, model the target boot device.
+
+In the current commit this is always unset (set to 'None'), so this
+does nothing.
+
+(cherry picked from commit e512d84bc8e18734aac7659e839f32c960f6fb0a)
+---
+ convert/convert.ml |  8 ++++++--
+ lib/types.ml       |  3 ++-
+ lib/types.mli      | 15 ++++++++++++++-
+ 3 files changed, 22 insertions(+), 4 deletions(-)
+
+diff --git a/convert/convert.ml b/convert/convert.ml
+index 45d48a95..f8a35506 100644
+--- a/convert/convert.ml
++++ b/convert/convert.ml
+@@ -136,7 +136,8 @@ let rec convert input_disks options source =
+     get_target_firmware i_firmware guestcaps source output in
+ 
+   (* Create target metadata file. *)
+-  let target_meta = { guestcaps; target_buses; target_firmware; target_nics } in
++  let target_meta = { guestcaps; target_buses; target_nics;
++                      target_firmware; target_boot_device = None } in
+ 
+   (* This is a good place to dump everything we know about the guest. *)
+   if verbose () then debug_info source inspect target_meta mpstats;
+@@ -366,7 +367,8 @@ and get_target_firmware i_firmware guestcaps source output =
+  * is enabled.
+  *)
+ and debug_info source inspect
+-               { guestcaps; target_buses; target_firmware; target_nics }
++               { guestcaps; target_buses; target_nics;
++                 target_firmware; target_boot_device }
+                mpstats =
+   eprintf "info:\n";
+   eprintf "%s\n" (string_of_source source);
+@@ -374,6 +376,8 @@ and debug_info source inspect
+   eprintf "%s\n" (string_of_guestcaps guestcaps);
+   eprintf "%s\n" (string_of_target_buses target_buses);
+   eprintf "target firmware: %s\n" (string_of_target_firmware target_firmware);
++  eprintf "target boot device: %s\n"
++    (match target_boot_device with None -> "" | Some i -> string_of_int i);
+   eprintf "target NICs:\n";
+   List.iter (fun nic -> eprintf "%s\n" (string_of_source_nic nic))
+     target_nics;
+diff --git a/lib/types.ml b/lib/types.ml
+index 0196a3fd..bd4ab31c 100644
+--- a/lib/types.ml
++++ b/lib/types.ml
+@@ -485,8 +485,9 @@ let string_of_target_buses buses =
+ type target_meta = {
+   guestcaps : guestcaps;
+   target_buses : target_buses;
++  target_nics : target_nics;
+   target_firmware : target_firmware;
+-  target_nics : target_nics
++  target_boot_device : int option;
+ }
+ 
+ type root_choice = AskRoot | SingleRoot | FirstRoot | RootDev of string
+diff --git a/lib/types.mli b/lib/types.mli
+index b3815c8e..0c43b149 100644
+--- a/lib/types.mli
++++ b/lib/types.mli
+@@ -367,8 +367,21 @@ val string_of_target_buses : target_buses -> string
+ type target_meta = {
+   guestcaps : guestcaps;
+   target_buses : target_buses;
++  target_nics : target_nics;
++
+   target_firmware : target_firmware;
+-  target_nics : target_nics
++
++  target_boot_device : int option;
++  (** The disk index of the device containing the bootloader (index
++      starting from 0).
++
++      For libvirt guests this should usually be mapped to
++      [<boot order='1'>] for this disk, and [<boot order='N'>]
++      where N > 1 for each other disk (order does not matter
++      for the other disks).
++
++      This is only necessary for SeaBIOS so only collected for
++      a subset of BIOS guests (RHEL-108991). *)
+ }
+ 
+ (** {2 Command line parameters} *)

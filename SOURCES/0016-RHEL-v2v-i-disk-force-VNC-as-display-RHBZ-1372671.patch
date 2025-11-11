@@ -1,4 +1,4 @@
-From 1c85b582fc38f379b54efe344dc2323db95acc78 Mon Sep 17 00:00:00 2001
+From 4f5301bfa39c09df4ce4368abbafcb53ea139efc Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Thu, 2 Mar 2017 14:21:37 +0100
 Subject: [PATCH] RHEL: v2v: -i disk: force VNC as display (RHBZ#1372671)
@@ -9,12 +9,12 @@ The SDL output mode is not supported in RHEL's qemu-kvm.
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/input/input_disk.ml b/input/input_disk.ml
-index cf1f811b..27fc80de 100644
+index 8b027fed..6dd1b0cf 100644
 --- a/input/input_disk.ml
 +++ b/input/input_disk.ml
-@@ -77,7 +77,7 @@ module Disk = struct
-       s_features = [ "acpi"; "apic"; "pae" ];
+@@ -78,7 +78,7 @@ module Disk = struct
        s_firmware = UnknownFirmware; (* causes virt-v2v to autodetect *)
+       s_uefi_secureboot = false;
        s_display =
 -        Some { s_display_type = Window; s_keymap = None; s_password = None;
 +        Some { s_display_type = VNC; s_keymap = None; s_password = None;

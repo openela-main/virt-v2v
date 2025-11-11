@@ -1,4 +1,4 @@
-From dce2fe3c583cb6a8259667337df31c6c361fa670 Mon Sep 17 00:00:00 2001
+From 5c5d4163dfa7cbdd10450d677a85aeaf87e1a14b Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Wed, 30 Jun 2021 11:15:52 +0100
 Subject: [PATCH] RHEL: Remove -o glance
@@ -8,12 +8,14 @@ Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=1977539
  docs/virt-v2v-output-openstack.pod | 54 ++----------------------------
  docs/virt-v2v.pod                  | 20 -----------
  output/output_glance.mli           |  2 +-
- tests/test-v2v-o-glance.sh         |  3 ++
- v2v/v2v.ml                         |  7 +---
- 5 files changed, 7 insertions(+), 79 deletions(-)
+ output/select_output.ml            |  5 ---
+ output/select_output.mli           |  1 -
+ tests/test-o-glance.sh             |  3 ++
+ v2v/v2v.ml                         |  2 --
+ 7 files changed, 6 insertions(+), 81 deletions(-)
 
 diff --git a/docs/virt-v2v-output-openstack.pod b/docs/virt-v2v-output-openstack.pod
-index cd4862b1..54cd276e 100644
+index 9bef76ea..04595816 100644
 --- a/docs/virt-v2v-output-openstack.pod
 +++ b/docs/virt-v2v-output-openstack.pod
 @@ -10,13 +10,10 @@ virt-v2v-output-openstack - Using virt-v2v to convert guests to OpenStack
@@ -98,10 +100,10 @@ index cd4862b1..54cd276e 100644
  =head1 AUTHOR
  
 diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
-index ca75c255..6e26e62c 100644
+index 8e31fd0b..fde60a8c 100644
 --- a/docs/virt-v2v.pod
 +++ b/docs/virt-v2v.pod
-@@ -438,14 +438,6 @@ See L</Networks and bridges> below.
+@@ -439,14 +439,6 @@ See L</Networks and bridges> below.
  
  This is the same as I<-o local>.
  
@@ -116,7 +118,7 @@ index ca75c255..6e26e62c 100644
  =item B<-o> B<kubevirt>
  
  Set the output method to I<kubevirt>.  B<Note the way this mode works
-@@ -1164,11 +1156,6 @@ and output methods may use disk space, as outlined in the table below.
+@@ -897,11 +889,6 @@ and output methods may use disk space, as outlined in the table below.
  This temporarily places a full copy of the uncompressed source disks
  in C<$VIRT_V2V_TMPDIR> (or F</var/tmp>).
  
@@ -128,7 +130,7 @@ index ca75c255..6e26e62c 100644
  =item I<-o local>
  
  =item I<-o qemu>
-@@ -1371,13 +1358,6 @@ See also L</Starting the libvirt system instance>.
+@@ -1053,13 +1040,6 @@ See also L</Starting the libvirt system instance>.
  Because of how Cinder volumes are presented as F</dev> block devices,
  using I<-o openstack> normally requires that virt-v2v is run as root.
  
@@ -143,7 +145,7 @@ index ca75c255..6e26e62c 100644
  
  This normally requires root.  See the next section.
 diff --git a/output/output_glance.mli b/output/output_glance.mli
-index 972320a2..9befc461 100644
+index 83d67576..7ab1503c 100644
 --- a/output/output_glance.mli
 +++ b/output/output_glance.mli
 @@ -18,4 +18,4 @@
@@ -152,10 +154,66 @@ index 972320a2..9befc461 100644
  
 -module Glance : Output.OUTPUT
 +(*module Glance : Output.OUTPUT*)
-diff --git a/tests/test-v2v-o-glance.sh b/tests/test-v2v-o-glance.sh
-index c0db9115..074b5e16 100755
---- a/tests/test-v2v-o-glance.sh
-+++ b/tests/test-v2v-o-glance.sh
+diff --git a/output/select_output.ml b/output/select_output.ml
+index ab4bfe4d..b1f7d0ab 100644
+--- a/output/select_output.ml
++++ b/output/select_output.ml
+@@ -21,7 +21,6 @@ open Common_gettext.Gettext
+ 
+ type output_mode =
+   | Disk
+-  | Glance
+   | Kubevirt
+   | Libvirt
+   | Null
+@@ -33,7 +32,6 @@ type output_mode =
+ 
+ let output_modes = [
+     Disk;
+-    Glance;
+     Kubevirt;
+     Libvirt;
+     Null;
+@@ -46,7 +44,6 @@ let output_modes = [
+ 
+ let string_of_output_mode = function
+   | Disk -> "disk"
+-  | Glance -> "glance"
+   | Kubevirt -> "kubevirt"
+   | Libvirt -> "libvirt"
+   | Null -> "null"
+@@ -57,7 +54,6 @@ let string_of_output_mode = function
+   | VDSM -> "vdsm"
+ 
+ let output_mode_of_string = function
+-  | "glance" -> Glance
+   | "kubevirt" -> Kubevirt
+   | "libvirt" -> Libvirt
+   | "disk" | "local" -> Disk
+@@ -75,7 +71,6 @@ let select_output = function
+   | Some Disk -> (module Output_disk.Disk)
+   | Some Null -> (module Output_null.Null)
+   | Some QEmu -> (module Output_qemu.QEMU)
+-  | Some Glance -> (module Output_glance.Glance)
+   | Some Kubevirt -> (module Output_kubevirt.Kubevirt)
+   | Some Openstack -> (module Output_openstack.Openstack)
+   | Some OVirt_Upload -> (module Output_ovirt_upload.OVirtUpload)
+diff --git a/output/select_output.mli b/output/select_output.mli
+index a509a1db..093c9b9a 100644
+--- a/output/select_output.mli
++++ b/output/select_output.mli
+@@ -18,7 +18,6 @@
+ 
+ type output_mode =
+   | Disk
+-  | Glance
+   | Kubevirt
+   | Libvirt
+   | Null
+diff --git a/tests/test-o-glance.sh b/tests/test-o-glance.sh
+index 9e32d2bf..632579ee 100755
+--- a/tests/test-o-glance.sh
++++ b/tests/test-o-glance.sh
 @@ -20,6 +20,9 @@
  
  set -e
@@ -167,27 +225,10 @@ index c0db9115..074b5e16 100755
  set -e
  set -x
 diff --git a/v2v/v2v.ml b/v2v/v2v.ml
-index 9a622da0..801aaf7d 100644
+index 1811f9e6..5d3a9dbb 100644
 --- a/v2v/v2v.ml
 +++ b/v2v/v2v.ml
-@@ -197,7 +197,6 @@ let rec main () =
-     if !output_mode <> `Not_set then
-       error (f_"%s option used more than once on the command line") "-o";
-     match mode with
--    | "glance" -> output_mode := `Glance
-     | "kubevirt" -> output_mode := `Kubevirt
-     | "libvirt" -> output_mode := `Libvirt
-     | "disk" | "local" -> output_mode := `Disk
-@@ -257,7 +256,7 @@ let rec main () =
-       s_"Map network ‘in’ to ‘out’";
-     [ L"no-trim" ],  Getopt.String ("-", no_trim_warning),
-       s_"Ignored for backwards compatibility";
--    [ S 'o' ],       Getopt.String ("glance|kubevirt|libvirt|local|null|openstack|qemu|rhv|rhv-upload|vdsm", set_output_mode),
-+    [ S 'o' ],       Getopt.String ("kubevirt|libvirt|local|null|openstack|qemu|rhv|rhv-upload|vdsm", set_output_mode),
-       s_"Set output mode (default: libvirt)";
-     [ M"oa" ],       Getopt.String ("sparse|preallocated", set_output_alloc),
-                                     s_"Set output allocation mode";
-@@ -333,8 +332,6 @@ virt-v2v -i libvirtxml guest-domain.xml -o local -os /var/tmp
+@@ -267,8 +267,6 @@ virt-v2v -i libvirtxml guest-domain.xml -o local -os /var/tmp
  
  virt-v2v -i disk disk.img -o local -os /var/tmp
  
@@ -196,19 +237,3 @@ index 9a622da0..801aaf7d 100644
  There is a companion front-end called \"virt-p2v\" which comes as an
  ISO or CD image that can be booted on physical machines.
  
-@@ -411,7 +408,6 @@ read the man page virt-v2v(1).
-       pr "input:libvirtxml\n";
-       pr "input:ova\n";
-       pr "input:vmx\n";
--      pr "output:glance\n";
-       pr "output:kubevirt\n";
-       pr "output:libvirt\n";
-       pr "output:local\n";
-@@ -504,7 +500,6 @@ read the man page virt-v2v(1).
-     | `Disk -> (module Output_disk.Disk)
-     | `Null -> (module Output_null.Null)
-     | `QEmu -> (module Output_qemu.QEMU)
--    | `Glance -> (module Output_glance.Glance)
-     | `Kubevirt -> (module Output_kubevirt.Kubevirt)
-     | `Openstack -> (module Output_openstack.Openstack)
-     | `RHV_Upload -> (module Output_rhv_upload.RHVUpload)
