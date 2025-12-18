@@ -8,7 +8,7 @@
 Name:          virt-v2v
 Epoch:         1
 Version:       2.7.1
-Release:       16%{?dist}
+Release:       18%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -87,6 +87,8 @@ Patch0056:     0056-vddk-Remove-io-vddk-noextents-option.patch
 Patch0057:     0057-Modify-configure_pnputil_install-script-to-check.patch
 Patch0058:     0058-Ignore-ERROR_NO_MORE_ITEMS-status-from-PnPUtil.patch
 Patch0059:     0059-remove-timeout-before-installing-virtio-win-drivers.patch
+Patch0060:     0060-convert-windows-Fix-ESP-conversion-if-C-Windows-Temp.patch
+Patch0061:     0061-Update-common-submodule.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -390,6 +392,14 @@ make -C tests TESTS=test-fedora-luks-on-lvm-conversion.sh check
 
 
 %changelog
+* Mon Nov 17 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.7.1-18
+- Fix pnputil driver store after conversion
+  resolves: RHEL-128776
+
+* Thu Oct 30 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.7.1-17
+- Fix ESP conversion if C:\Windows\Temp has alternate case
+  resolves: RHEL-125120
+
 * Fri Jul 18 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.7.1-16
 - mlcustomize: Remove dnf --verbose option
   resolves: RHEL-83289
