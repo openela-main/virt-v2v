@@ -7,7 +7,7 @@
 Name:          virt-v2v
 Epoch:         1
 Version:       2.8.1
-Release:       10%{?dist}
+Release:       13%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -59,6 +59,8 @@ Patch0029:     0029-convert-Detect-target-boot-device-for-Linux-guests.patch
 Patch0030:     0030-output-kubevirt-Add-bootOrder-to-Kubevirt-YAML.patch
 Patch0031:     0031-convert-Look-for-GRUB-signature-first-to-identify-bo.patch
 Patch0032:     0032-lib-types.ml-Fix-formatting-of-debug-message.patch
+Patch0033:     0033-convert-windows-Fix-ESP-conversion-if-C-Windows-Temp.patch
+Patch0034:     0034-Update-common-submodule.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -349,13 +351,21 @@ done
 
 
 %changelog
-* Sep 25 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-10
+* Mon Nov 17 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-13
+- Fix pnputil driver store after conversion
+  resolves: RHEL-128908
+
+* Wed Oct 29 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-12
+- Fix ESP conversion if C:\Windows\Temp has alternate case
+  resolves: RHEL-124791
+
+* Thu Sep 25 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-10
 - Fix setting boot order for Linux BIOS guests
   resolves: RHEL-108991
 - Set boot order for guests in -o kubevirt output mode
   resolves: RHEL-110742
 
-* Aug 21 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-9
+* Thu Aug 21 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-9
 - Rebase to virt-v2v 2.8.1
   related: RHEL-81735
 - Fix virt-v2v -v --install dnf5 error
