@@ -1,0 +1,33 @@
+From 733358cd70f92acc7c5147009b82989be988ca53 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 12 May 2025 11:34:35 +0100
+Subject: [PATCH] output: Remove useless 'let cmd'
+
+Commit d50966c2a4 ("lib: Make Nbdkit mini-library handle mutable")
+made Nbdkit handles mutable, but didn't fix all instances where we
+still used the pure handle.  Fix it here.
+
+Fixes: commit d50966c2a480bda033f6e63bb797f86c13d576bd
+(cherry picked from commit 0be5d99ae71906d989cee3d48ada30fecd0f5888)
+(cherry picked from commit 797dc287fbbd5f102540ca2a24cf99a6471fca0b)
+---
+ output/output.ml | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/output/output.ml b/output/output.ml
+index 14288bdc..1bcb7c4f 100644
+--- a/output/output.ml
++++ b/output/output.ml
+@@ -102,10 +102,8 @@ let output_to_local_file ?(changeuid = fun f -> f ()) ?(compressed = false)
+     | "raw" ->
+        let cmd = Nbdkit.create "file" in
+        Nbdkit.add_arg cmd "file" filename;
+-       if Nbdkit.version () >= (1, 22, 0) then (
+-         let cmd = Nbdkit.add_arg cmd "cache" "none" in
+-         cmd
+-       );
++       if Nbdkit.version () >= (1, 22, 0) then
++         Nbdkit.add_arg cmd "cache" "none";
+        let _, pid = Nbdkit.run_unix socket cmd in
+        pid
+ 

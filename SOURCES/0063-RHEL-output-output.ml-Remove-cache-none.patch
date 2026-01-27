@@ -1,0 +1,36 @@
+From 06ab7844de7a1d7344c9ad35fede792dcd436877 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 12 Dec 2025 16:18:15 +0000
+Subject: [PATCH] RHEL: output/output.ml: Remove cache=none
+
+Virt-v2v tries to reduce the amount of page cache used when writing
+out the disk image to the target storage. It does this by enabling the
+cache=none option in nbdkit-file-plugin.
+
+However, use of nbdkit-file-plugin cache=none option causes data
+corruption with Dell PowerMax 8000 storage (only).
+
+As this is only an advisory setting, remove it.  Use of the page cache
+can be limited instead using cgroupsv2 memory settings.
+
+Fixes: https://issues.redhat.com/browse/RHEL-135617
+(cherry picked from commit 30c03c7e308b063843a7848d15890871566bbbc0)
+(cherry picked from commit 24cd76732009fabd3070d1a1fcfee5cbfa5c229c)
+(cherry picked from commit 6c4ca6464d8e955bdef9b5b6cdabdffe59931bc0)
+---
+ output/output.ml | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/output/output.ml b/output/output.ml
+index 1bcb7c4f..cc4dee21 100644
+--- a/output/output.ml
++++ b/output/output.ml
+@@ -102,8 +102,6 @@ let output_to_local_file ?(changeuid = fun f -> f ()) ?(compressed = false)
+     | "raw" ->
+        let cmd = Nbdkit.create "file" in
+        Nbdkit.add_arg cmd "file" filename;
+-       if Nbdkit.version () >= (1, 22, 0) then
+-         Nbdkit.add_arg cmd "cache" "none";
+        let _, pid = Nbdkit.run_unix socket cmd in
+        pid
+ 
