@@ -1,0 +1,364 @@
+From 4b5e135960edde0091aa25fd070934fa643c5299 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 26 Aug 2025 12:33:18 +0100
+Subject: [PATCH] v2v: Add --memsize and --smp options
+
+For a long time in virt-builder and virt-customize, we have had
+options --memsize and --smp which let you override the default amount
+of memory and number of vCPUs assigned to the libguestfs appliance.
+Usually virt-builder / virt-customize choose suitable numbers, but
+occasionally (for example if you need to --install a large package or
+--run a heavyweight program) we cannot anticipate what is needed so
+it's useful to allow these to be overridden by the user.
+
+Virt-v2v by default choses 2560MB and min (8, NR_CPUS) for these.
+However much the same as above applies, especially since we added
+virt-customize features to virt-v2v.  It's useful to have these
+options as additional control or to "just get it working", although
+generally we should still try to make virt-v2v choose good defaults.
+
+Also add the same options to virt-v2v-in-place and virt-v2v-inspector.
+
+(cherry picked from commit 03b656ed468ecbe309e7cca24721de9369d476aa)
+---
+ convert/convert.ml          | 29 ++++++++++++++++++++++++-----
+ convert/convert.mli         |  2 ++
+ docs/virt-v2v-in-place.pod  | 17 +++++++++++++++++
+ docs/virt-v2v-inspector.pod |  6 ++++++
+ docs/virt-v2v.pod           | 17 +++++++++++++++++
+ in-place/in_place.ml        | 13 +++++++++++++
+ inspector/inspector.ml      | 13 +++++++++++++
+ v2v/v2v.ml                  | 13 +++++++++++++
+ 8 files changed, 105 insertions(+), 5 deletions(-)
+
+diff --git a/convert/convert.ml b/convert/convert.ml
+index 6c78bd99..0b6c88f9 100644
+--- a/convert/convert.ml
++++ b/convert/convert.ml
+@@ -34,8 +34,10 @@ type options = {
+   block_driver : guestcaps_block_type;
+   keep_serial_console : bool;
+   ks : key_store;
++  memsize : int option;
+   network_map : Networks.t;
+   root_choice : root_choice;
++  smp : int option;
+   static_ips : static_ip list;
+   customize_ops : Customize_cmdline.ops;
+ }
+@@ -54,11 +56,28 @@ let rec convert input_disks options source =
+   message (f_"Opening the source");
+   let g = open_guestfs ~identifier:"v2v" () in
+   g#set_program "virt-v2v";
+-  g#set_memsize (g#get_memsize () * 2);
+-  (* Setting the number of vCPUs allows parallel mkinitrd, but make
+-   * sure this is not too large because each vCPU consumes guest RAM.
+-   *)
+-  g#set_smp (min 8 (Sysconf.nr_processors_online ()));
++  let memsize =
++    match options.memsize with
++    | None ->
++       (* Default (if [--memsize] option is not used) is to calculate
++        * some multiple of the libguestfs default memory size.
++        *)
++       g#get_memsize () * 2
++    | Some memsize -> memsize in
++  g#set_memsize memsize;
++  let smp =
++    match options.smp with
++    | None ->
++       (* Default (if [--smp] option is not used) is to set the number
++        * according to the number of physical CPUs on the host, but
++        * limit it because each vCPU consumes guest RAM.  This is
++        * necessary to allow parallel mkinitrd which greatly improves
++        * performance.
++        *)
++       min 8 (Sysconf.nr_processors_online ())
++    | Some smp -> smp in
++  g#set_smp smp;
++
+   (* The network is used by the unconfigure_vmware () function, and the "--key
+    * ID:clevis" command line options (if any). *)
+   g#set_network true;
+diff --git a/convert/convert.mli b/convert/convert.mli
+index b34f04e0..85ed05cb 100644
+--- a/convert/convert.mli
++++ b/convert/convert.mli
+@@ -20,8 +20,10 @@ type options = {
+   block_driver : Types.guestcaps_block_type; (** [--block-driver] option *)
+   keep_serial_console : bool;
+   ks : Tools_utils.key_store;      (** [--key] option *)
++  memsize : int option;            (** [--memsize] option *)
+   network_map : Networks.t;        (** [-b] and [-n] options *)
+   root_choice : Types.root_choice; (** [--root] option *)
++  smp : int option;                (** [--smp] option *)
+   static_ips : Types.static_ip list; (** [--mac :ip:] option *)
+   customize_ops : Customize_cmdline.ops; (** virt-customize options *)
+ }
+diff --git a/docs/virt-v2v-in-place.pod b/docs/virt-v2v-in-place.pod
+index 9714bbac..2d1857b9 100644
+--- a/docs/virt-v2v-in-place.pod
++++ b/docs/virt-v2v-in-place.pod
+@@ -197,6 +197,14 @@ This option is used to make the output more machine friendly
+ when being parsed by other programs.  See
+ L<virt-v2v(1)/Machine readable output>.
+ 
++=item B<-m> MB
++
++=item B<--memsize> MB
++
++Change the amount of memory allocated when doing the conversion.
++Virt-v2v-in-place will usually choose a suitable default.  Increase
++this if you see that the conversion step is running out of memory.
++
+ =item B<-n> in:out
+ 
+ =item B<-n> out
+@@ -244,6 +252,15 @@ This disables progress bars and other unnecessary output.
+ Choose the root filesystem to be converted.  See the documentation of
+ this option in L<virt-v2v(1)>.
+ 
++=item B<--smp> N
++
++Change the number of virtual CPUs used when doing the conversion.
++Virt-v2v-in-place will usually choose a suitable default.
++
++Increasing this beyond 8 may improve conversion performance, if your
++host has sufficient physical CPUs.  You may also need to increase the
++memory size (I<--memsize> option).
++
+ =item B<-v>
+ 
+ =item B<--verbose>
+diff --git a/docs/virt-v2v-inspector.pod b/docs/virt-v2v-inspector.pod
+index 29adcb56..26770459 100644
+--- a/docs/virt-v2v-inspector.pod
++++ b/docs/virt-v2v-inspector.pod
+@@ -194,6 +194,10 @@ virt-v2v-inspector.
+ 
+ =item B<--machine-readable>=format
+ 
++=item B<-m> MB
++
++=item B<--memsize> MB
++
+ =item B<-n> ...
+ 
+ =item B<--network> ...
+@@ -204,6 +208,8 @@ virt-v2v-inspector.
+ 
+ =item B<--root> ...
+ 
++=item B<--smp> N
++
+ =item B<--wrap>
+ 
+ These options work in the same way as the equivalent virt-v2v options.
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index b63da9f3..76a53e34 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -386,6 +386,14 @@ This option is used to make the output more machine friendly
+ when being parsed by other programs.  See
+ L</Machine readable output> below.
+ 
++=item B<-m> MB
++
++=item B<--memsize> MB
++
++Change the amount of memory allocated when doing the conversion.
++Virt-v2v will usually choose a suitable default.  Increase this if you
++see that the conversion step is running out of memory.
++
+ =item B<-n> in:out
+ 
+ =item B<-n> out
+@@ -646,6 +654,15 @@ would mean to use the second partition on the first hard drive.  If
+ the named root device does not exist or was not detected as a root
+ device, then virt-v2v will fail.
+ 
++=item B<--smp> N
++
++Change the number of virtual CPUs used when doing the conversion.
++Virt-v2v will usually choose a suitable default.
++
++Increasing this beyond 8 may improve conversion performance, if your
++host has sufficient physical CPUs.  You may also need to increase the
++memory size (I<--memsize> option).
++
+ =item B<-v>
+ 
+ =item B<--verbose>
+diff --git a/in-place/in_place.ml b/in-place/in_place.ml
+index dba0772c..2ee3abc4 100644
+--- a/in-place/in_place.ml
++++ b/in-place/in_place.ml
+@@ -66,6 +66,11 @@ let rec main () =
+     )
+   in
+ 
++  let memsize = ref None in
++  let set_memsize arg = memsize := Some arg in
++  let smp = ref None in
++  let set_smp arg = smp := Some arg in
++
+   let network_map = Networks.create () in
+ 
+   let output_xml = ref No_output_xml in
+@@ -173,6 +178,8 @@ let rec main () =
+                                     s_"Use password from file to connect to input hypervisor";
+     [ L"mac" ],      Getopt.String ("mac:network|bridge|ip:out", add_mac),
+                                     s_"Map NIC to network or bridge or assign static IP";
++    [ S 'm'; L"memsize" ], Getopt.Int ("mb", set_memsize),
++                                    s_"Set memory size";
+     [ S 'n'; L"network" ], Getopt.String ("in:out", add_network),
+                                     s_"Map network ‘in’ to ‘out’";
+     [ S 'O' ],       Getopt.String ("output.xml", set_output_xml_option),
+@@ -181,6 +188,8 @@ let rec main () =
+                                     s_"Print source and stop";
+     [ L"root" ],     Getopt.String ("ask|... ", set_root_choice),
+                                     s_"How to choose root filesystem";
++    [ L"smp" ],      Getopt.Int ("vcpus", set_smp),
++                                    s_"Set number of vCPUs";
+   ] in
+ 
+   (* Append virt-customize options. *)
+@@ -233,9 +242,11 @@ read the man page virt-v2v-in-place(1).
+   let customize_ops = get_customize_ops () in
+   let input_conn = !input_conn in
+   let input_mode = !input_mode in
++  let memsize = !memsize in
+   let output_xml = !output_xml in
+   let print_source = !print_source in
+   let root_choice = !root_choice in
++  let smp = !smp in
+   let static_ips = !static_ips in
+ 
+   (* No arguments and machine-readable mode?  Print out some facts
+@@ -295,8 +306,10 @@ read the man page virt-v2v-in-place(1).
+     Convert.block_driver = Virtio_blk;
+     keep_serial_console = true;
+     ks = opthandle.ks;
++    memsize;
+     network_map;
+     root_choice;
++    smp;
+     static_ips;
+     customize_ops;
+   } in
+diff --git a/inspector/inspector.ml b/inspector/inspector.ml
+index 50b8f711..752a5c1c 100644
+--- a/inspector/inspector.ml
++++ b/inspector/inspector.ml
+@@ -65,6 +65,11 @@ let rec main () =
+     )
+   in
+ 
++  let memsize = ref None in
++  let set_memsize arg = memsize := Some arg in
++  let smp = ref None in
++  let set_smp arg = smp := Some arg in
++
+   let network_map = Networks.create () in
+   let static_ips = ref [] in
+   let rec add_network str =
+@@ -164,12 +169,16 @@ let rec main () =
+                                     s_"Input transport";
+     [ L"mac" ],      Getopt.String ("mac:network|bridge|ip:out", add_mac),
+                                     s_"Map NIC to network or bridge or assign static IP";
++    [ S 'm'; L"memsize" ], Getopt.Int ("mb", set_memsize),
++                                    s_"Set memory size";
+     [ S 'n'; L"network" ], Getopt.String ("in:out", add_network),
+                                     s_"Map network ‘in’ to ‘out’";
+     [ S 'O' ],       Getopt.String ("output.xml", set_output_file_option),
+                                     s_"Set the output filename";
+     [ L"root" ],     Getopt.String ("ask|... ", set_root_choice),
+                                     s_"How to choose root filesystem";
++    [ L"smp" ],      Getopt.Int ("vcpus", set_smp),
++                                    s_"Set number of vCPUs";
+   ] in
+ 
+   (* Append virt-customize options. *)
+@@ -223,7 +232,9 @@ read the man page virt-v2v-inspector(1).
+     | Some "vddk" -> Some Input.VDDK
+     | Some transport ->
+        error (f_"unknown input transport ‘-it %s’") transport in
++  let memsize = !memsize in
+   let root_choice = !root_choice in
++  let smp = !smp in
+   let static_ips = !static_ips in
+ 
+   (* No arguments and machine-readable mode?  Print out some facts
+@@ -276,8 +287,10 @@ read the man page virt-v2v-inspector(1).
+     Convert.block_driver = Virtio_blk;
+     keep_serial_console = true;
+     ks = opthandle.ks;
++    memsize;
+     network_map;
+     root_choice;
++    smp;
+     static_ips;
+     customize_ops;
+   } in
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index c274baa0..20082544 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -73,7 +73,12 @@ let rec main () =
+     )
+   in
+ 
++  let memsize = ref None in
++  let set_memsize arg = memsize := Some arg in
+   let parallel = ref 1 in
++  let smp = ref None in
++  let set_smp arg = smp := Some arg in
++
+   let network_map = Networks.create () in
+   let static_ips = ref [] in
+   let rec add_network str =
+@@ -216,6 +221,8 @@ let rec main () =
+                                     s_"Use virt-v2v-in-place instead";
+     [ L"mac" ],      Getopt.String ("mac:network|bridge|ip:out", add_mac),
+       s_"Map NIC to network or bridge or assign static IP";
++    [ S 'm'; L"memsize" ], Getopt.Int ("mb", set_memsize),
++                                    s_"Set memory size";
+     [ S 'n'; L"network" ], Getopt.String ("in:out", add_network),
+       s_"Map network ‘in’ to ‘out’";
+     [ S 'o' ],       Getopt.String (output_modes, set_output_mode),
+@@ -240,6 +247,8 @@ let rec main () =
+       s_"Print source and stop";
+     [ L"root" ],     Getopt.String ("ask|... ", set_root_choice),
+       s_"How to choose root filesystem";
++    [ L"smp" ],      Getopt.Int ("vcpus", set_smp),
++                                    s_"Set number of vCPUs";
+   ] in
+ 
+   (* Append virt-customize options. *)
+@@ -299,6 +308,7 @@ read the man page virt-v2v(1).
+     | Some "vddk" -> Some Input.VDDK
+     | Some transport ->
+        error (f_"unknown input transport ‘-it %s’") transport in
++  let memsize = !memsize in
+   let output_alloc =
+     match !output_alloc with
+     | `Not_set | `Sparse -> Types.Sparse
+@@ -310,6 +320,7 @@ read the man page virt-v2v(1).
+     error (f_"--parallel parameter must be >= 1");
+   let print_source = !print_source in
+   let root_choice = !root_choice in
++  let smp = !smp in
+   let static_ips = !static_ips in
+ 
+   (* No arguments and machine-readable mode?  Print out some facts
+@@ -402,8 +413,10 @@ read the man page virt-v2v(1).
+     Convert.block_driver = Virtio_blk;
+     keep_serial_console = not remove_serial_console;
+     ks = opthandle.ks;
++    memsize;
+     network_map;
+     root_choice;
++    smp;
+     static_ips;
+     customize_ops;
+   } in

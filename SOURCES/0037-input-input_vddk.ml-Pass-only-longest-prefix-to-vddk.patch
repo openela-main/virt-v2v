@@ -1,0 +1,127 @@
+From c1119abb08bc27609f99f99a4d2f5c8e71f06cd5 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 20 Oct 2025 14:50:07 +0100
+Subject: [PATCH] input/input_vddk.ml: Pass only longest prefix to vddk export
+ parameter
+
+See discussion on https://gitlab.com/nbdkit/nbdkit/-/merge_requests/113
+
+nbdkit commit 01b429c412 ("vddk: Don't use FNM_PATHNAME when matching
+export parameter") removes the FNM_PATHNAME restriction, so we can
+just use the longest common prefix again.
+
+This change requires nbdkit >= 1.45.11.  I think it's time to raise
+the minimum version of nbdkit anyway, so starting with virt-v2v 2.10,
+nbdkit 1.46 will be required.  If you use too old nbdkit you will see
+the error:
+
+  virt-v2v: error: nbdkit must be >= 1.45.11 for input from VDDK
+
+This partially reverts commit ba86b22c75 ("input/input_vddk.ml: Handle
+subdirectories in nbdkit vddk export wildcard") but I didn't actually
+revert that commit because I wanted to keep the explantory comments in
+the code.
+
+Reverts: commit ba86b22c75
+Related: https://gitlab.com/nbdkit/nbdkit/-/merge_requests/113
+Related: https://gitlab.com/nbdkit/nbdkit/-/commit/01b429c412504a491a4b5cc009a9c2e906f993ef
+Related: https://issues.redhat.com/browse/RHEL-121728
+
+Cherry picked from commit dda93d7fd3ef5b2cdf25cfefa0b2d41207fa54f6,
+but remove the hard test for nbdkit >= 1.45.11, and replace it with
+an RPM dependency.
+---
+ README              |  2 +-
+ input/input_vddk.ml | 46 ++++++++++++++++-----------------------------
+ 2 files changed, 17 insertions(+), 31 deletions(-)
+
+diff --git a/README b/README
+index 407869b4..b21cb87d 100644
+--- a/README
++++ b/README
+@@ -56,7 +56,7 @@ REQUIREMENTS
+ 
+ * OCaml bindings for libnbd
+ 
+-* nbdkit >= 1.28 (https://gitlab.com/nbdkit/nbdkit)
++* nbdkit >= 1.45.11 (https://gitlab.com/nbdkit/nbdkit)
+ 
+ * These nbdkit plugins and filters:
+ 
+diff --git a/input/input_vddk.ml b/input/input_vddk.ml
+index 7fd416b9..f420192b 100644
+--- a/input/input_vddk.ml
++++ b/input/input_vddk.ml
+@@ -36,11 +36,15 @@ open Input
+ let libNN = sprintf "lib%d" Sys.word_size
+ 
+ (* Calculate the nbdkit vddk plugin 'export' parameter.  This is a
+- * wildcard that must match all filenames given.  nbdkit uses
+- * 'fnmatch (export, filename, FNM_PATHNAME)' when checking this,
+- * which means:
+- *  - We have to escape any fnmatch-special chars such as '[' and '*'
+- *  - '*' does not match '/' characters in the filename
++ * wildcard that must match all filenames given.
++ *
++ * nbdkit 1.44 used 'fnmatch (export, filename, FNM_PATHNAME)'
++ * which means '*' does not match '/' characters in the filename.
++ * Unfortunately this made it impossible to match certain paths,
++ * in particular if the guest has some files in a subdirectory.
++ *
++ * nbdkit 1.46 relaxes this to 'fnmatch (export, filename, 0)',
++ * so a simple longest prefix works.
+  *)
+ let get_vddk_export_wildcard = function
+   | [] -> assert false (* can't happen, checked by the caller *)
+@@ -50,37 +54,14 @@ let get_vddk_export_wildcard = function
+      List.iter (fun f -> assert (String.ends_with ".vmdk" f)) files;
+ 
+      (* Calculate the longest common prefix of all the filenames.
+-      * Remove the prefix from each filename, leaving the remainder strings.
+-      * eg.
+-      *   "foobar", "foobazs" => prefix = "fooba", remainders = ["r", "zs"]
++      * eg. "foobar", "foobazs" => prefix = "fooba"
+       *)
+      let prefix = String.longest_common_prefix files in
+-     let prefix_len = String.length prefix in
+-     let remainders = List.map (
+-       fun f ->
+-         let n = String.length f in
+-         assert (prefix_len <= n);
+-         String.sub f prefix_len (n - prefix_len)
+-     ) files in
+-
+-     (* The number of '/' (slash) characters in the remainders must be
+-      * the same, otherwise there's something weird with subdirectories
+-      * going on that we can't handle yet.  (XXX If this happens, then
+-      * we'd need to change nbdkit because it cannot possibly handle
+-      * a wildcard that matches different directory depths).
+-      *)
+-     let count_slashes = List.map (String.count_chars '/') remainders in
+-     let nr_slashes = List.hd count_slashes in
+-     List.iter (fun nr -> assert (nr_slashes = nr)) count_slashes;
+-
+-     (* Now we need to generate "*/*/*" for this number of slashes. *)
+-     let stars = List.make (nr_slashes+1) "*" in
+-     let stars_n_slashes = String.concat "/" stars in
+ 
+      (* Construct the final wildcard.  Note we only need to
+       * escape the prefix (the only part which is user content).
+       *)
+-     fnmatch_escape prefix ^ stars_n_slashes ^ ".vmdk"
++     fnmatch_escape prefix ^ "*.vmdk"
+ 
+ module VDDK = struct
+   let to_string options args =
+@@ -283,6 +264,11 @@ information on these settings.
+     (* Check we have nbdkit and the vddk plugin and the cow filter. *)
+     if not (Nbdkit.is_installed ()) then
+       error (f_"nbdkit is not installed or not working");
++(* Remove this test for RHEL 10.1-z, we will enforce it through
++   RPM dependencies instead.
++    if not (Nbdkit.version () >= (1, 45, 11)) then
++      error (f_"nbdkit must be >= 1.45.11 for input from VDDK");
++*)
+     if not (Nbdkit.probe_plugin "vddk") then
+       error (f_"nbdkit-vddk-plugin is not installed");
+     if not (Nbdkit.probe_filter "cow") then

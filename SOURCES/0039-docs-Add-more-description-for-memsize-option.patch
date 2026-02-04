@@ -1,0 +1,60 @@
+From edfb40af35c5922b6f7a5595f95f063b3a31fcba Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 30 Oct 2025 17:48:39 +0000
+Subject: [PATCH] docs: Add more description for --memsize option
+
+The adjustable --memsize option, which increases the amount of memory
+available in the appliance, is necessary to work around at least one
+unfixable setfiles / glibc bug.  Document in more detail what this
+option does in a new section, and mention this issue.  (As the issue
+can't be fixed properly, this is a documentation-only fix).
+
+Fixes: https://issues.redhat.com/browse/RHEL-125116
+(cherry picked from commit 9bb2e7d4705811f0e227103c14757895e5f591d9)
+---
+ docs/virt-v2v.pod | 22 ++++++++++++++++++++--
+ 1 file changed, 20 insertions(+), 2 deletions(-)
+
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index 76a53e34..ff31bb00 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -394,6 +394,8 @@ Change the amount of memory allocated when doing the conversion.
+ Virt-v2v will usually choose a suitable default.  Increase this if you
+ see that the conversion step is running out of memory.
+ 
++See also L</Adjusting memory available for conversion>.
++
+ =item B<-n> in:out
+ 
+ =item B<-n> out
+@@ -742,11 +744,27 @@ alleviate this.
+ 
+ =head2 Compute power and RAM
+ 
++Virt-v2v can be run in a virtual machine, but may run faster on bare
++metal.
++
+ Virt-v2v is not especially compute or RAM intensive.  If you are
+ running many parallel conversions, then you may consider allocating
+-one CPU core and 2 GB of RAM per running instance.
++one CPU core and 2 GB of RAM per running instance.  (You may adjust
++the amount of memory used by conversion, see the next heading.)
+ 
+-Virt-v2v can be run in a virtual machine.
++=head2 Adjusting memory available for conversion
++
++Virt-v2v I<--memsize=N> can be used to increase the amount of memory
++available to do conversion.  This rarely needs to be adjusted, but can
++help to workaround some conversion problems.
++
++=head3 Linux: setfiles runs out of memory when relabelling
++
++For Linux guests that use SELinux, setfiles can run out of memory if a
++single directory contains millions of files.  As there is no simple
++way for virt-v2v to detect this problem in advance, you may have to
++use I<--memsize=4000> (or larger) to convert such guests.  For details
++see L<https://issues.redhat.com/browse/RHEL-125116>
+ 
+ =head2 Trimming
+ 

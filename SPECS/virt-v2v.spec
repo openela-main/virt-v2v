@@ -7,7 +7,7 @@
 Name:          virt-v2v
 Epoch:         1
 Version:       2.8.1
-Release:       13%{?dist}
+Release:       16%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -61,6 +61,11 @@ Patch0031:     0031-convert-Look-for-GRUB-signature-first-to-identify-bo.patch
 Patch0032:     0032-lib-types.ml-Fix-formatting-of-debug-message.patch
 Patch0033:     0033-convert-windows-Fix-ESP-conversion-if-C-Windows-Temp.patch
 Patch0034:     0034-Update-common-submodule.patch
+Patch0035:     0035-RHEL-output-output.ml-Remove-cache-none.patch
+Patch0036:     0036-input-input_vddk.ml-Handle-subdirectories-in-nbdkit-.patch
+Patch0037:     0037-input-input_vddk.ml-Pass-only-longest-prefix-to-vddk.patch
+Patch0038:     0038-v2v-Add-memsize-and-smp-options.patch
+Patch0039:     0039-docs-Add-more-description-for-memsize-option.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -120,7 +125,7 @@ BuildRequires: nbdkit-null-plugin
 %if !0%{?rhel}
 BuildRequires: nbdkit-python-plugin
 %endif
-BuildRequires: nbdkit-cow-filter >= 1.28.3-1.el9
+BuildRequires: nbdkit-cow-filter
 BuildRequires: mingw-srvany-redistributable >= 1.1-6
 %ifarch x86_64
 BuildRequires: glibc-static
@@ -169,7 +174,7 @@ Requires:      libnbd >= 1.10
 Requires:      %{_bindir}/qemu-nbd
 Requires:      %{_bindir}/nbdcopy
 Requires:      %{_bindir}/nbdinfo
-Requires:      nbdkit-server >= 1.28.3-1.el9
+Requires:      nbdkit-server >= 1.44.1-3.el10_1
 Requires:      nbdkit-curl-plugin
 Requires:      nbdkit-file-plugin
 Requires:      nbdkit-nbd-plugin
@@ -182,7 +187,7 @@ Requires:      nbdkit-ssh-plugin
 Requires:      nbdkit-vddk-plugin
 %endif
 Requires:      nbdkit-blocksize-filter
-Requires:      nbdkit-cow-filter >= 1.28.3-1.el9
+Requires:      nbdkit-cow-filter
 Requires:      nbdkit-multi-conn-filter
 Requires:      nbdkit-noextents-filter
 Requires:      nbdkit-rate-filter
@@ -351,6 +356,19 @@ done
 
 
 %changelog
+* Wed Jan 07 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-16
+- Add --memsize and --smp options
+  resolves: RHEL-139153
+
+* Tue Jan 06 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-15
+- v2v can't convert guest with multiple windows OS on rhel10
+- Add runtime requires for nbdkit-1.44.1-3.el10_1
+  resolves: RHEL-137304
+
+* Mon Dec 15 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-14
+- Remove cache=none
+  resolves: RHEL-135750
+
 * Mon Nov 17 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-13
 - Fix pnputil driver store after conversion
   resolves: RHEL-128908
