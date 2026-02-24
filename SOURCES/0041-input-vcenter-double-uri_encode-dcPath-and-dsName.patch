@@ -1,0 +1,46 @@
+From a5fe9fd47c3695c021dc7479bdce18aa59f9d068 Mon Sep 17 00:00:00 2001
+From: Cole Robinson <crobinso@redhat.com>
+Date: Tue, 27 Jan 2026 09:14:29 -0500
+Subject: [PATCH] input: vcenter: double uri_encode `dcPath` and `dsName`
+
+Special characters like `+` in vmware datastore names aren't accessible
+by expected URLs:
+
+https://knowledge.broadcom.com/external/article/386368/vcenter-inventory-object-name-with-speci.html
+
+Turns out they need to passed through URI encoding twice.
+Libvirt fixed this here:
+
+https://gitlab.com/libvirt/libvirt/-/commit/6c9d2591c668732eb05cf17d27c9102ef3d40b39
+
+But we need a similar fix for non-vddk vCenter conversions
+
+Fixes: https://issues.redhat.com/browse/RHEL-133729
+
+Signed-off-by: Cole Robinson <crobinso@redhat.com>
+(cherry picked from commit f13e85f9ce3bb51f65c0afbaae009b5a3e6af9c7)
+(cherry picked from commit c532b2c1d14b22b540cced337ad26473aa5b6648)
+---
+ input/vCenter.ml | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/input/vCenter.ml b/input/vCenter.ml
+index f9b6ab07..fef113cd 100644
+--- a/input/vCenter.ml
++++ b/input/vCenter.ml
+@@ -137,9 +137,14 @@ and get_https_url dcPath uri server path =
+     (* XXX Need to handle templates.  The file is called "-delta.vmdk" in
+      * place of "-flat.vmdk".
+      *)
++    (* dcPath and dsName need to be double quoted:
++     * https://gitlab.com/libvirt/libvirt/-/commit/6c9d2591c6
++     *)
+     sprintf "https://%s%s/folder/%s-flat.vmdk?dcPath=%s&dsName=%s"
+             server port
+-            (uri_quote path) (uri_quote dcPath) (uri_quote datastore)
++            (uri_quote path)
++            (uri_quote (uri_quote dcPath))
++            (uri_quote (uri_quote datastore))
+   )
+ 
+ (* Fetch the status from a URL. *)

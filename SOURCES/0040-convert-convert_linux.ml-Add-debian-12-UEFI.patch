@@ -1,0 +1,58 @@
+From 7e0bee433cb357afae186e5821c738c3b2f3bf57 Mon Sep 17 00:00:00 2001
+From: Martin Necas <mnecas@redhat.com>
+Date: Tue, 27 Jan 2026 21:56:41 +0900
+Subject: [PATCH] convert/convert_linux.ml: Add debian 12 UEFI
+
+When migrating Debian 12 VM with UEFI the VM fails to boot as we don't
+preserve the UEFI configuration. Debian has similar mechanism as ubuntu
+so we can reuse it.
+
+Fixes: https://issues.redhat.com/browse/RHEL-144467
+
+Signed-off-by: Martin Necas <mnecas@redhat.com>
+(cherry picked from commit 161679267f2100e3604dca3f5bfa0827e9a5de30)
+(cherry picked from commit 3ef1078cd3cf5a56dc8023ed113838533d9cea09)
+---
+ convert/convert_linux.ml | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/convert/convert_linux.ml b/convert/convert_linux.ml
+index fe88b903..a0674d88 100644
+--- a/convert/convert_linux.ml
++++ b/convert/convert_linux.ml
+@@ -1320,13 +1320,15 @@ let convert (g : G.guestfs) source inspect i_firmware _ keep_serial_console _ =
+                   g inspect.i_root "fix uefi boot" fix_script)
+               else
+                 cant_fix_uefi ()
+-            | "ubuntu", 14 ->
++            | ("ubuntu", 14) | ("debian", 12)->
+               (* to make a bootable uefi ubuntu 14 we need to
+                * copy shim<arch>.efi to UEFI fallback path
+                * and rename it to BOOT<arch>.efi, also we copy
+                * grub.efi and grub.cfg to UEFI fallback path without renaming *)
+               let arch_suffix = String.lowercase_ascii suffix in
+ 
++              let distro = inspect.i_distro in
++
+               let shim =
+                 String.concat "" [grub_path; "/shim"; arch_suffix; ".efi"] in
+               let uefi_grub_name =
+@@ -1342,14 +1344,14 @@ let convert (g : G.guestfs) source inspect i_firmware _ keep_serial_console _ =
+                  * if not, then just don't clean up and leave the temp loader
+                  * at UEFI fallback path for simplicity
+                  *)
+-                if String.find shim "/boot/efi/EFI/ubuntu/shim" >= 0 then
++                if String.find shim (sprintf "/boot/efi/EFI/%s/shim" distro) >= 0 then
+                   let fix_script =
+                     sprintf
+                       "#!/bin/bash\n\
+-                       sudo efibootmgr -c -L ubuntu \
+-                         -l \\\\EFI\\\\ubuntu\\\\shim%s.efi\n\
++                       sudo efibootmgr -c -L %s \
++                         -l \\\\EFI\\\\%s\\\\shim%s.efi\n\
+                        rm -rf %s"
+-                      arch_suffix uefi_fallback_path in
++                      distro distro arch_suffix uefi_fallback_path in
+                   Firstboot.add_firstboot_script
+                     g inspect.i_root "fix uefi boot" fix_script
+                 else

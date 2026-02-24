@@ -7,7 +7,7 @@
 Name:          virt-v2v
 Epoch:         1
 Version:       2.8.1
-Release:       16%{?dist}
+Release:       18%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -66,6 +66,8 @@ Patch0036:     0036-input-input_vddk.ml-Handle-subdirectories-in-nbdkit-.patch
 Patch0037:     0037-input-input_vddk.ml-Pass-only-longest-prefix-to-vddk.patch
 Patch0038:     0038-v2v-Add-memsize-and-smp-options.patch
 Patch0039:     0039-docs-Add-more-description-for-memsize-option.patch
+Patch0040:     0040-convert-convert_linux.ml-Add-debian-12-UEFI.patch
+Patch0041:     0041-input-vcenter-double-uri_encode-dcPath-and-dsName.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -356,6 +358,14 @@ done
 
 
 %changelog
+* Fri Jan 30 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-18
+- Fix import when datastore name has characters like '+'
+  resolves: RHEL-145321
+
+* Thu Jan 29 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-17
+- Fix Debian 12 UEFI conversions
+  resolves: RHEL-144643
+
 * Wed Jan 07 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-16
 - Add --memsize and --smp options
   resolves: RHEL-139153
