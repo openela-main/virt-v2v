@@ -7,7 +7,7 @@
 Name:          virt-v2v
 Epoch:         1
 Version:       2.8.1
-Release:       18%{?dist}
+Release:       19%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -68,6 +68,7 @@ Patch0038:     0038-v2v-Add-memsize-and-smp-options.patch
 Patch0039:     0039-docs-Add-more-description-for-memsize-option.patch
 Patch0040:     0040-convert-convert_linux.ml-Add-debian-12-UEFI.patch
 Patch0041:     0041-input-vcenter-double-uri_encode-dcPath-and-dsName.patch
+Patch0042:     0042-Update-common-submodule.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -358,6 +359,10 @@ done
 
 
 %changelog
+* Sun Feb 15 2026 Cole Robinson <crobinso@redhat.com> - 1:2.8.1-19
+- Install blnsvr.exe to \Windows\Drivers\VirtIO
+  resolves: RHEL-149474
+
 * Fri Jan 30 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-18
 - Fix import when datastore name has characters like '+'
   resolves: RHEL-145321

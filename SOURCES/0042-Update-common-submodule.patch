@@ -1,0 +1,64 @@
+From 69c4b5280893793771f6514357ab56348420fcf7 Mon Sep 17 00:00:00 2001
+From: Cole Robinson <crobinso@redhat.com>
+Date: Wed, 11 Feb 2026 19:09:26 -0500
+Subject: [PATCH] Update common submodule
+Content-type: text/plain
+
+Update to fix:
+https://issues.redhat.com/browse/RHEL-148423
+
+This pulls in the following commits:
+
+    Cole Robinson (1):
+        virtio-win: Install blnsvr.exe to C:\Windows\Drivers\VirtIO
+
+(cherry picked from commit b227d493ace2250bbc53a25ce7db42fcf220ba51)
+
+Signed-off-by: Cole Robinson <crobinso@redhat.com>
+---
+ common | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Submodule common 54a5b4ce..10fed783:
+diff --git a/common/mlcustomize/inject_virtio_win.ml b/common/mlcustomize/inject_virtio_win.ml
+index 114df064..a2938080 100644
+--- a/common/mlcustomize/inject_virtio_win.ml
++++ b/common/mlcustomize/inject_virtio_win.ml
+@@ -254,13 +254,10 @@ and inject_qemu_ga ({ g; root } as t) =
+ 
+ and inject_blnsvr ({ g; root } as t) =
+   (* Copy the files to the guest. *)
+-  let dir, dir_win = Firstboot.firstboot_dir g root in
+-  let dir_win = Option.value dir_win ~default:dir in
+-  let tempdir = sprintf "%s/Temp" dir in
+-  let tempdir_win = sprintf "%s\\Temp" dir_win in
+-  g#mkdir_p tempdir;
++  let driverdir = sprintf "%s/Drivers/VirtIO" t.i_windows_systemroot in
++  g#mkdir_p driverdir;
+ 
+-  let files = copy_blnsvr t tempdir in
++  let files = copy_blnsvr t driverdir in
+   match files with
+   | [] -> false (* Didn't find or install anything. *)
+ 
+@@ -268,7 +265,7 @@ and inject_blnsvr ({ g; root } as t) =
+    * drivers/by-driver).  Pick the first.
+    *)
+   | blnsvr :: _ ->
+-     configure_blnsvr t tempdir_win blnsvr;
++     configure_blnsvr t driverdir blnsvr;
+      true
+ 
+ and add_guestor_to_registry t ((g, root) as reg) drv_name drv_pciid =
+@@ -570,9 +567,9 @@ and configure_qemu_ga t tempdir_win files =
+ 
+   Firstboot.add_firstboot_powershell t.g t.root "install-qemu-ga" !script
+ 
+-and configure_blnsvr t tempdir_win blnsvr =
++and configure_blnsvr t driverdir blnsvr =
+   let cmd = sprintf "\
+                      @echo off\n\
+                      echo Installing %s\n\
+-                     \"%s\\%s\" -i\n" blnsvr tempdir_win blnsvr in
++                     \"%s\\%s\" -i\n" blnsvr driverdir blnsvr in
+   Firstboot.add_firstboot_script t.g t.root "install-blnsvr" cmd
