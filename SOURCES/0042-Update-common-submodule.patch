@@ -2,7 +2,6 @@ From 69c4b5280893793771f6514357ab56348420fcf7 Mon Sep 17 00:00:00 2001
 From: Cole Robinson <crobinso@redhat.com>
 Date: Wed, 11 Feb 2026 19:09:26 -0500
 Subject: [PATCH] Update common submodule
-Content-type: text/plain
 
 Update to fix:
 https://issues.redhat.com/browse/RHEL-148423
