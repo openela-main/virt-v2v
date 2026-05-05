@@ -7,7 +7,7 @@
 Name:          virt-v2v
 Epoch:         1
 Version:       2.8.1
-Release:       20%{?dist}
+Release:       22%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -70,6 +70,8 @@ Patch0040:     0040-convert-convert_linux.ml-Add-debian-12-UEFI.patch
 Patch0041:     0041-input-vcenter-double-uri_encode-dcPath-and-dsName.patch
 Patch0042:     0042-Update-common-submodule.patch
 Patch0043:     0043-Add-no-fstrim-option-to-disable-fstrim-during-conver.patch
+Patch0044:     0044-convert-Stop-using-maxmem-xfs_repair-m-option.patch
+Patch0045:     0045-Update-common-submodule.patch
 
 %if !0%{?rhel}
 # libguestfs hasn't been built on i686 for a while since there is no
@@ -360,6 +362,12 @@ done
 
 
 %changelog
+* Thu Apr 23 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-22
+- Stop using maxmem (xfs_repair -m option)
+  resolves: RHEL-169173
+- Fix CHS geometry error for Veritas/Sun partitions
+  resolves: RHEL-169224
+
 * Fri Apr 03 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-20
 - Add --no-fstrim option
   resolves: RHEL-164582

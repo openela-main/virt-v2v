@@ -1,0 +1,53 @@
+From 11c3421fd248d5b02f521a96ddc95e05e46eaac3 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 23 Apr 2026 15:42:12 +0100
+Subject: [PATCH] Update common submodule
+
+  Richard W.M. Jones (1):
+      mldrivers/firmware.ml: Ignore CHS geometry error from parted
+---
+ common | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Submodule common 10fed783..06905cd1:
+diff --git a/common/mldrivers/firmware.ml b/common/mldrivers/firmware.ml
+index ee0a7caf..6698b073 100644
+--- a/common/mldrivers/firmware.ml
++++ b/common/mldrivers/firmware.ml
+@@ -18,6 +18,7 @@
+ 
+ open Printf
+ 
++open Std_utils
+ open Tools_utils
+ 
+ module G = Guestfs
+@@ -28,12 +29,22 @@ type i_firmware =
+ 
+ let detect_firmware g =
+   let parttype_is_gpt dev =
+-    try g#part_get_parttype dev = "gpt"
+-    with G.Error msg as exn ->
+-         (* If it's _not_ "unrecognised disk label" then re-raise it. *)
+-         if g#last_errno () <> G.Errno.errno_EINVAL then raise exn;
+-         debug "%s (ignored)" msg;
+-         false
++    try
++      g#part_get_parttype dev = "gpt"
++    with
++    | G.Error msg when String.find msg "CHS geometry" >= 0 ->
++       (* Parted has poor handling of "sun" partition types, always
++        * issuing a warning because the CHS doesn't match the physical
++        * geometry.  Ignore this as we don't care about it in this
++        * function (RHEL-165220).
++        *)
++       debug "%s (ignored)" msg;
++       false
++    | G.Error msg as exn ->
++       (* If it's _not_ "unrecognised disk label" then re-raise it. *)
++       if g#last_errno () <> G.Errno.errno_EINVAL then raise exn;
++       debug "%s (ignored)" msg;
++       false
+   in
+   let accumulate_partition (esp_parts, bboot) part =
+     let dev = g#part_to_dev part in
