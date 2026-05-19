@@ -1,0 +1,30 @@
+From 61a9ba9a9140573ec2964a6338e76c57c84bbf0a Mon Sep 17 00:00:00 2001
+From: Cole Robinson <crobinso@redhat.com>
+Date: Tue, 10 Feb 2026 08:26:41 -0500
+Subject: [PATCH] docs: update virtio-win exploded tree docs
+
+The directory in /usr/share/virtio-win is not out of date these
+days and hasn't been for years. See:
+
+https://github.com/libguestfs/libguestfs-common/commit/4be37c277
+
+Signed-off-by: Cole Robinson <crobinso@redhat.com>
+(cherry picked from commit f10924cdf2f438d0e939efdc6081b8b644a2131a)
+---
+ docs/virt-v2v.pod | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index 258fe937..04764832 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -1883,8 +1883,7 @@ The ISO containing virtio drivers for Windows.
+ 
+ =item F</usr/share/virtio-win>
+ 
+-The exploded tree of virtio drivers for Windows.  This is
+-usually incomplete, hence the least preferred method.
++The exploded tree of virtio drivers for Windows.
+ 
+ =back
+ 

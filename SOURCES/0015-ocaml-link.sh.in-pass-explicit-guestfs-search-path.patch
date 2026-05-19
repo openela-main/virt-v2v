@@ -1,0 +1,54 @@
+From fbd10145df6d6b903f476895c4b205a0c261e454 Mon Sep 17 00:00:00 2001
+From: Cole Robinson <crobinso@redhat.com>
+Date: Tue, 10 Feb 2026 11:42:34 -0500
+Subject: [PATCH] ocaml-link.sh.in: pass explicit guestfs search path
+
+Without this, if we use `libguestfs/run` while `ocaml-libguestfs-*`
+host packages are installed, we get mismatched search path warnings
+like these, and then linking fails:
+
+  findlib: [WARNING] Package guestfs has multiple definitions in /tmp/libguestfs.git/ocaml/guestfs/META, /usr/lib64/ocaml/guestfs/META
+  findlib: [WARNING] Interface guestfs.cmi occurs in several directories: /usr/lib64/ocaml/guestfs, /tmp/libguestfs.git/ocaml/guestfs
+
+This change avoids the last warning. There's still lots of spew
+about `multiple definitions` but it seems harmless.
+
+Signed-off-by: Cole Robinson <crobinso@redhat.com>
+(cherry picked from commit 123c3211dfb4fb8949fbdc3967ec51e9eda34a6c)
+---
+ ocaml-link.sh.in | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/ocaml-link.sh.in b/ocaml-link.sh.in
+index 4148e8f9..d3c44d10 100755
+--- a/ocaml-link.sh.in
++++ b/ocaml-link.sh.in
+@@ -41,18 +41,26 @@ while true ; do
+   esac
+ done
+ 
++# Without this, if we use `libguestfs/run` while `ocaml-libguestfs-*`
++# host packages are installed, we get mismatched search path warnings
++# like these, and then linking fails:
++#
++#  findlib: [WARNING] Package guestfs has multiple definitions in /tmp/libguestfs.git/ocaml/guestfs/META, /usr/lib64/ocaml/guestfs/META
++#  findlib: [WARNING] Interface guestfs.cmi occurs in several directories: /usr/lib64/ocaml/guestfs, /tmp/libguestfs.git/ocaml/guestfs
++guestfs_path=$(@OCAMLFIND@ query guestfs 2>/dev/null)
++
+ # Integration with silent rules of automake: print the full command
+ # line option in verbose mode.
+ if [ x"${V:-@AM_DEFAULT_VERBOSITY@}" = x1 ]; then
+   echo "$@" \
+      @OCAML_RUNTIME_VARIANT_PIC_OPTION@ \
+-     -I +guestfs \
++     -I "$guestfs_path" \
+      -linkpkg \
+      -cclib "'@LDFLAGS@ $cclib'"
+ fi
+ # NB -cclib must come last.
+ exec "$@" \
+      @OCAML_RUNTIME_VARIANT_PIC_OPTION@ \
+-     -I +guestfs \
++     -I "$guestfs_path" \
+      -linkpkg \
+      -cclib "@LDFLAGS@ $cclib"

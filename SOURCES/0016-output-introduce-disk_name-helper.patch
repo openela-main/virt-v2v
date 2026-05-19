@@ -1,0 +1,85 @@
+From 2723d30596546e92141f45bd302cf895d6233495 Mon Sep 17 00:00:00 2001
+From: Susant Sahani <ssahani@redhat.com>
+Date: Tue, 10 Feb 2026 15:15:21 +0530
+Subject: [PATCH] output: introduce disk_name helper
+
+Refactor the places where we create "name-sdX" names to use a common
+helper function.
+
+Signed-off-by: Richard W.M. Jones <rjones@redhat.com>
+Signed-off-by: Susant Sahani <ssahani@redhat.com>
+(cherry picked from commit a4b76ca9b5e01e807d39c0a2ba1fe515b854ef82)
+---
+ output/output.ml           | 7 +++++--
+ output/output.mli          | 4 ++++
+ output/output_libvirt.ml   | 2 +-
+ output/output_openstack.ml | 2 +-
+ 4 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/output/output.ml b/output/output.ml
+index 7e096278..919a48a4 100644
+--- a/output/output.ml
++++ b/output/output.ml
+@@ -150,8 +150,11 @@ let output_to_local_file ?name
+          ignore (waitpid [] pid)
+      )
+ 
++let disk_name name i =
++  sprintf "%s-sd%s" name (drive_name i)
++
+ let disk_path os name i =
+-  let outdisk = sprintf "%s/%s-sd%s" os name (drive_name i) in
++  let outdisk = sprintf "%s/%s" os (disk_name name i) in
+   absolute_path outdisk
+ 
+ let create_local_output_disks dir
+@@ -214,7 +217,7 @@ let create_local_output_disks dir
+     let uris =
+       List.mapi (
+         fun i _ ->
+-          let export = sprintf "%s-sd%s" output_name (drive_name i) in
++          let export = disk_name output_name i in
+           NBD_URI.Unix (socket, Some export)
+       ) input_disks in
+ 
+diff --git a/output/output.mli b/output/output.mli
+index fa79bfe1..d63a5d72 100644
+--- a/output/output.mli
++++ b/output/output.mli
+@@ -121,6 +121,10 @@ val output_to_local_file : ?name:string ->
+     (such as unmounting a host filesystem or removing a host device)
+     depends on the NBD server releasing resources. *)
+ 
++val disk_name : string -> int -> string
++(** Return the disk name for the i'th disk,
++    eg. 0 => name-sda. *)
++
+ val disk_path : string -> string -> int -> string
+ (** For [-o disk|qemu], return the output disk name of the i'th disk,
+     eg. 0 => /path/to/name-sda. *)
+diff --git a/output/output_libvirt.ml b/output/output_libvirt.ml
+index 9560d2d3..708de3e0 100644
+--- a/output/output_libvirt.ml
++++ b/output/output_libvirt.ml
+@@ -189,7 +189,7 @@ module Libvirt_ = struct
+     let doc =
+       create_libvirt_xml ~pool:pool_name source inspect target_meta
+         target_features domcaps_features
+-        (fun i -> output_name ^ "-sd" ^ (drive_name i))
++        (disk_name output_name)
+         output_format output_name in
+ 
+     let tmpfile, chan = Filename.open_temp_file "v2vlibvirt" ".xml" in
+diff --git a/output/output_openstack.ml b/output/output_openstack.ml
+index 88a39c68..dd04052e 100644
+--- a/output/output_openstack.ml
++++ b/output/output_openstack.ml
+@@ -322,7 +322,7 @@ The os-* parameters and environment variables are optional.
+          * something related to the guest name.  Cinder volume
+          * names do not need to be unique.
+          *)
+-        let name = sprintf "%s-sd%s" output_name (drive_name i) in
++        let name = disk_name output_name i in
+ 
+         (* Create the cinder volume. *)
+         let id = create_cinder_volume name description size in

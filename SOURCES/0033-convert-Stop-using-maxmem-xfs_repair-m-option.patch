@@ -1,0 +1,52 @@
+From 7b88bd2b5c35ec64c704b242ca7eb6b4ab5da977 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Wed, 15 Apr 2026 11:22:34 +0100
+Subject: [PATCH] convert: Stop using maxmem (xfs_repair -m option)
+
+We originally introduced this option in commit dba4f0d3ba ("convert:
+Limit the amount of memory used by xfs_repair").  In the same commit
+we also started to use noprefetch (xfs_repair -P).  This was to avoid
+xfs_repair taking too much memory, causing OOM errors.
+
+However the -m option turns out to be deprecated.  It has a number of
+problems and sharp edges, including that it overestimates the amount
+of memory required (often, greatly), its estimates are not very
+accurate, and it prints a localized error message that libguestfs
+needs to parse to obtain useful information.
+
+xfs_repair has internal logic already to find the available physical
+memory and limit memory usage.  This also operates even if the -m
+option is not used.
+
+The beneficial option is noprefetch (-P) which limits the caching that
+xfs_repair does.  Leave that one alone.
+
+Reported-by: Ming Xie
+Thanks: Eric Sandeen, Dave Chinner
+Related: https://redhat.atlassian.net/browse/RHEL-165677
+(cherry picked from commit 788bd68663cfc4535753623faa25180fd35f0893)
+---
+ convert/convert.ml | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/convert/convert.ml b/convert/convert.ml
+index 1ff87e43..5aca94f1 100644
+--- a/convert/convert.ml
++++ b/convert/convert.ml
+@@ -334,13 +334,11 @@ and do_fsck ?(before=false) g =
+           *)
+          let nomodify = true
+          (* xfs_repair runs out of memory in the low memory environment
+-          * of the appliance unless we limit the amount of memory it will
+-          * use here.
++          * of the appliance unless we disable prefetch.
+           *)
+-         and noprefetch = true
+-         and maxmem = Int64.of_int (g#get_memsize () / 2) in
++         and noprefetch = true in
+ 
+-         if g#xfs_repair ~maxmem ~noprefetch ~nomodify dev <> 0 then
++         if g#xfs_repair ~noprefetch ~nomodify dev <> 0 then
+            error (f_"detected errors on the XFS filesystem on %s") dev
+ 
+       | _, _ ->

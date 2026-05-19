@@ -1,0 +1,36 @@
+From e7922450fa61f3280fbd9c429379e95bbde47787 Mon Sep 17 00:00:00 2001
+From: Cole Robinson <crobinso@redhat.com>
+Date: Fri, 6 Feb 2026 15:17:05 -0500
+Subject: [PATCH] convert/convert_linux.ml: Condense device regex handling
+
+Signed-off-by: Cole Robinson <crobinso@redhat.com>
+(cherry picked from commit cf8b872c3eb7009cb399bdd395f9894ac288b9db)
+---
+ convert/convert_linux.ml | 14 +++-----------
+ 1 file changed, 3 insertions(+), 11 deletions(-)
+
+diff --git a/convert/convert_linux.ml b/convert/convert_linux.ml
+index ce02b04a..d93036f9 100644
+--- a/convert/convert_linux.ml
++++ b/convert/convert_linux.ml
+@@ -1194,17 +1194,9 @@ fi
+           device
+       in
+ 
+-      if PCRE.matches rex_device_cciss value then (
+-        let device = PCRE.sub 1
+-        and part = try PCRE.sub 2 with Not_found -> "" in
+-        "/dev/" ^ replace device ^ part
+-      )
+-      else if PCRE.matches rex_device_nvme value then (
+-        let device = PCRE.sub 1
+-        and part = try PCRE.sub 2 with Not_found -> "" in
+-        "/dev/" ^ replace device ^ part
+-      )
+-      else if PCRE.matches rex_device value then (
++      if PCRE.matches rex_device_cciss value ||
++         PCRE.matches rex_device_nvme value ||
++         PCRE.matches rex_device value then (
+         let device = PCRE.sub 1
+         and part = try PCRE.sub 2 with Not_found -> "" in
+         "/dev/" ^ replace device ^ part

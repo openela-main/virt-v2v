@@ -1,34 +1,53 @@
-From 519ccf9d812093c0c54625d14f835652c07cf0dc Mon Sep 17 00:00:00 2001
+From f217991387a3cda520b1fe954ea9da44e1eea4cd Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
-Date: Sat, 20 Sep 2025 17:20:25 +0100
+Date: Thu, 23 Apr 2026 15:41:31 +0100
 Subject: [PATCH] Update common submodule
 
-  Richard W.M. Jones (2):
-      daemon, generator: Use power of 2 for initial size of Hashtbl.create
-      mlcustomize/inject_virtio_win.ml: Use viostor.inf instead of guestor
-
-Fixes: https://issues.redhat.com/browse/RHEL-128908
+  Richard W.M. Jones (1):
+      mldrivers/firmware.ml: Ignore CHS geometry error from parted
 ---
  common | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Submodule common 5be8d552..54a5b4ce:
-diff --git a/common/mlcustomize/inject_virtio_win.ml b/common/mlcustomize/inject_virtio_win.ml
-index b26b14d3..114df064 100644
---- a/common/mlcustomize/inject_virtio_win.ml
-+++ b/common/mlcustomize/inject_virtio_win.ml
-@@ -310,8 +310,13 @@ and ddb_regedits inspect drv_name drv_pciid =
-    * one must add keys into the DriverDatabase.
-    *)
+Submodule common cb0e19b7..29176db2:
+diff --git a/common/mldrivers/firmware.ml b/common/mldrivers/firmware.ml
+index ee0a7caf..6698b073 100644
+--- a/common/mldrivers/firmware.ml
++++ b/common/mldrivers/firmware.ml
+@@ -18,6 +18,7 @@
  
-+  let winarch =
-+    match inspect.i_arch with
-+    | "i386" -> "x86" | "x86_64" -> "amd64"
-+    | _ -> assert false in
-+
-   let drv_inf = "guestor.inf" in
--  let drv_inf_label = drv_inf ^ "_tmp" in
-+  let drv_inf_label = sprintf "%s_%s_0000000000000000" drv_inf winarch in
-   let drv_config = "guestor_conf" in
+ open Printf
  
-   [
++open Std_utils
+ open Tools_utils
+ 
+ module G = Guestfs
+@@ -28,12 +29,22 @@ type i_firmware =
+ 
+ let detect_firmware g =
+   let parttype_is_gpt dev =
+-    try g#part_get_parttype dev = "gpt"
+-    with G.Error msg as exn ->
+-         (* If it's _not_ "unrecognised disk label" then re-raise it. *)
+-         if g#last_errno () <> G.Errno.errno_EINVAL then raise exn;
+-         debug "%s (ignored)" msg;
+-         false
++    try
++      g#part_get_parttype dev = "gpt"
++    with
++    | G.Error msg when String.find msg "CHS geometry" >= 0 ->
++       (* Parted has poor handling of "sun" partition types, always
++        * issuing a warning because the CHS doesn't match the physical
++        * geometry.  Ignore this as we don't care about it in this
++        * function (RHEL-165220).
++        *)
++       debug "%s (ignored)" msg;
++       false
++    | G.Error msg as exn ->
++       (* If it's _not_ "unrecognised disk label" then re-raise it. *)
++       if g#last_errno () <> G.Errno.errno_EINVAL then raise exn;
++       debug "%s (ignored)" msg;
++       false
+   in
+   let accumulate_partition (esp_parts, bboot) part =
+     let dev = g#part_to_dev part in

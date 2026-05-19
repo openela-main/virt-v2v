@@ -1,0 +1,44 @@
+From c80d9e84d1c5c12fd6fb675f99afcf0679a8a585 Mon Sep 17 00:00:00 2001
+From: Cole Robinson <crobinso@redhat.com>
+Date: Tue, 10 Feb 2026 08:22:10 -0500
+Subject: [PATCH] docs: Drop references to virtio-win osinfo usage
+
+Follow on from libguestfs-common commit that dropped this:
+
+https://github.com/libguestfs/libguestfs-common/commit/22d586fe9
+
+Signed-off-by: Cole Robinson <crobinso@redhat.com>
+(cherry picked from commit 2ddfe18ccd7df423a86790b0505623660fc1ffe3)
+---
+ docs/virt-v2v.pod | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
+
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index f751f4e7..258fe937 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -1344,9 +1344,9 @@ below.
+  Windows        Drivers are installed from the ISO or directory pointed
+                 to by the "VIRTIO_WIN" environment variable if present.
+                 If the "VIRTIO_WIN" environment variable is absent
+-                (which is the recommended setting), then libosinfo is
+-                consulted first, for driver files that are locally
+-                available on the conversion host.
++                (which is the recommended setting), then drivers are
++                searched for in /usr/share/virtio-win, as installed
++                by the virtio-win RPM.
+ 
+ 
+ =head2 RHEL 4: SELinux relabel appears to hang forever
+@@ -1877,11 +1877,6 @@ succeeds first:
+ 
+ =over 4
+ 
+-=item C<osinfo-db>
+-
+-Load osinfo data from the default paths, and attempt to find drivers via
+-libosinfo lookup.  This is the preferred method.
+-
+ =item F</usr/share/virtio-win/virtio-win.iso>
+ 
+ The ISO containing virtio drivers for Windows.

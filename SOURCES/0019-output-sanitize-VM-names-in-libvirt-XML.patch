@@ -1,0 +1,27 @@
+From 3f5a9ac841adc8996a74e32659aed4c3fc831c6c Mon Sep 17 00:00:00 2001
+From: Susant Sahani <ssahani@redhat.com>
+Date: Tue, 10 Feb 2026 15:15:31 +0530
+Subject: [PATCH] output: sanitize VM names in libvirt XML
+
+Prevent domain creation failures when VM names contain '/' characters.
+
+Fixes: https://issues.redhat.com/browse/RHEL-136479
+Signed-off-by: Susant Sahani <ssahani@redhat.com>
+(cherry picked from commit 1e68923593a7121943f09e67a6b78b902bfeeceb)
+---
+ output/create_libvirt_xml.ml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/output/create_libvirt_xml.ml b/output/create_libvirt_xml.ml
+index e4199efe..7471ee5a 100644
+--- a/output/create_libvirt_xml.ml
++++ b/output/create_libvirt_xml.ml
+@@ -51,7 +51,7 @@ let create_libvirt_xml ?pool source inspect
+ 
+   List.push_back_list body [
+     Comment generated_by;
+-    e "name" [] [PCData output_name];
++    e "name" [] [PCData (Utils.sanitize_slash output_name)];
+   ];
+ 
+   (match source.s_genid with

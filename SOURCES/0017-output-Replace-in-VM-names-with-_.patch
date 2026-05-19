@@ -1,0 +1,71 @@
+From 8edb5356b40b28f26e3c7f891cf47018e67d4903 Mon Sep 17 00:00:00 2001
+From: Susant Sahani <ssahani@redhat.com>
+Date: Tue, 10 Feb 2026 15:15:21 +0530
+Subject: [PATCH] output: Replace '/' in VM names with '_'
+
+Add Utils.sanitize_slash function which replaces '/' with '_' in VM
+names, and use that in the new disk_name function.
+
+For example, if the VM name is "foo/bar" then the new generated name
+will be "foo_bar-sda".  You can use -on option to choose an output
+name instead of relying on this.
+
+Fixes: https://issues.redhat.com/browse/RHEL-136479
+Signed-off-by: Susant Sahani <ssahani@redhat.com>
+Signed-off-by: Richard W.M. Jones <rjones@redhat.com>
+(cherry picked from commit 25161d37484f6f3431446cae7eabef4054752c65)
+---
+ lib/utils.ml      | 3 +++
+ lib/utils.mli     | 4 ++++
+ output/output.ml  | 1 +
+ output/output.mli | 2 +-
+ 4 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/lib/utils.ml b/lib/utils.ml
+index 9da6737c..15af5b1a 100644
+--- a/lib/utils.ml
++++ b/lib/utils.ml
+@@ -289,3 +289,6 @@ let name_from_disk disk =
+   if name = "" then
+     error (f_"invalid input filename (%s)") disk;
+   name
++
++let sanitize_slash =
++  String.map (fun c -> if c = '/' then '_' else c)
+diff --git a/lib/utils.mli b/lib/utils.mli
+index c976a582..40bed0b9 100644
+--- a/lib/utils.mli
++++ b/lib/utils.mli
+@@ -108,3 +108,7 @@ val name_from_disk : string -> string
+ (** Take a disk name and derive from it a suitable source name.
+ 
+     Used in particular by [-i disk], [-i ova] and [-i vmx] modes. *)
++
++val sanitize_slash : string -> string
++(** Replace '/' with '_' in guest names for filesystem paths and
++    libvirt domain names. *)
+diff --git a/output/output.ml b/output/output.ml
+index 919a48a4..ff4b12b1 100644
+--- a/output/output.ml
++++ b/output/output.ml
+@@ -151,6 +151,7 @@ let output_to_local_file ?name
+      )
+ 
+ let disk_name name i =
++  let name = Utils.sanitize_slash name in
+   sprintf "%s-sd%s" name (drive_name i)
+ 
+ let disk_path os name i =
+diff --git a/output/output.mli b/output/output.mli
+index d63a5d72..3f953010 100644
+--- a/output/output.mli
++++ b/output/output.mli
+@@ -122,7 +122,7 @@ val output_to_local_file : ?name:string ->
+     depends on the NBD server releasing resources. *)
+ 
+ val disk_name : string -> int -> string
+-(** Return the disk name for the i'th disk,
++(** Return the sanitized disk name for the i'th disk,
+     eg. 0 => name-sda. *)
+ 
+ val disk_path : string -> string -> int -> string

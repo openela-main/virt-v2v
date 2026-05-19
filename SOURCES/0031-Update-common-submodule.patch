@@ -1,0 +1,180 @@
+From b820e5e7a6196ee49420b2b78b42aa388e082665 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 3 Mar 2026 21:11:39 +0000
+Subject: [PATCH] Update common submodule
+
+  Richard W.M. Jones (2):
+      mlcustomize/firstboot.ml: Be more careful about quoting
+      mlcustomize: Create a sentinel file when firstboot completes
+
+Fixes: https://issues.redhat.com/browse/RHEL-152939
+
+For RHEL 10.2:
+Cherry picked from commit 45b486f5493575717bce93d00adcaefd99af0c10
+
+For the cherry pick, we end up with this extra commit from the
+submodule.  This seems harmless, and better than creating a new
+rhel-10.2-virt-v2v branch in the submodule.
+
+  Cole Robinson (1):
+      build: mark some ocaml commands with $(AM_V_GEN)
+---
+ common | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Submodule common 22b583b9..cb0e19b7:
+diff --git a/common/mlcustomize/Makefile.am b/common/mlcustomize/Makefile.am
+index 351524c8..3bdff2a6 100644
+--- a/common/mlcustomize/Makefile.am
++++ b/common/mlcustomize/Makefile.am
+@@ -142,7 +142,7 @@ endif
+ libmlcustomize_a_DEPENDENCIES = $(OBJECTS)
+ 
+ $(MLCUSTOMIZE_CMA): $(OBJECTS) libmlcustomize.a
+-	$(OCAMLFIND) mklib $(OCAMLPACKAGES) \
++	$(AM_V_GEN) $(OCAMLFIND) mklib $(OCAMLPACKAGES) \
+ 	    $(OBJECTS) $(libmlcustomize_a_OBJECTS) -o mlcustomize
+ 
+ # Tests.
+diff --git a/common/mlcustomize/firstboot.ml b/common/mlcustomize/firstboot.ml
+index f29884c8..5e23a64b 100644
+--- a/common/mlcustomize/firstboot.ml
++++ b/common/mlcustomize/firstboot.ml
+@@ -271,6 +271,9 @@ module Windows = struct
+     (* Create a directory for firstboot scripts in the guest. *)
+     g#mkdir_p (firstboot_dir // "scripts");
+ 
++    (* Remove the sentinel file if it exists from a previous run. *)
++    g#rm_f (firstboot_dir // "complete");
++
+     (* Copy pvvxsvc or rhsrvany to the guest. *)
+     g#upload (virt_tools_data_dir () // srvany) (firstboot_dir // srvany);
+ 
+@@ -284,11 +287,11 @@ module Windows = struct
+     let firstboot_script = sprintf {|@echo off
+ 
+ setlocal EnableDelayedExpansion
+-set firstboot=%s
+-set log=%%firstboot%%\log.txt
++set "firstboot=%s"
++set "log=%%firstboot%%\log.txt"
+ 
+-set scripts=%%firstboot%%\scripts
+-set scripts_done=%%firstboot%%\scripts-done
++set "scripts=%%firstboot%%\scripts"
++set "scripts_done=%%firstboot%%\scripts-done"
+ 
+ call :main >> "%%log%%" 2>&1
+ exit /b
+@@ -327,6 +330,10 @@ for %%%%f in ("%%scripts%%"\*.bat) do (
+ )
+ 
+ :: Fallthrough here if there are no scripts.
++
++:: Touch a sentinel file to say we have finished.
++type nul > "%%firstboot%%\complete"
++
+ echo uninstalling firstboot service
+ "%%firstboot%%\%s" -s firstboot uninstall
+ |} firstboot_dir_win srvany in
+diff --git a/common/mldrivers/Makefile.am b/common/mldrivers/Makefile.am
+index 714fc9f7..aac3da4f 100644
+--- a/common/mldrivers/Makefile.am
++++ b/common/mldrivers/Makefile.am
+@@ -94,7 +94,7 @@ endif
+ libmldrivers_a_DEPENDENCIES = $(OBJECTS)
+ 
+ $(MLDRIVERS_CMA): $(OBJECTS) libmldrivers.a
+-	$(OCAMLFIND) mklib $(OCAMLPACKAGES) \
++	$(AM_V_GEN) $(OCAMLFIND) mklib $(OCAMLPACKAGES) \
+ 	    $(OBJECTS) $(libmldrivers_a_OBJECTS) -o mldrivers
+ 
+ # OCaml dependencies.
+diff --git a/common/mlgettext/Makefile.am b/common/mlgettext/Makefile.am
+index 712feb11..275b15fa 100644
+--- a/common/mlgettext/Makefile.am
++++ b/common/mlgettext/Makefile.am
+@@ -71,11 +71,11 @@ endif
+ libmlgettext_a_DEPENDENCIES = $(OBJECTS)
+ 
+ mlgettext.cma: $(BOBJECTS)
+-	$(OCAMLFIND) ocamlc $(OCAMLPACKAGES) -a $^ -o $@
++	$(AM_V_GEN) $(OCAMLFIND) ocamlc $(OCAMLPACKAGES) -a $^ -o $@
+ 
+ if HAVE_OCAMLOPT
+ mlgettext.cmxa: $(XOBJECTS)
+-	$(OCAMLFIND) ocamlopt $(OCAMLPACKAGES) -a $^ -o $@
++	$(AM_V_GEN) $(OCAMLFIND) ocamlopt $(OCAMLPACKAGES) -a $^ -o $@
+ endif
+ 
+ # Dependencies.
+diff --git a/common/mlpcre/Makefile.am b/common/mlpcre/Makefile.am
+index a1d8b029..30a60f64 100644
+--- a/common/mlpcre/Makefile.am
++++ b/common/mlpcre/Makefile.am
+@@ -83,7 +83,7 @@ endif
+ libmlpcre_a_DEPENDENCIES = $(OBJECTS)
+ 
+ $(MLPCRE_CMA): $(OBJECTS) libmlpcre.a
+-	$(OCAMLFIND) mklib $(OCAMLPACKAGES) \
++	$(AM_V_GEN) $(OCAMLFIND) mklib $(OCAMLPACKAGES) \
+ 	    $(OBJECTS) $(libmlpcre_a_OBJECTS) -cclib -lpcre2-8 -o mlpcre
+ 
+ # Tests.
+diff --git a/common/mlstdutils/Makefile.am b/common/mlstdutils/Makefile.am
+index b9632b07..0f881907 100644
+--- a/common/mlstdutils/Makefile.am
++++ b/common/mlstdutils/Makefile.am
+@@ -84,11 +84,11 @@ endif
+ libmlstdutils_a_DEPENDENCIES = $(OBJECTS)
+ 
+ mlstdutils.cma: $(BOBJECTS)
+-	$(OCAMLFIND) ocamlc $(OCAMLPACKAGES) -a $^ -o $@
++	$(AM_V_GEN) $(OCAMLFIND) ocamlc $(OCAMLPACKAGES) -a $^ -o $@
+ 
+ if HAVE_OCAMLOPT
+ mlstdutils.cmxa: $(XOBJECTS)
+-	$(OCAMLFIND) ocamlopt $(OCAMLPACKAGES) -a $^ -o $@
++	$(AM_V_GEN) $(OCAMLFIND) ocamlopt $(OCAMLPACKAGES) -a $^ -o $@
+ endif
+ 
+ # Tests.
+diff --git a/common/mltools/Makefile.am b/common/mltools/Makefile.am
+index e9e0398c..44cfbb1b 100644
+--- a/common/mltools/Makefile.am
++++ b/common/mltools/Makefile.am
+@@ -161,7 +161,7 @@ endif
+ libmltools_a_DEPENDENCIES = $(OBJECTS)
+ 
+ $(MLTOOLS_CMA): $(OBJECTS) libmltools.a
+-	$(OCAMLFIND) mklib $(OCAMLPACKAGES) \
++	$(AM_V_GEN) $(OCAMLFIND) mklib $(OCAMLPACKAGES) \
+ 	    $(OBJECTS) $(libmltools_a_OBJECTS) -o mltools
+ 
+ # Tests.
+diff --git a/common/mlutils/Makefile.am b/common/mlutils/Makefile.am
+index d52cb9c8..084ce630 100644
+--- a/common/mlutils/Makefile.am
++++ b/common/mlutils/Makefile.am
+@@ -86,7 +86,7 @@ endif
+ libmlcutils_a_DEPENDENCIES = $(OBJECTS)
+ 
+ $(MLCUTILS_CMA): $(OBJECTS) libmlcutils.a
+-	$(OCAMLFIND) mklib $(OCAMLPACKAGES) \
++	$(AM_V_GEN) $(OCAMLFIND) mklib $(OCAMLPACKAGES) \
+ 	    $(OBJECTS) $(libmlcutils_a_OBJECTS) \
+ 	    -cclib -lutils \
+ 	    -o mlcutils
+diff --git a/common/mlxml/Makefile.am b/common/mlxml/Makefile.am
+index e56b6fd5..db131ab3 100644
+--- a/common/mlxml/Makefile.am
++++ b/common/mlxml/Makefile.am
+@@ -84,7 +84,7 @@ endif
+ libmlxml_a_DEPENDENCIES = $(OBJECTS)
+ 
+ $(MLXML_CMA): $(OBJECTS) libmlxml.a
+-	$(OCAMLFIND) mklib $(OCAMLPACKAGES) \
++	$(AM_V_GEN) $(OCAMLFIND) mklib $(OCAMLPACKAGES) \
+ 	    $(OBJECTS) $(libmlxml_a_OBJECTS) \
+ 	    -o mlxml
+ 

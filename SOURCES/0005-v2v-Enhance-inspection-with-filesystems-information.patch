@@ -1,0 +1,177 @@
+From 3e60eef83ed072b605a3c34f3bf3acbc89a876bb Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 26 Jan 2026 16:26:27 +0000
+Subject: [PATCH] v2v: Enhance inspection with filesystems information
+
+Add the list of filesystems found by inspection to the internal
+inspection struct.  This is not actually used by virt-v2v itself (it
+is used by virt-v2v-inspector), so this change should have no effect.
+
+(cherry picked from commit 6bd4ab3a5da9bf3bb3b22585d2226d6e338f23ba)
+
+For RHEL 10: Adjust minimum version of libguestfs since we will
+backport the new API to libguestfs 1.58.1-2.el10.
+---
+ convert/mount_filesystems.ml | 49 ++++++++++++++++++++++++++++++++++++
+ lib/types.ml                 |  9 +++++++
+ lib/types.mli                |  9 +++++++
+ m4/guestfs-libraries.m4      |  5 ++--
+ v2v/v2v_unit_tests.ml        |  1 +
+ 5 files changed, 70 insertions(+), 3 deletions(-)
+
+diff --git a/convert/mount_filesystems.ml b/convert/mount_filesystems.ml
+index e7974359..aa117e51 100644
+--- a/convert/mount_filesystems.ml
++++ b/convert/mount_filesystems.ml
+@@ -30,6 +30,42 @@ let rec mount_filesystems g root =
+   reject_if_not_installed_image g root;
+   reject_if_unknown_fields g root;
+ 
++  (* Get the list of filesystems.  This is not actually used by
++   * virt-v2v (only used by virt-v2v-inspector) so try hard not
++   * to fail here.
++   *)
++  let fses = g#inspect_get_filesystems root in
++  let fses = Array.to_list fses in
++  let fses = List.sort compare fses in
++  let fses =
++    List.map (
++      fun dev ->
++        let dev = g#canonical_device_name dev
++        and fs_type = ref None
++        and fs_version = ref None
++        and fs_label = ref None
++        and fs_uuid = ref None in
++
++        (try
++           let v = g#vfs_type dev in
++           if v <> "" then (
++             fs_type := Some v;
++             fs_version := get_filesystem_version g dev v;
++           )
++         with G.Error msg -> debug "vfs_type: %s: %s (ignored)" dev msg);
++        (try
++           let v = g#vfs_label dev in
++           if v <> "" then fs_label := Some v
++         with G.Error msg -> debug "vfs_label: %s: %s (ignored)" dev msg);
++        (try
++           let v = g#vfs_uuid dev in
++           if v <> "" then fs_uuid := Some v
++         with G.Error msg -> debug "vfs_uuid: %s: %s (ignored)" dev msg);
++
++        { fs_dev = dev; fs_type = !fs_type; fs_version = !fs_version;
++          fs_label = !fs_label; fs_uuid = !fs_uuid }
++    ) fses in
++
+   (* Mount up the filesystems. *)
+   let mps = g#inspect_get_mountpoints root in
+   let cmp (a,_) (b,_) = compare (String.length a) (String.length b) in
+@@ -121,6 +157,7 @@ let rec mount_filesystems g root =
+     i_product_name = g#inspect_get_product_name root;
+     i_product_variant = g#inspect_get_product_variant root;
+     i_mountpoints = mps;
++    i_filesystems = fses;
+     i_apps = apps;
+     i_apps_map = apps_map;
+     i_windows_systemroot = systemroot;
+@@ -164,6 +201,18 @@ and error_if_unknown fieldname value =
+               Inspection field ‘%s’ was ‘unknown’.")
+           fieldname
+ 
++(* See equivalent function in guestfs-tools.git:inspector/inspector.c *)
++and get_filesystem_version g dev = function
++  | "xfs" ->
++     let hash = g#xfs_info2 dev in
++     (match List.assoc_opt "meta-data.crc" hash with
++      | None -> None
++      | Some "0" -> (* XFS version *) Some "4"
++      | Some "1" -> (* XFS version *) Some "5"
++      | Some _ -> None
++     )
++  | _ -> None
++
+ (* Wrapper around g#inspect_list_applications2 which, for RPM
+  * guests, on failure tries to rebuild the RPM database before
+  * repeating the operation.
+diff --git a/lib/types.ml b/lib/types.ml
+index 9ba580e4..d727af89 100644
+--- a/lib/types.ml
++++ b/lib/types.ml
+@@ -300,6 +300,7 @@ type inspect = {
+   i_product_name : string;
+   i_product_variant : string;
+   i_mountpoints : (string * string) list;
++  i_filesystems : filesystem list;
+   i_apps : Guestfs.application2 list;
+   i_apps_map : Guestfs.application2 list StringMap.t;
+   i_windows_systemroot : string;
+@@ -310,6 +311,14 @@ type inspect = {
+   i_drive_mappings : (string * string) list;
+ }
+ 
++and filesystem = {
++  fs_dev : string;
++  fs_type : string option;
++  fs_version : string option;
++  fs_label : string option;
++  fs_uuid : string option;
++}
++
+ let string_of_inspect inspect =
+   sprintf "\
+ i_root = %s
+diff --git a/lib/types.mli b/lib/types.mli
+index 4c705a73..64b6336f 100644
+--- a/lib/types.mli
++++ b/lib/types.mli
+@@ -207,6 +207,7 @@ type inspect = {
+   i_product_name : string;
+   i_product_variant : string;
+   i_mountpoints : (string * string) list;
++  i_filesystems : filesystem list;
+   i_apps : Guestfs.application2 list;   (** List of packages installed. *)
+   i_apps_map : Guestfs.application2 list StringMap.t;
+     (** This is a map from the app name to the application object.
+@@ -220,6 +221,14 @@ type inspect = {
+   i_drive_mappings : (string * string) list;
+ }
+ 
++and filesystem = {
++  fs_dev : string;
++  fs_type : string option;
++  fs_version : string option;
++  fs_label : string option;
++  fs_uuid : string option;
++}
++
+ val string_of_inspect : inspect -> string
+ 
+ (** {2 Disk stats} *)
+diff --git a/m4/guestfs-libraries.m4 b/m4/guestfs-libraries.m4
+index db11cff6..c4237438 100644
+--- a/m4/guestfs-libraries.m4
++++ b/m4/guestfs-libraries.m4
+@@ -19,9 +19,8 @@ dnl Any C libraries required by virt-v2v.
+ 
+ dnl Of course we need libguestfs.
+ dnl
+-dnl We need libguestfs 1.57.3 for guestfs_ntfs_chmod.
+-dnl We need libguestfs 1.57.6 for guestfs_inspect_get_windows_group_policy.
+-PKG_CHECK_MODULES([LIBGUESTFS], [libguestfs >= 1.57.6])
++dnl We need libguestfs >= 1.58.1-2.el10 for guestfs_xfs_info2.
++PKG_CHECK_MODULES([LIBGUESTFS], [libguestfs >= 1.58.1])
+ printf "libguestfs version is "; $PKG_CONFIG --modversion libguestfs
+ 
+ dnl And libnbd.
+diff --git a/v2v/v2v_unit_tests.ml b/v2v/v2v_unit_tests.ml
+index 892bf190..efbadc80 100644
+--- a/v2v/v2v_unit_tests.ml
++++ b/v2v/v2v_unit_tests.ml
+@@ -38,6 +38,7 @@ let inspect_defaults = {
+   i_major_version = 0; i_minor_version = 0;
+   i_root = ""; i_package_format = ""; i_package_management = "";
+   i_product_name = ""; i_product_variant = ""; i_mountpoints = [];
++  i_filesystems = [];
+   i_apps = []; i_apps_map = StringMap.empty;
+   i_windows_systemroot = "";
+   i_windows_software_hive = ""; i_windows_system_hive = "";

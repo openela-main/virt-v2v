@@ -1,0 +1,47 @@
+From 986edd3e609cc33e0004e41447b74b93572bd61e Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 13 Jan 2026 14:20:18 +0000
+Subject: [PATCH] input/ssh.ml: Fix Ssh.remote_file_exists
+
+This function was inadvertently broken in commit 970d7123c2
+("input/ssh: Use nbdinfo --can connect (instead of --size)"), since
+'nbdinfo --can connect' just says that nbdinfo managed to connect at
+all, even if the connection failed to fully negotiate the NBD
+handshake.  (This is possibly a bug in nbdinfo.)
+
+Using --size means we must have negotiated the NBD handshake.
+
+However this leaves the problem that commit 970d7123c2 was originally
+intended to fix, that 'nbdinfo --size' prints the size on stdout.  To
+fix this, replace use of run_command with shell_command so we can
+redirect stdout.
+
+Reported-by: Ming Xie
+Thanks: Ming Xie
+Updates: commit fb72e059863a60503b6011b8590c25c3a010a58f
+Reverts: commit 970d7123c2025bc148870f4bc6fa75fa9e95905f
+---
+ input/ssh.ml | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/input/ssh.ml b/input/ssh.ml
+index 51276156..2393965c 100644
+--- a/input/ssh.ml
++++ b/input/ssh.ml
+@@ -56,10 +56,13 @@ let download_file ~server ?port ?user ?password path output =
+ let remote_file_exists ~server ?port ?user ?password path =
+   let uri = start_nbdkit ~server ?port ?user ?password path in
+ 
+-  (* Testing that we can connect to the nbdkit server is enough to
++  (* Testing that the nbdkit server can get the size is enough to
+    * prove the remote file exists.
+    *)
+-  let cmd = [ Config.nbdinfo; "--can"; "connect"; uri ] in
+-  let r = run_command cmd = 0 in
++  let cmd = sprintf "%s --size %s >/dev/null %s"
++              Config.nbdinfo (quote uri)
++              (* If verbose then allow stderr to go to the log, else hide it *)
++              (if verbose () then "" else "2>&1") in
++  let r = shell_command cmd = 0 in
+   debug "ssh: remote_file_exists: testing %s -> %b" path r;
+   r

@@ -1,0 +1,75 @@
+From 29dc8ba93237d7d70f5c39c28d74ec9bae0f9c00 Mon Sep 17 00:00:00 2001
+From: Cole Robinson <crobinso@redhat.com>
+Date: Sun, 26 Oct 2025 12:53:58 -0400
+Subject: [PATCH] convert: linux: replace /etc/crypttab /dev/sdX with UUID=
+
+sles12sp5 installer luks setup will put a /dev/sdX style path
+in /etc/crypttab. Example:
+
+  $ cat /etc/crypttab
+  cr_sda2         /dev/sda2            none       none
+
+For v2v conversion, switching that path to eg. /dev/vda2 is not enough:
+initrd rebuild does not work correctly with systemd-cryptsetup,
+because that new path doesn't exist at v2v conversion time, and
+the converted guest doesn't boot correctly.
+
+What we really want is to replace the unstable path with
+UUID=<luks UUID>, to make this unambiguous. Do that for /dev/sdX
+paths, where the appliance disk ordering should match, so a
+vfs_uuid call gives us the UUID we want.
+
+Fixes: https://issues.redhat.com/browse/RHEL-93583
+
+Signed-off-by: Cole Robinson <crobinso@redhat.com>
+(cherry picked from commit 25b36dd60ada5a924b0d40a13d92c5e693cbe1a8)
+---
+ convert/convert_linux.ml | 28 +++++++++++++++++++++++++++-
+ 1 file changed, 27 insertions(+), 1 deletion(-)
+
+diff --git a/convert/convert_linux.ml b/convert/convert_linux.ml
+index d93036f9..4462e6cf 100644
+--- a/convert/convert_linux.ml
++++ b/convert/convert_linux.ml
+@@ -1165,6 +1165,7 @@ fi
+     let paths = [
+       (* /etc/fstab *)
+       "/files/etc/fstab/*/spec";
++      "/files/etc/crypttab/*/device";
+     ] in
+     (* Bootloader config *)
+     let paths = paths @ bootloader#augeas_device_patterns in
+@@ -1199,7 +1200,32 @@ fi
+          PCRE.matches rex_device value then (
+         let device = PCRE.sub 1
+         and part = try PCRE.sub 2 with Not_found -> "" in
+-        "/dev/" ^ replace device ^ part
++        let adjusted_dev = "/dev/" ^ replace device ^ part in
++
++        (* On sles12sp5, the installer puts a non-stable path into
++           /etc/crypttab, like /dev/sda2. If we replace it with eg. /dev/vda2,
++           and then regenerate dracut initrd, systemd cryptab integration
++           doesn't happen correctly, because it all expects /dev/vda2 to
++           exist at initrd creation time..
++
++           We can avoid this by filling in a stable `UUID=<luks UUID>` value.
++           This depends on /dev/sdXX in the guest having the same /dev/sdXX
++           name in the appliance.
++         *)
++        if String.starts_with "/etc/crypttab" path &&
++           String.starts_with "/dev/sd" value then (
++          try
++            let uuid = g#vfs_uuid value in
++            "UUID=" ^ uuid
++          with ex ->
++            warning (f_"failed to translate encrypted device name %s to a UUID \
++                in /etc/crypttab.  This may prevent the guest from booting \
++                after conversion. You may have to manually change the file and \
++                reconvert. The original error was: %s")
++              value (Printexc.to_string ex);
++            adjusted_dev
++        ) else
++          adjusted_dev
+       )
+       else (* doesn't look like a known device name *)
+         value

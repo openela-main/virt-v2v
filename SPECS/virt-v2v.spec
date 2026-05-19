@@ -2,12 +2,50 @@
 %global verify_tarball_signature 1
 
 # The source directory.
-%global source_directory 2.8-stable
+%global source_directory 2.10-stable
+
+%if !0%{?rhel}
+# Optional features enabled in this build for Fedora.
+%global with_block_driver     1
+%global with_glance           1
+%global with_ovirt            1
+%global with_xen              1
+
+# libguestfs hasn't been built on i686 for a while since there is no
+# kernel built for this architecture any longer and libguestfs rather
+# fundamentally depends on the kernel.  Therefore we must exclude this
+# arch.  Note there is no bug filed for this because we do not ever
+# expect that libguestfs or virt-v2v will be available on i686 so
+# there is nothing that needs fixing.
+ExcludeArch:   %{ix86}
+
+# Version extra string for Fedora.
+%global version_extra         fedora=%{fedora},release=%{release}
+
+%else
+
+# Optional features enabled in this build for RHEL.
+%global with_block_driver     0
+%global with_glance           0
+%global with_ovirt            0
+%global with_xen              0
+
+# Architectures where virt-v2v is shipped on RHEL:
+#
+# not on aarch64 because it is not useful there
+# not on %%{power64} because of RHBZ#1287826
+# not on s390x because it is not useful there
+ExclusiveArch: x86_64
+
+# Version extra string for RHEL.
+%global version_extra         rhel=%{rhel},release=%{release}
+
+%endif
 
 Name:          virt-v2v
 Epoch:         1
-Version:       2.8.1
-Release:       22%{?dist}
+Version:       2.10.0
+Release:       13%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -24,85 +62,63 @@ Source2:       libguestfs.keyring
 Source3:       copy-patches.sh
 
 # Patches are maintained in the following repository:
-# https://github.com/libguestfs/virt-v2v/commits/rhel-10.1
+# https://github.com/libguestfs/virt-v2v/commits/rhel-10.2
 
 # Patches.
-Patch0001:     0001-docs-Move-oo-verify-server-certificate-docs-to-alpha.patch
-Patch0002:     0002-input-input_vddk.ml-Fix-escaping-of-export-.-paramet.patch
-Patch0003:     0003-Modify-configure_pnputil_install-script-to-check.patch
-Patch0004:     0004-Update-the-common-submodule.patch
-Patch0005:     0005-Ignore-ERROR_NO_MORE_ITEMS-status-from-PnPUtil.patch
-Patch0006:     0006-v2v-Print-the-version-of-libnbd-nbdcopy-in-debug-out.patch
-Patch0007:     0007-vddk-Remove-io-vddk-noextents-option.patch
-Patch0008:     0008-curl-ssh-vddk-file-Add-nbdkit-count-filter.patch
-Patch0009:     0009-o-kubevirt-Add-oo-disk-to-allow-disk-names-to-be-ove.patch
-Patch0010:     0010-output-Add-optional-create-parameter.patch
-Patch0011:     0011-o-kubevirt-Add-oo-create-false-to-avoid-disk-creatio.patch
-Patch0012:     0012-RHEL-Fixes-for-libguestfs-winsupport.patch
-Patch0013:     0013-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
-Patch0014:     0014-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
-Patch0015:     0015-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
-Patch0016:     0016-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
-Patch0017:     0017-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
-Patch0018:     0018-RHEL-Remove-input-from-Xen.patch
-Patch0019:     0019-RHEL-Remove-o-glance.patch
-Patch0020:     0020-RHEL-tests-Remove-btrfs-test.patch
-Patch0021:     0021-RHEL-Remove-block-driver-option.patch
-Patch0022:     0022-RHEL-Remove-o-ovirt-o-ovirt-upload-and-o-vdsm-modes.patch
-Patch0023:     0023-RHEL-Add-warning-about-virt-v2v-in-place-not-being-s.patch
-Patch0024:     0024-remove-timeout-before-installing-virtio-win-drivers.patch
-Patch0025:     0025-v2v-Fix-SELinux-relabelling.patch
-Patch0026:     0026-RHEL-10-m4-Depend-on-libguestfs-1.56.1-2.el10-for-gu.patch
-Patch0027:     0027-convert-Model-target-boot-device.patch
-Patch0028:     0028-output-Add-boot-order-depending-on-target-boot-devic.patch
-Patch0029:     0029-convert-Detect-target-boot-device-for-Linux-guests.patch
-Patch0030:     0030-output-kubevirt-Add-bootOrder-to-Kubevirt-YAML.patch
-Patch0031:     0031-convert-Look-for-GRUB-signature-first-to-identify-bo.patch
-Patch0032:     0032-lib-types.ml-Fix-formatting-of-debug-message.patch
-Patch0033:     0033-convert-windows-Fix-ESP-conversion-if-C-Windows-Temp.patch
+Patch0001:     0001-docs-virt-v2v.pod-Document-Windows-vTPM-and-BitLocke.patch
+Patch0002:     0002-input-ssh.ml-Add-debugging-around-remote_file_exists.patch
+Patch0003:     0003-input-ssh.ml-Fix-Ssh.remote_file_exists.patch
+Patch0004:     0004-Update-common-submodule.patch
+Patch0005:     0005-v2v-Enhance-inspection-with-filesystems-information.patch
+Patch0006:     0006-inspector-Enhance-virt-v2v-inspector-output-with-fil.patch
+Patch0007:     0007-convert-convert_linux.ml-Add-debian-12-UEFI.patch
+Patch0008:     0008-input-vcenter-double-uri_encode-dcPath-and-dsName.patch
+Patch0009:     0009-lib-Replace-nbdkit-file-cache-none-with-reduce-memor.patch
+Patch0010:     0010-convert-convert_linux.ml-Condense-device-regex-handl.patch
+Patch0011:     0011-convert-linux-replace-etc-crypttab-dev-sdX-with-UUID.patch
+Patch0012:     0012-build-replace-AM_GNU_GETTEXT-with-simpler-LIBINTL-ch.patch
+Patch0013:     0013-docs-Drop-references-to-virtio-win-osinfo-usage.patch
+Patch0014:     0014-docs-update-virtio-win-exploded-tree-docs.patch
+Patch0015:     0015-ocaml-link.sh.in-pass-explicit-guestfs-search-path.patch
+Patch0016:     0016-output-introduce-disk_name-helper.patch
+Patch0017:     0017-output-Replace-in-VM-names-with-_.patch
+Patch0018:     0018-output-sanitize-guest-names-in-metadata-file-paths.patch
+Patch0019:     0019-output-sanitize-VM-names-in-libvirt-XML.patch
+Patch0020:     0020-RHEL-Fixes-for-libguestfs-winsupport.patch
+Patch0021:     0021-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
+Patch0022:     0022-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
+Patch0023:     0023-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
+Patch0024:     0024-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
+Patch0025:     0025-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
+Patch0026:     0026-RHEL-tests-Remove-btrfs-test.patch
+Patch0027:     0027-RHEL-Add-warning-about-virt-v2v-in-place-not-being-s.patch
+Patch0028:     0028-RHEL-output-output.ml-Remove-reduce-memory-pressure-.patch
+Patch0029:     0029-Update-common-submodule.patch
+Patch0030:     0030-convert-linux-properly-match-etc-crypttab.patch
+Patch0031:     0031-Update-common-submodule.patch
+Patch0032:     0032-Add-no-fstrim-option-to-disable-fstrim-during-conver.patch
+Patch0033:     0033-convert-Stop-using-maxmem-xfs_repair-m-option.patch
 Patch0034:     0034-Update-common-submodule.patch
-Patch0035:     0035-RHEL-output-output.ml-Remove-cache-none.patch
-Patch0036:     0036-input-input_vddk.ml-Handle-subdirectories-in-nbdkit-.patch
-Patch0037:     0037-input-input_vddk.ml-Pass-only-longest-prefix-to-vddk.patch
-Patch0038:     0038-v2v-Add-memsize-and-smp-options.patch
-Patch0039:     0039-docs-Add-more-description-for-memsize-option.patch
-Patch0040:     0040-convert-convert_linux.ml-Add-debian-12-UEFI.patch
-Patch0041:     0041-input-vcenter-double-uri_encode-dcPath-and-dsName.patch
-Patch0042:     0042-Update-common-submodule.patch
-Patch0043:     0043-Add-no-fstrim-option-to-disable-fstrim-during-conver.patch
-Patch0044:     0044-convert-Stop-using-maxmem-xfs_repair-m-option.patch
-Patch0045:     0045-Update-common-submodule.patch
-
-%if !0%{?rhel}
-# libguestfs hasn't been built on i686 for a while since there is no
-# kernel built for this architecture any longer and libguestfs rather
-# fundamentally depends on the kernel.  Therefore we must exclude this
-# arch.  Note there is no bug filed for this because we do not ever
-# expect that libguestfs or virt-v2v will be available on i686 so
-# there is nothing that needs fixing.
-ExcludeArch:   %{ix86}
-%else
-# Architectures where virt-v2v is shipped on RHEL:
-#
-# not on aarch64 because it is not useful there
-# not on %%{power64} because of RHBZ#1287826
-# not on s390x because it is not useful there
-ExclusiveArch: x86_64
-%endif
 
 BuildRequires: autoconf, automake, libtool
 BuildRequires: make
 BuildRequires: /usr/bin/pod2man
+BuildRequires: perl(Pod::Usage)
+BuildRequires: perl(Getopt::Long)
+BuildRequires: perl(IPC::Run3)
 BuildRequires: gcc
 BuildRequires: ocaml >= 4.08
 
-BuildRequires: libguestfs-devel >= 1:1.56.1-2.el10
+BuildRequires: libguestfs-devel >= 1:1.58.1-2
 BuildRequires: augeas-devel
 BuildRequires: bash-completion
+%if 0%{?fedora} || 0%{?rhel} >= 11
+BuildRequires: bash-completion-devel
+%endif
 BuildRequires: file
 BuildRequires: gettext-devel
 BuildRequires: json-c-devel
-BuildRequires: libnbd-devel >= 1.14
+BuildRequires: libnbd-devel >= 1.24
 BuildRequires: libosinfo-devel
 BuildRequires: libvirt-daemon-kvm
 BuildRequires: libvirt-devel
@@ -126,11 +142,9 @@ BuildRequires: glibc-utils
 BuildRequires: %{_bindir}/qemu-nbd
 BuildRequires: %{_bindir}/nbdcopy
 BuildRequires: %{_bindir}/nbdinfo
+BuildRequires: nbdkit-server >= 1.46.1
 BuildRequires: nbdkit-file-plugin
 BuildRequires: nbdkit-null-plugin
-%if !0%{?rhel}
-BuildRequires: nbdkit-python-plugin
-%endif
 BuildRequires: nbdkit-cow-filter
 BuildRequires: mingw-srvany-redistributable >= 1.1-6
 %ifarch x86_64
@@ -141,8 +155,8 @@ BuildRequires: glibc-static
 BuildRequires: gnupg2
 %endif
 
-Requires:      libguestfs%{?_isa} >= 1:1.56.1-2.el10
-Requires:      guestfs-tools >= 1.49.7-1
+Requires:      libguestfs%{?_isa} >= 1:1.58.1-2
+Requires:      guestfs-tools >= 1.54
 
 # XFS is the default filesystem in Fedora and RHEL.
 Requires:      libguestfs-xfs
@@ -152,11 +166,12 @@ Requires:      libguestfs-xfs
 Requires:      libguestfs-winsupport >= 7.2
 %endif
 
+Requires:      curl
 Requires:      gawk
 Requires:      gzip
-Requires:      unzip
-Requires:      curl
 Requires:      openssh-clients >= 8.8p1
+Requires:      %{_bindir}/openssl
+Requires:      unzip
 Requires:      %{_bindir}/virsh
 
 # Ensure the UEFI firmware is available, to properly convert
@@ -168,24 +183,19 @@ Requires:      edk2-ovmf
 Requires:      edk2-aarch64
 %endif
 
-%if !0%{?rhel}
+%if !%{with_ovirt}
 Requires:      /usr/bin/python3
-%else
-%if 0%{?rhel} == 9
-Requires:      platform-python
-# Python is not needed by RHEL 10.
 %endif
-%endif
-Requires:      libnbd >= 1.10
+Requires:      libnbd >= 1.24
 Requires:      %{_bindir}/qemu-nbd
 Requires:      %{_bindir}/nbdcopy
 Requires:      %{_bindir}/nbdinfo
-Requires:      nbdkit-server >= 1.44.1-3.el10_1
+Requires:      nbdkit-server >= 1.46.1
 Requires:      nbdkit-curl-plugin
 Requires:      nbdkit-file-plugin
 Requires:      nbdkit-nbd-plugin
 Requires:      nbdkit-null-plugin
-%if !0%{?rhel}
+%if !%{with_ovirt}
 Requires:      nbdkit-python-plugin
 %endif
 Requires:      nbdkit-ssh-plugin
@@ -193,9 +203,9 @@ Requires:      nbdkit-ssh-plugin
 Requires:      nbdkit-vddk-plugin
 %endif
 Requires:      nbdkit-blocksize-filter
+Requires:      nbdkit-count-filter
 Requires:      nbdkit-cow-filter
 Requires:      nbdkit-multi-conn-filter
-Requires:      nbdkit-noextents-filter
 Requires:      nbdkit-rate-filter
 Requires:      nbdkit-retry-filter
 
@@ -261,11 +271,27 @@ autoreconf -fiv
 
 %build
 %configure \
-%if !0%{?rhel}
-  --with-extra="fedora=%{fedora},release=%{release}" \
+%if %{with_block_driver}
+  --enable-block-driver \
 %else
-  --with-extra="rhel=%{rhel},release=%{release}" \
+  --disable-block-driver \
 %endif
+%if %{with_glance}
+  --enable-glance \
+%else
+  --disable-glance \
+%endif
+%if %{with_ovirt}
+  --enable-ovirt \
+%else
+  --disable-ovirt \
+%endif
+%if %{with_xen}
+  --enable-xen \
+%else
+  --disable-xen \
+%endif
+  --with-extra="%{version_extra}"
 
 make V=1 %{?_smp_mflags}
 
@@ -282,9 +308,6 @@ find $RPM_BUILD_ROOT -name '*.la' -delete
 mkdir -p $RPM_BUILD_ROOT%{_libexecdir}
 mv $RPM_BUILD_ROOT%{_bindir}/virt-v2v-in-place $RPM_BUILD_ROOT%{_libexecdir}/
 rm $RPM_BUILD_ROOT%{_mandir}/man1/virt-v2v-in-place.1*
-# these are also not supported on RHEL
-rm -f $RPM_BUILD_ROOT%{_mandir}/man1/virt-v2v-input-xen.1*
-rm -f $RPM_BUILD_ROOT%{_mandir}/man1/virt-v2v-output-ovirt.1*
 %endif
 
 # Find locale files.
@@ -292,6 +315,23 @@ rm -f $RPM_BUILD_ROOT%{_mandir}/man1/virt-v2v-output-ovirt.1*
 
 
 %check
+# Check that the binary runs and the features match those configured.
+./run virt-v2v --version
+./run virt-v2v --machine-readable | tee machine-readable.out
+grep "virt-v2v-2.0" machine-readable.out
+grep "input:disk" machine-readable.out
+%if %{with_block_driver}
+grep "block-driver-option" machine-readable.out
+%endif
+%if %{with_glance}
+grep "output:glance" machine-readable.out
+%endif
+%if %{with_ovirt}
+grep "output:ovirt$" machine-readable.out
+grep "output:ovirt-upload" machine-readable.out
+grep "output:vdsm" machine-readable.out
+%endif
+
 %ifarch x86_64
 # Only run the tests with non-debug (ie. non-Rawhide) kernels.
 # XXX This tests for any debug kernel installed.
@@ -330,15 +370,17 @@ done
 %{_mandir}/man1/virt-v2v.1*
 %{_mandir}/man1/virt-v2v-hacking.1*
 %{_mandir}/man1/virt-v2v-input-vmware.1*
-%if !0%{?rhel}
+%if %{with_xen}
 %{_mandir}/man1/virt-v2v-input-xen.1*
+%endif
+%if !0%{?rhel}
 %{_mandir}/man1/virt-v2v-in-place.1*
 %endif
 %{_mandir}/man1/virt-v2v-inspector.1*
 %{_mandir}/man1/virt-v2v-open.1*
 %{_mandir}/man1/virt-v2v-output-local.1*
 %{_mandir}/man1/virt-v2v-output-openstack.1*
-%if !0%{?rhel}
+%if %{with_ovirt}
 %{_mandir}/man1/virt-v2v-output-ovirt.1*
 %endif
 %{_mandir}/man1/virt-v2v-release-notes-1.42.1*
@@ -362,54 +404,76 @@ done
 
 
 %changelog
-* Thu Apr 23 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-22
+* Thu Apr 23 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-13
 - Stop using maxmem (xfs_repair -m option)
-  resolves: RHEL-169173
+  resolves: RHEL-169321
 - Fix CHS geometry error for Veritas/Sun partitions
-  resolves: RHEL-169224
+  resolves: RHEL-169225
 
-* Fri Apr 03 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-20
+* Fri Apr 03 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-11
 - Add --no-fstrim option
-  resolves: RHEL-164582
+  resolves: RHEL-164583
 
-* Sun Feb 15 2026 Cole Robinson <crobinso@redhat.com> - 1:2.8.1-19
+* Fri Mar 27 2026 Richard W.M. Jones <rjones@redhat.com> - 1::2.10.0-10
+- Create sentinel file after all firstboot scripts have finished running
+  resolves: RHEL-161192
+
+* Mon Mar 23 2026 Richard W.M. Jones <rjones@redhat.com> - 1::2.10.0-9
+- Requires openssl (for finding thumbprint)
+  resolves: RHEL-155204
+
+* Tue Feb 17 2026 Cole Robinson <crobinso@redhat.com> - 1:2.10.0-7
+- Attempt 2 to fix sles12sp5 crypttab
+  resolves: RHEL-93583
+
+* Thu Feb 12 2026 Cole Robinson <crobinso@redhat.com> - 1:2.10.0-6
 - Install blnsvr.exe to \Windows\Drivers\VirtIO
-  resolves: RHEL-149474
+  resolves: RHEL-148423
 
-* Fri Jan 30 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-18
-- Fix import when datastore name has characters like '+'
-  resolves: RHEL-145321
-
-* Thu Jan 29 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-17
-- Fix Debian 12 UEFI conversions
-  resolves: RHEL-144643
-
-* Wed Jan 07 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-16
-- Add --memsize and --smp options
-  resolves: RHEL-139153
-
-* Tue Jan 06 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-15
-- v2v can't convert guest with multiple windows OS on rhel10
-- Add runtime requires for nbdkit-1.44.1-3.el10_1
-  resolves: RHEL-137304
-
-* Mon Dec 15 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-14
-- Remove cache=none
-  resolves: RHEL-135750
-
-* Mon Nov 17 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-13
-- Fix pnputil driver store after conversion
-  resolves: RHEL-128908
-
-* Wed Oct 29 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-12
+* Wed Feb 11 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-5
+- Rebase to virt-v2v 2.10.0
+  resolves: RHEL-111241
+- Synchronize spec file with Fedora.
+- Tighten permissions on windows C:\Program Files\Guestfs
+  resolves: RHEL-104352
+- Don't output floppy XML with qemu lacks support
+  resolves: RHEL-90175
+- convert: linux: Ignore /etc/lvm/archive/*.vg files
+  resolves: RHEL-113820
+- mlcustomize/inject_virtio_win.ml: Use viostor.inf instead of guestor
+  resolves: RHEL-112517
+- Fix for setting boot order for Linux guests based on grub location
+  resolves: RHEL-115989, RHEL-115990
+- Remove virt-v2v subscription manager options
+  resolves: RHEL-122308
+- Handle subdirectories in nbdkit vddk export wildcard
+  resolves: RHEL-121728
+- Further fixes for nbdkit vddk export wildcard
+  resolves: RHEL-122753
 - Fix ESP conversion if C:\Windows\Temp has alternate case
-  resolves: RHEL-124791
-
-* Thu Sep 25 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-10
-- Fix setting boot order for Linux BIOS guests
-  resolves: RHEL-108991
-- Set boot order for guests in -o kubevirt output mode
-  resolves: RHEL-110742
+  resolves: RHEL-124569
+- setfiles runs out of memory in glibc fts_read (doc fix)
+  resolves: RHEL-125116
+- Use AV and GPO information from inspection instead of open coding
+  resolves: RHEL-125956
+- Remove reduce-memory-pressure=on as workaround for Dell Powermax 8000
+  resolves: RHEL-135617
+- Hard depend on libnbd 1.24
+  resolves: RHEL-140894
+- Add documentation about BitLocker Recovery
+  resolves: RHEL-103915
+- Fix regression when converting vmx+ssh with snapshots
+  resolves: RHEL-102938
+- Expose XFS version in virt-v2v-inspector
+  resolves: RHEL-144075
+- Fix Debian 12 UEFI conversions
+  resolves: RHEL-144467
+- Fix import when datastore name has characters like '+'
+  resolves: RHEL-133729
+- Replace /etc/crypttab /dev/sdX with UUID
+  resolves: RHEL-93583
+- Replace '/' in output name with '_'
+  resolves: RHEL-136479
 
 * Thu Aug 21 2025 Richard W.M. Jones <rjones@redhat.com> - 1:2.8.1-9
 - Rebase to virt-v2v 2.8.1

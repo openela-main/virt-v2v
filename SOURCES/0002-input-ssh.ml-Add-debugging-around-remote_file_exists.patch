@@ -1,0 +1,24 @@
+From b6d5f9dc47fa57836215a698a1ed9df20f90dabc Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 13 Jan 2026 14:11:49 +0000
+Subject: [PATCH] input/ssh.ml: Add debugging around remote_file_exists
+ function
+
+It's hard to tell when this function was called and if it returned
+success or failure, so add some debugging.
+---
+ input/ssh.ml | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/input/ssh.ml b/input/ssh.ml
+index 9b93df7b..51276156 100644
+--- a/input/ssh.ml
++++ b/input/ssh.ml
+@@ -60,4 +60,6 @@ let remote_file_exists ~server ?port ?user ?password path =
+    * prove the remote file exists.
+    *)
+   let cmd = [ Config.nbdinfo; "--can"; "connect"; uri ] in
+-  run_command cmd = 0
++  let r = run_command cmd = 0 in
++  debug "ssh: remote_file_exists: testing %s -> %b" path r;
++  r

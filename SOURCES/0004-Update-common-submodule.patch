@@ -1,0 +1,120 @@
+From aec2e0a6e6861a2b895d27001e009650f6227dfe Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 26 Jan 2026 16:20:50 +0000
+Subject: [PATCH] Update common submodule
+
+This pulls in the following commits:
+
+  Richard W.M. Jones (4):
+      mlcustomize/firstboot.ml: Print %USERNAME% and %USERDOMAIN%
+      mlcustomize/firstboot.ml: Fix %-encoding in previous commit
+      mlpcre: Add optional PCRE_ANCHORED flag when compiling expressions
+      mlstdutils: Export List.assoc_opt
+
+(cherry picked from commit e3e5cbcf45a0c9a523b8389b2fd8835d5ab684ee)
+---
+ common | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Submodule common b54ba203..1005f4a6:
+diff --git a/common/mlcustomize/firstboot.ml b/common/mlcustomize/firstboot.ml
+index 360c33d6..f29884c8 100644
+--- a/common/mlcustomize/firstboot.ml
++++ b/common/mlcustomize/firstboot.ml
+@@ -295,6 +295,7 @@ exit /b
+ 
+ :main
+ echo starting firstboot service
++echo effective user: %%USERNAME%% domain: %%USERDOMAIN%%
+ 
+ if not exist "%%scripts_done%%" (
+   mkdir "%%scripts_done%%"
+diff --git a/common/mlpcre/PCRE.ml b/common/mlpcre/PCRE.ml
+index 077290ef..33074af1 100644
+--- a/common/mlpcre/PCRE.ml
++++ b/common/mlpcre/PCRE.ml
+@@ -22,7 +22,7 @@ exception Error of string * int
+ 
+ type regexp
+ 
+-external compile : ?caseless:bool -> ?dotall:bool -> ?extended:bool -> ?multiline:bool -> string -> regexp = "guestfs_int_pcre_compile"
++external compile : ?anchored:bool -> ?caseless:bool -> ?dotall:bool -> ?extended:bool -> ?multiline:bool -> string -> regexp = "guestfs_int_pcre_compile_byte" "guestfs_int_pcre_compile"
+ external matches : ?offset:int -> regexp -> string -> bool = "guestfs_int_pcre_matches"
+ external sub : int -> string = "guestfs_int_pcre_sub"
+ external subi : int -> int * int = "guestfs_int_pcre_subi"
+diff --git a/common/mlpcre/PCRE.mli b/common/mlpcre/PCRE.mli
+index b69a56ba..0fdc2bd5 100644
+--- a/common/mlpcre/PCRE.mli
++++ b/common/mlpcre/PCRE.mli
+@@ -52,11 +52,12 @@ exception Error of string * int
+ type regexp
+ (** The type of a compiled regular expression. *)
+ 
+-val compile : ?caseless:bool -> ?dotall:bool -> ?extended:bool -> ?multiline:bool -> string -> regexp
++val compile : ?anchored:bool -> ?caseless:bool -> ?dotall:bool ->
++              ?extended:bool -> ?multiline:bool -> string -> regexp
+ (** Compile a regular expression.  This can raise {!Error}.
+ 
+-    The flags [?caseless], [?dotall], [?extended], [?multiline]
+-    correspond to the [pcre_compile] flags [PCRE_CASELESS] etc.
++    The flags [?anchored], [?caseless], [?dotall], [?extended], [?multiline]
++    correspond to the [pcre_compile] flags [PCRE_ANCHORED] etc.
+     See pcre2api(3) for details of what they do.
+     All flags default to false. *)
+ 
+diff --git a/common/mlpcre/pcre-c.c b/common/mlpcre/pcre-c.c
+index 3959fd56..11be1577 100644
+--- a/common/mlpcre/pcre-c.c
++++ b/common/mlpcre/pcre-c.c
+@@ -154,11 +154,12 @@ Optint_val (value intv, int defval)
+ }
+ 
+ value
+-guestfs_int_pcre_compile (value caselessv, value dotallv,
+-                          value extendedv, value multilinev,
++guestfs_int_pcre_compile (value anchoredv, value caselessv,
++                          value dotallv,  value extendedv,
++                          value multilinev,
+                           value pattv)
+ {
+-  CAMLparam4 (caselessv, dotallv, extendedv, multilinev);
++  CAMLparam5 (anchoredv, caselessv, dotallv, extendedv, multilinev);
+   CAMLxparam1 (pattv);
+   const char *patt;
+   int options = 0;
+@@ -167,6 +168,8 @@ guestfs_int_pcre_compile (value caselessv, value dotallv,
+   PCRE2_SIZE errnum;
+ 
+   /* Flag parameters are all ‘bool option’, defaulting to false. */
++  if (is_Some_true (anchoredv))
++    options |= PCRE2_ANCHORED;
+   if (is_Some_true (caselessv))
+     options |= PCRE2_CASELESS;
+   if (is_Some_true (dotallv))
+@@ -186,6 +189,14 @@ guestfs_int_pcre_compile (value caselessv, value dotallv,
+   CAMLreturn (Val_regexp (re));
+ }
+ 
++value
++guestfs_int_pcre_compile_byte (value *argv, int argn)
++{
++  assert (argn == 6);
++  return guestfs_int_pcre_compile (argv[0], argv[1], argv[2],
++                                   argv[3], argv[4], argv[5]);
++}
++
+ value
+ guestfs_int_pcre_matches (value offsetv, value rev, value strv)
+ {
+diff --git a/common/mlstdutils/std_utils.mli b/common/mlstdutils/std_utils.mli
+index 6c1911da..77cf107e 100644
+--- a/common/mlstdutils/std_utils.mli
++++ b/common/mlstdutils/std_utils.mli
+@@ -51,6 +51,7 @@ module List : sig
+     val find_all : ('a -> bool) -> 'a list -> 'a list
+     val partition : ('a -> bool) -> 'a list -> 'a list * 'a list
+     val assoc : 'a -> ('a * 'b) list -> 'b
++    val assoc_opt : 'a -> ('a * 'b) list -> 'b option
+     val assq : 'a -> ('a * 'b) list -> 'b
+     val mem_assoc : 'a -> ('a * 'b) list -> bool
+     val mem_assq : 'a -> ('a * 'b) list -> bool

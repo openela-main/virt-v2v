@@ -1,0 +1,112 @@
+From 3b6f7752ab8c8879426518c7ab290db79e4f6571 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 27 Jan 2026 08:56:11 +0000
+Subject: [PATCH] lib: Replace nbdkit file cache=none with
+ reduce-memory-pressure=on
+
+nbdkit 1.46 replaced the cache=none option with the
+same option renamed as 'reduce-memory-pressure', taking a boolean
+value, see:
+
+https://gitlab.com/nbdkit/nbdkit/-/commit/98a5ddc835ba520c949b31328aef7b7987462faa
+
+The old option caused customer confusion.  cache=none still works, but
+to reduce confusion we should also prefer reduce-memory-pressure=on
+when that option is available.
+
+(cherry picked from commit 7aab8a85f2f1a6d01d5e62dabe1839483abd0401)
+---
+ input/input_disk.ml    | 2 +-
+ input/input_libvirt.ml | 2 +-
+ lib/nbdkit.ml          | 9 +++++++++
+ lib/nbdkit.mli         | 8 ++++++++
+ output/output.ml       | 4 ++--
+ 5 files changed, 21 insertions(+), 4 deletions(-)
+
+diff --git a/input/input_disk.ml b/input/input_disk.ml
+index 8a71a3d9..a5291031 100644
+--- a/input/input_disk.ml
++++ b/input/input_disk.ml
+@@ -110,7 +110,7 @@ module Disk = struct
+               if options.read_only then
+                 Nbdkit.add_filter cmd "cow";
+               Nbdkit.add_arg cmd "file" disk;
+-              Nbdkit.add_arg cmd "cache" "none";
++              Nbdkit.reduce_memory_pressure cmd;
+               let _, pid = Nbdkit.run_unix socket cmd in
+ 
+               (* --exit-with-parent should ensure nbdkit is cleaned
+diff --git a/input/input_libvirt.ml b/input/input_libvirt.ml
+index f566ff5c..4c1a6eef 100644
+--- a/input/input_libvirt.ml
++++ b/input/input_libvirt.ml
+@@ -129,7 +129,7 @@ and setup_servers options dir disks =
+              if options.read_only then
+                Nbdkit.add_filter cmd "cow";
+              Nbdkit.add_arg cmd "file" filename;
+-             Nbdkit.add_arg cmd "cache" "none";
++             Nbdkit.reduce_memory_pressure cmd;
+              let _, pid = Nbdkit.run_unix socket cmd in
+ 
+              (* --exit-with-parent should ensure nbdkit is cleaned
+diff --git a/lib/nbdkit.ml b/lib/nbdkit.ml
+index 9e42b607..e975bddf 100644
+--- a/lib/nbdkit.ml
++++ b/lib/nbdkit.ml
+@@ -134,6 +134,15 @@ let add_env cmd name value = cmd.env <- (name, value) :: cmd.env
+ let add_filter_if_available cmd filter =
+   if probe_filter filter then add_filter cmd filter
+ 
++let reduce_memory_pressure cmd =
++  assert (cmd.plugin = "file");
++  if probe_plugin_parameter cmd.plugin "reduce-memory-pressure=" then
++    add_arg cmd "reduce-memory-pressure" "on"
++  else if probe_plugin_parameter cmd.plugin "cache=" then
++    add_arg cmd "cache" "none"
++  else
++    assert false
++
+ let run_unix socket cmd =
+   (* Create a temporary directory where we place the PID file. *)
+   let piddir = Mkdtemp.temp_dir "v2vnbdkit." in
+diff --git a/lib/nbdkit.mli b/lib/nbdkit.mli
+index ea40b612..eaf65f05 100644
+--- a/lib/nbdkit.mli
++++ b/lib/nbdkit.mli
+@@ -109,6 +109,14 @@ val add_args : cmd -> (string * string) list -> unit
+ 
+     The arguments are added left to right. *)
+ 
++val reduce_memory_pressure : cmd -> unit
++(** This is short-hand for detecting if the file plugin supports the
++    [reduce-memory-pressure=on] option, and adding it to the nbdkit
++    command line.  Otherwise it adds the old, confusing [cache=none]
++    option instead.
++
++    Only use this with the file plugin. *)
++
+ val add_env : cmd -> string -> string -> unit
+ (** Add name=value environment variable. *)
+ 
+diff --git a/output/output.ml b/output/output.ml
+index 3067b920..7e096278 100644
+--- a/output/output.ml
++++ b/output/output.ml
+@@ -102,7 +102,7 @@ let output_to_local_file ?name
+     | "raw" ->
+        let cmd = Nbdkit.create ?name "file" in
+        Nbdkit.add_arg cmd "file" filename;
+-       Nbdkit.add_arg cmd "cache" "none";
++       Nbdkit.reduce_memory_pressure cmd;
+        if verbose () then Nbdkit.add_filter_if_available cmd "count";
+        let _, pid = Nbdkit.run_unix socket cmd in
+        pid
+@@ -205,7 +205,7 @@ let create_local_output_disks dir
+     (* Create the single nbdkit-file-plugin instance. *)
+     let cmd = Nbdkit.create ~name:"out" "file" in
+     Nbdkit.add_arg cmd "dir" output_storage;
+-    Nbdkit.add_arg cmd "cache" "none";
++    Nbdkit.reduce_memory_pressure cmd;
+     if verbose () then Nbdkit.add_filter_if_available cmd "count";
+     let _, pid = Nbdkit.run_unix socket cmd in
+     On_exit.kill pid;
