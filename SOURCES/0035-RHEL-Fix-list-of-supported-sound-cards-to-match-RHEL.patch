@@ -1,4 +1,4 @@
-From f19e71394757c9f44ed3367addbe694140f34fea Mon Sep 17 00:00:00 2001
+From 98c618ab6f22f1b791ec0e5f5ca41c68b9ddc64b Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Fri, 24 Apr 2015 09:45:41 -0400
 Subject: [PATCH] RHEL: Fix list of supported sound cards to match RHEL qemu

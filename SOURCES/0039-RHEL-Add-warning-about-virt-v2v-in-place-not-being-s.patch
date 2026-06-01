@@ -1,4 +1,4 @@
-From 61eac56a5cb787d591b9338324513b94f0f51b74 Mon Sep 17 00:00:00 2001
+From 93ef7cb7183afaa4a5a6800ff0ecca0913010e79 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Tue, 9 Jul 2024 11:30:09 +0100
 Subject: [PATCH] RHEL: Add warning about virt-v2v-in-place not being supported
@@ -10,10 +10,10 @@ Fixes: https://issues.redhat.com/browse/RHEL-40903
  2 files changed, 7 insertions(+)
 
 diff --git a/in-place/in_place.ml b/in-place/in_place.ml
-index 7e490867..6c2790af 100644
+index e84266ab..a96d55d9 100644
 --- a/in-place/in_place.ml
 +++ b/in-place/in_place.ml
-@@ -229,6 +229,9 @@ read the man page virt-v2v-in-place(1).
+@@ -232,6 +232,9 @@ read the man page virt-v2v-in-place(1).
    let opthandle = create_standard_options argspec ~anon_fun ~key_opts:true ~machine_readable:true usage_msg in
    Getopt.parse opthandle.getopt;
  
@@ -24,7 +24,7 @@ index 7e490867..6c2790af 100644
    debug "info: %s: %s %s (%s)"
          prog Config.package_name Config.package_version_full
 diff --git a/in-place/virt-v2v-in-place.pod b/in-place/virt-v2v-in-place.pod
-index 69d2092e..7c0a4d90 100644
+index 333a6827..ac4142ae 100644
 --- a/in-place/virt-v2v-in-place.pod
 +++ b/in-place/virt-v2v-in-place.pod
 @@ -16,6 +16,10 @@ virt-v2v-in-place - Convert a guest to use KVM in-place

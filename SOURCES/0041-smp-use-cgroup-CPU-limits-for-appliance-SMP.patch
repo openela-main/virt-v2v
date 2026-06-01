@@ -1,0 +1,96 @@
+From 02752f0c9ec3825cec6e96b78ef833a8ffac381f Mon Sep 17 00:00:00 2001
+From: Susant Sahani <ssahani@redhat.com>
+Date: Fri, 27 Mar 2026 06:54:25 +0530
+Subject: [PATCH] smp: use cgroup CPU limits for appliance SMP
+
+Use Cgroup.nr_cpus_available instead of nr_processors_online
+to respect container cgroup CPU limits when setting SMP.
+
+(cherry picked from commit db696f4cff486373a87c71d1de2d4dda4b047c8f)
+
+[For RHEL 10.2 I also updated the common submodule to include:
+commit bff133edf "smp: respect cgroup v2 CPU limits for appliance SMP"]
+---
+ common             | 2 +-
+ convert/convert.ml | 8 +-------
+ 2 files changed, 2 insertions(+), 8 deletions(-)
+
+Submodule common 763a2102..5971cbb3:
+diff --git a/common/mlutils/unix_utils.ml b/common/mlutils/unix_utils.ml
+index b79144a9..b21b9227 100644
+--- a/common/mlutils/unix_utils.ml
++++ b/common/mlutils/unix_utils.ml
+@@ -89,3 +89,28 @@ module Sysconf = struct
+   external nr_processors_online : unit -> int =
+     "guestfs_int_mllib_sysconf_nr_processors_online" [@@noalloc]
+ end
++
++module Cgroup = struct
++  let v2_cpus () =
++    let file = "/sys/fs/cgroup/cpu.max" in
++    if Sys.file_exists file then
++      try
++        let line = read_first_line_from_file file in
++        if String.starts_with ~prefix:"max" line then
++          None
++        else
++          let quota, period =
++            Scanf.sscanf line "%Ld %Ld" (fun q p -> (q, p)) in
++          if period > 0L then
++            Some (max 1 (Int64.to_int (Int64.div quota period)))
++          else None
++      with
++      | Scanf.Scan_failure _ | Failure _ | End_of_file -> None
++    else
++      None
++
++  let nr_cpus_available () =
++    match v2_cpus () with
++    | Some cpus -> cpus
++    | None -> Sysconf.nr_processors_online ()
++end
+diff --git a/common/mlutils/unix_utils.mli b/common/mlutils/unix_utils.mli
+index aead4df2..cb4f0426 100644
+--- a/common/mlutils/unix_utils.mli
++++ b/common/mlutils/unix_utils.mli
+@@ -130,3 +130,21 @@ module Sysconf : sig
+       Note this never fails.  In case we cannot get the number of
+       cores it returns 1. *)
+ end
++
++module Cgroup : sig
++  (** Functions to read CPU limits from cgroup filesystems. *)
++
++  val v2_cpus : unit -> int option
++  (** [v2_cpus ()] reads the cgroup v2 CPU quota from
++      [/sys/fs/cgroup/cpu.max] and returns the number of CPUs
++      allocated (quota / period), or [None] if the file does not
++      exist, the quota is "max" (unlimited), or the file cannot
++      be parsed.  The kernel stores quota and period as [long]
++      values in microseconds, so we parse them as [Int64]. *)
++
++  val nr_cpus_available : unit -> int
++  (** [nr_cpus_available ()] returns the number of CPUs available,
++      taking into account cgroup v2 CPU limits.
++      Falls back to {!Sysconf.nr_processors_online} if no cgroup
++      limits are set. *)
++end
+diff --git a/convert/convert.ml b/convert/convert.ml
+index 5aca94f1..bd1dfe65 100644
+--- a/convert/convert.ml
++++ b/convert/convert.ml
+@@ -69,13 +69,7 @@ let rec convert input_disks options source =
+   let smp =
+     match options.smp with
+     | None ->
+-       (* Default (if [--smp] option is not used) is to set the number
+-        * according to the number of physical CPUs on the host, but
+-        * limit it because each vCPU consumes guest RAM.  This is
+-        * necessary to allow parallel mkinitrd which greatly improves
+-        * performance.
+-        *)
+-       min 8 (Sysconf.nr_processors_online ())
++       min 8 (Cgroup.nr_cpus_available ())
+     | Some smp -> smp in
+   g#set_smp smp;
+ 

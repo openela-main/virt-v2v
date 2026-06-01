@@ -1,4 +1,4 @@
-From 7b88bd2b5c35ec64c704b242ca7eb6b4ab5da977 Mon Sep 17 00:00:00 2001
+From bb9ddf65787ec5e04a465da8d2eee303640b5f5f Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Wed, 15 Apr 2026 11:22:34 +0100
 Subject: [PATCH] convert: Stop using maxmem (xfs_repair -m option)
@@ -30,10 +30,10 @@ Related: https://redhat.atlassian.net/browse/RHEL-165677
  1 file changed, 3 insertions(+), 5 deletions(-)
 
 diff --git a/convert/convert.ml b/convert/convert.ml
-index 1ff87e43..5aca94f1 100644
+index 1c1ad2b4..1df8699a 100644
 --- a/convert/convert.ml
 +++ b/convert/convert.ml
-@@ -334,13 +334,11 @@ and do_fsck ?(before=false) g =
+@@ -333,13 +333,11 @@ and do_fsck ?(before=false) g =
            *)
           let nomodify = true
           (* xfs_repair runs out of memory in the low memory environment

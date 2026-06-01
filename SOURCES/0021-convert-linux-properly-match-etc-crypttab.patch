@@ -1,4 +1,4 @@
-From 4e06515083d7effdee91195dbf93082e544a6283 Mon Sep 17 00:00:00 2001
+From 0ff94fda02a55353f6ff15ad974e12bc9e31bf3e Mon Sep 17 00:00:00 2001
 From: Cole Robinson <crobinso@redhat.com>
 Date: Mon, 16 Feb 2026 13:58:08 -0500
 Subject: [PATCH] convert: linux: properly match /etc/crypttab

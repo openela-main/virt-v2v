@@ -1,4 +1,4 @@
-From 9e9546aa983337e197407ce25ef3d3cd0a3cf173 Mon Sep 17 00:00:00 2001
+From 7deb382a96bc6bfbff34b6880106d4875d8baeb8 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Fri, 12 Dec 2025 16:18:15 +0000
 Subject: [PATCH] RHEL: output/output.ml: Remove reduce-memory-pressure=on

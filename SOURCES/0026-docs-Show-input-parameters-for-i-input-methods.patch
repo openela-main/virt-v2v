@@ -1,0 +1,68 @@
+From d26ac59e9c5b1d8d3d4175c9ef88212c7727f0d3 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Sat, 18 Apr 2026 09:08:15 +0100
+Subject: [PATCH] docs: Show input parameters for -i input methods
+
+Show what input parameters (eg. list of disk images, XML file) should
+be used for each input method.  This is an attempt to make the
+documentation a little clearer.
+
+(cherry picked from commit 6cb43b899a52aa02d99b385fb270a421d58ce084)
+---
+ docs/virt-v2v.pod | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index f1bda76a..945e8dfc 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -266,7 +266,7 @@ Note this options only applies to keys and passphrases for encrypted
+ devices and partitions, not for passwords used to connect to remote
+ servers.
+ 
+-=item B<-i> B<disk>
++=item B<-i> B<disk> disk [disk ...]
+ 
+ Set the input method to I<disk>.
+ 
+@@ -276,7 +276,7 @@ usually adequate but you can get finer control (eg. of memory and
+ vCPUs) by using I<-i libvirtxml> instead.  Only guests that use a single
+ disk can be imported this way.
+ 
+-=item B<-i> B<libvirt>
++=item B<-i> B<libvirt> name|UUID
+ 
+ Set the input method to I<libvirt>.  This is the default.
+ 
+@@ -286,7 +286,7 @@ I<-ic>).
+ 
+ See L</Starting the libvirt system instance> below.
+ 
+-=item B<-i> B<libvirtxml>
++=item B<-i> B<libvirtxml> guestB<.xml>
+ 
+ Set the input method to I<libvirtxml>.
+ 
+@@ -295,11 +295,11 @@ This file is read in order to get metadata about the source guest
+ (such as its name, amount of memory), and also to locate the input
+ disks.  See L</Minimal XML for -i libvirtxml option> below.
+ 
+-=item B<-i> B<local>
++=item B<-i> B<local> disk [disk ...]
+ 
+ This is the same as I<-i disk>.
+ 
+-=item B<-i> B<ova>
++=item B<-i> B<ova> guestB<.ova>
+ 
+ Set the input method to I<ova>.
+ 
+@@ -308,7 +308,7 @@ ova manifest file and check the vmdk volumes for validity (checksums)
+ as well as analyzing the ovf file, and then convert the guest.  See
+ L<virt-v2v-input-vmware(1)>.
+ 
+-=item B<-i> B<vmx>
++=item B<-i> B<vmx> guestB<.vmx>|B<ssh://>...
+ 
+ Set the input method to I<vmx>.
+ 

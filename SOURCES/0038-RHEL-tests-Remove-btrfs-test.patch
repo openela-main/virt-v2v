@@ -1,4 +1,4 @@
-From 57a29e5f33a5035917ef0bfffaa61326148c7afa Mon Sep 17 00:00:00 2001
+From fe21f14e35d6b5606b1f5f84cca6fd4bea41d915 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Tue, 5 Jul 2022 11:58:09 +0100
 Subject: [PATCH] RHEL: tests: Remove btrfs test
@@ -9,7 +9,7 @@ RHEL does not have btrfs so this test always fails.
  1 file changed, 1 deletion(-)
 
 diff --git a/tests/Makefile.am b/tests/Makefile.am
-index 54cfd124..8e142b09 100644
+index 19a60f73..9a0726d2 100644
 --- a/tests/Makefile.am
 +++ b/tests/Makefile.am
 @@ -64,7 +64,6 @@ TESTS = \

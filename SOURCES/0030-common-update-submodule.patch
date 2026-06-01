@@ -1,0 +1,329 @@
+From e342104e305251911ed4e769659fc708a9ab4d64 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 28 Apr 2026 17:01:26 +0100
+Subject: [PATCH] common: update submodule
+
+  Richard W.M. Jones (4):
+      utils: Add read_whole_file function
+      options/keys.c: When reading key from user, prefix with "text:"
+      options/keys.c: When using --key <dev>:key:<string>, prefix with "text:"
+      options/keys.c: When reading the key from a file, encode it with base64
+
+Also this now requires libguestfs >= 1.59.7 because we rely on text:
+and base64: prefixes in LUKS functions.
+
+Fixes: https://redhat.atlassian.net/browse/RHEL-170864
+(cherry picked from commit 020fb2cdd145ae24f9d84ea60e0e3df15afdb0ff)
+---
+ common                  | 2 +-
+ m4/guestfs-libraries.m4 | 3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+Submodule common 29176db2..31d0d6d4:
+diff --git a/common/options/keys.c b/common/options/keys.c
+index 7027104a..432e26dc 100644
+--- a/common/options/keys.c
++++ b/common/options/keys.c
+@@ -37,17 +37,23 @@
+  * Read a passphrase ('Key') from F</dev/tty> with echo off.
+  *
+  * The caller (F<fish/cmds.c>) will call free on the string
+- * afterwards.  Based on the code in cryptsetup file F<lib/utils.c>.
++ * afterwards.
++ *
++ * The entered string is prefixed with "text:..." to avoid ambiguity
++ * (with libguestfs >= 1.60).  Base64 encoding cannot be used here.
++ *
++ * Based on the code in cryptsetup file F<lib/utils.c>.
+  */
+ char *
+ read_key (const char *param)
+ {
+   FILE *infp, *outfp;
+   struct termios orig, temp;
++  CLEANUP_FREE char *key = NULL;
++  size_t keysize = 0;
+   char *ret = NULL;
+   int tty;
+   int tcset = 0;
+-  size_t allocsize = 0;
+   ssize_t len;
+ 
+   /* Read and write to /dev/tty if available. */
+@@ -75,16 +81,21 @@ read_key (const char *param)
+     }
+   }
+ 
+-  len = getline (&ret, &allocsize, infp);
++  len = getline (&key, &keysize, infp);
+   if (len == -1) {
+     perror ("getline");
+-    ret = NULL;
+     goto error;
+   }
+ 
+   /* Remove the terminating \n if there is one. */
+-  if (len > 0 && ret[len-1] == '\n')
+-    ret[len-1] = '\0';
++  if (len > 0 && key[len-1] == '\n')
++    key[len-1] = '\0';
++
++  /* Prefix with "text:". */
++  if (asprintf (&ret, "text:%s", key) == -1) {
++    perror ("asprintf");
++    goto error;
++  }
+ 
+  error:
+   /* Restore echo, close file descriptor. */
+@@ -99,27 +110,60 @@ read_key (const char *param)
+   return ret;
+ }
+ 
++/* Read a key from a file and base64 encode it, returning "base64:..." */
+ static char *
+-read_first_line_from_file (const char *filename)
++read_key_and_base64_encode (const char *filename)
+ {
+-  CLEANUP_FCLOSE FILE *fp = NULL;
+-  char *ret = NULL;
+-  size_t allocsize = 0;
+-  ssize_t len;
++  CLEANUP_FREE char *inp = NULL;
++  char *out;
++  size_t inplen, outlen, i, j;
+ 
+-  fp = fopen (filename, "r");
+-  if (!fp)
+-    error (EXIT_FAILURE, errno, "fopen: %s", filename);
++  if (read_whole_file (filename, &inp, &inplen) == -1)
++    error (EXIT_FAILURE, 0, "read_key_and_base64_encode: read_whole_file: %s",
++           filename);
+ 
+-  len = getline (&ret, &allocsize, fp);
+-  if (len == -1)
+-    error (EXIT_FAILURE, errno, "getline: %s", filename);
++  /* From https://stackoverflow.com/a/6782480 */
++  static char encoding_table[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
++                                  'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
++                                  'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
++                                  'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
++                                  'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
++                                  'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
++                                  'w', 'x', 'y', 'z', '0', '1', '2', '3',
++                                  '4', '5', '6', '7', '8', '9', '+', '/'};
++  static int mod_table[] = {0, 2, 1};
+ 
+-  /* Remove the terminating \n if there is one. */
+-  if (len > 0 && ret[len-1] == '\n')
+-    ret[len-1] = '\0';
++  outlen = 4 * ((inplen + 2) / 3);
++  out = malloc (outlen + 7 + 1);
++  if (!out)
++    error (EXIT_FAILURE, errno, "read_key_and_base64_encode: %s: malloc",
++           filename);
+ 
+-  return ret;
++  /* Add prefix and NUL-termination, then adjust 'out' to make the
++   * rest of the code simpler.
++   */
++  memcpy (out, "base64:", 7);
++  out[7 + outlen] = '\0';
++  out += 7;
++
++  for (i = 0, j = 0; i < inplen;) {
++    uint32_t octet_a = i < inplen ? (unsigned char) inp[i++] : 0;
++    uint32_t octet_b = i < inplen ? (unsigned char) inp[i++] : 0;
++    uint32_t octet_c = i < inplen ? (unsigned char) inp[i++] : 0;
++
++    uint32_t triple = (octet_a << 0x10) + (octet_b << 0x08) + octet_c;
++
++    assert (j <= outlen-4);
++    out[j++] = encoding_table[(triple >> 3 * 6) & 0x3F];
++    out[j++] = encoding_table[(triple >> 2 * 6) & 0x3F];
++    out[j++] = encoding_table[(triple >> 1 * 6) & 0x3F];
++    out[j++] = encoding_table[(triple >> 0 * 6) & 0x3F];
++  }
++
++  for (i = 0; i < mod_table[inplen % 3]; i++)
++    out[outlen - 1 - i] = '=';
++
++  return out - 7 /* see above */;
+ }
+ 
+ /* Return the key(s) matching this particular device from the
+@@ -163,15 +207,14 @@ get_keys (struct key_store *ks, const char *device, const char *uuid,
+ 
+       switch (key->type) {
+       case key_string:
+-        s = strdup (key->string.s);
+-        if (!s)
+-          error (EXIT_FAILURE, errno, "strdup");
++        if (asprintf (&s, "text:%s", key->string.s) == -1)
++          error (EXIT_FAILURE, errno, "asprintf");
+         match->clevis = false;
+         match->passphrase = s;
+         ++match;
+         break;
+       case key_file:
+-        s = read_first_line_from_file (key->file.name);
++        s = read_key_and_base64_encode (key->file.name);
+         match->clevis = false;
+         match->passphrase = s;
+         ++match;
+diff --git a/common/utils/Makefile.am b/common/utils/Makefile.am
+index 25c6100b..f328dcad 100644
+--- a/common/utils/Makefile.am
++++ b/common/utils/Makefile.am
+@@ -30,6 +30,7 @@ libutils_la_SOURCES = \
+ 	libxml2-writer-macros.h \
+ 	pcre2-cleanups.c \
+ 	stringlists-utils.c \
++	whole-file.c \
+ 	utils.c
+ libutils_la_CPPFLAGS = \
+ 	-DGUESTFS_NO_DEPRECATED=1 \
+diff --git a/common/utils/guestfs-utils.h b/common/utils/guestfs-utils.h
+index e861e7db..a8bd9ac2 100644
+--- a/common/utils/guestfs-utils.h
++++ b/common/utils/guestfs-utils.h
+@@ -113,4 +113,8 @@ extern const char *guestfs_int_strerror (int errnum, char *buf, size_t buflen);
+ /* environ.c */
+ extern char **guestfs_int_copy_environ (char **env, ...);
+ 
++/* whole-file.c */
++extern int read_whole_file (const char *filename,
++                            char **data_r, size_t *size_r);
++
+ #endif /* GUESTFS_UTILS_H_ */
+diff --git a/common/utils/whole-file.c b/common/utils/whole-file.c
+new file mode 100644
+index 00000000..a896e024
+--- /dev/null
++++ b/common/utils/whole-file.c
+@@ -0,0 +1,111 @@
++/* libguestfs
++ * Copyright (C) 2011-2026 Red Hat Inc.
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with this library; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#include <config.h>
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <sys/stat.h>
++#include <libintl.h>
++
++#include "guestfs-utils.h"
++
++/**
++ * Read the whole file C<filename> into a memory buffer.
++ *
++ * The memory buffer is initialized and returned in C<data_r>.  The
++ * size of the file in bytes is returned in C<size_r>.  The return
++ * buffer must be freed by the caller.
++ *
++ * On error this prints an error on C<stderr> and returns -1.  Unlike
++ * the similar C<guestfs_int_read_whole_file> this does not use the
++ * libguestfs handle or call C<error()>.
++ *
++ * For the convenience of callers, the returned buffer is
++ * NUL-terminated (the NUL is not included in the size).
++ *
++ * The file must be a B<regular>, B<local>, B<trusted> file.  In
++ * particular, do not use this function to read files that might be
++ * under control of an untrusted user since that will lead to a
++ * denial-of-service attack.
++ */
++int
++read_whole_file (const char *filename, char **data_r, size_t *size_r)
++{
++  int fd;
++  char *data;
++  off_t size;
++  off_t n;
++  ssize_t r;
++  struct stat statbuf;
++
++  fd = open (filename, O_RDONLY|O_CLOEXEC);
++  if (fd == -1) {
++    perror (filename);
++    return -1;
++  }
++
++  if (fstat (fd, &statbuf) == -1) {
++    perror (filename);
++    close (fd);
++    return -1;
++  }
++
++  size = statbuf.st_size;
++  data = malloc (size + 1);
++  if (data == NULL) {
++    perror ("malloc");
++    close (fd);
++    return -1;
++  }
++
++  n = 0;
++  while (n < size) {
++    r = read (fd, &data[n], size - n);
++    if (r == -1) {
++      perror (filename);
++      free (data);
++      close (fd);
++      return -1;
++    }
++    if (r == 0) {
++      fprintf (stderr, "%s: unexpected end of input", filename);
++      free (data);
++      close (fd);
++      return -1;
++    }
++    n += r;
++  }
++
++  if (close (fd) == -1) {
++    perror (filename);
++    free (data);
++    return -1;
++  }
++
++  /* For convenience of callers, \0-terminate the data. */
++  data[size] = '\0';
++
++  *data_r = data;
++  if (size_r != NULL)
++    *size_r = size;
++
++  return 0;
++}
+diff --git a/m4/guestfs-libraries.m4 b/m4/guestfs-libraries.m4
+index 11c9974c..22af5db7 100644
+--- a/m4/guestfs-libraries.m4
++++ b/m4/guestfs-libraries.m4
+@@ -19,7 +19,8 @@ dnl Any C libraries required by virt-v2v.
+ 
+ dnl Of course we need libguestfs.
+ dnl
+-dnl We need libguestfs >= 1.58.1-2.el10 for guestfs_xfs_info2.
++dnl We need libguestfs >= 1.58.1-6.el10 for guestfs_xfs_info2
++dnl and for text: and base64: prefix in LUKS funcs.
+ PKG_CHECK_MODULES([LIBGUESTFS], [libguestfs >= 1.58.1])
+ printf "libguestfs version is "; $PKG_CONFIG --modversion libguestfs
+ 

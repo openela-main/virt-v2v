@@ -1,0 +1,31 @@
+From f3c6cbcfa3704800668e663c7767664f8be07737 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 12 May 2026 14:58:06 +0100
+Subject: [PATCH] Update common submodule
+
+  Richard W.M. Jones (2):
+      mlcustomize: Remove fictitious "vista" virtio-win directory
+      mlcustomize: Use 2k8 drivers for Windows Vista and 2008 Server R1
+
+Fixes: https://redhat.atlassian.net/browse/RHEL-174513
+---
+ common | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Submodule common 5971cbb3..3fdd2edc:
+diff --git a/common/mlcustomize/inject_virtio_win.ml b/common/mlcustomize/inject_virtio_win.ml
+index a2938080..ce24332f 100644
+--- a/common/mlcustomize/inject_virtio_win.ml
++++ b/common/mlcustomize/inject_virtio_win.ml
+@@ -468,10 +468,8 @@ and virtio_iso_path_matches_guest_os t path =
+         ((=) "winxp")
+       else if pathelem "2k3" then
+         (function "win2k3" | "win2k3r2" -> true | _ -> false)
+-      else if pathelem "vista" then
+-        ((=) "winvista")
+       else if pathelem "2k8" then
+-        ((=) "win2k8")
++        (function "win2k8" | "winvista" -> true | _ -> false)
+       else if pathelem "w7" then
+         ((=) "win7")
+       else if pathelem "2k8r2" then

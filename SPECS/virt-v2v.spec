@@ -45,7 +45,7 @@ ExclusiveArch: x86_64
 Name:          virt-v2v
 Epoch:         1
 Version:       2.10.0
-Release:       13%{?dist}
+Release:       17%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -84,21 +84,29 @@ Patch0016:     0016-output-introduce-disk_name-helper.patch
 Patch0017:     0017-output-Replace-in-VM-names-with-_.patch
 Patch0018:     0018-output-sanitize-guest-names-in-metadata-file-paths.patch
 Patch0019:     0019-output-sanitize-VM-names-in-libvirt-XML.patch
-Patch0020:     0020-RHEL-Fixes-for-libguestfs-winsupport.patch
-Patch0021:     0021-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
-Patch0022:     0022-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
-Patch0023:     0023-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
-Patch0024:     0024-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
-Patch0025:     0025-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
-Patch0026:     0026-RHEL-tests-Remove-btrfs-test.patch
-Patch0027:     0027-RHEL-Add-warning-about-virt-v2v-in-place-not-being-s.patch
-Patch0028:     0028-RHEL-output-output.ml-Remove-reduce-memory-pressure-.patch
-Patch0029:     0029-Update-common-submodule.patch
-Patch0030:     0030-convert-linux-properly-match-etc-crypttab.patch
-Patch0031:     0031-Update-common-submodule.patch
-Patch0032:     0032-Add-no-fstrim-option-to-disable-fstrim-during-conver.patch
-Patch0033:     0033-convert-Stop-using-maxmem-xfs_repair-m-option.patch
-Patch0034:     0034-Update-common-submodule.patch
+Patch0020:     0020-Update-common-submodule.patch
+Patch0021:     0021-convert-linux-properly-match-etc-crypttab.patch
+Patch0022:     0022-Update-common-submodule.patch
+Patch0023:     0023-Add-no-fstrim-option-to-disable-fstrim-during-conver.patch
+Patch0024:     0024-convert-Stop-using-maxmem-xfs_repair-m-option.patch
+Patch0025:     0025-Update-common-submodule.patch
+Patch0026:     0026-docs-Show-input-parameters-for-i-input-methods.patch
+Patch0027:     0027-docs-i-disk-allows-multiple-disk-images.patch
+Patch0028:     0028-i-disk-Allow-nbd-URIs-for-input-disks.patch
+Patch0029:     0029-tests-Add-test-for-i-disk-nbd-URI.patch
+Patch0030:     0030-common-update-submodule.patch
+Patch0031:     0031-common-update-submodule.patch
+Patch0032:     0032-RHEL-Fixes-for-libguestfs-winsupport.patch
+Patch0033:     0033-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
+Patch0034:     0034-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
+Patch0035:     0035-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
+Patch0036:     0036-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
+Patch0037:     0037-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
+Patch0038:     0038-RHEL-tests-Remove-btrfs-test.patch
+Patch0039:     0039-RHEL-Add-warning-about-virt-v2v-in-place-not-being-s.patch
+Patch0040:     0040-RHEL-output-output.ml-Remove-reduce-memory-pressure-.patch
+Patch0041:     0041-smp-use-cgroup-CPU-limits-for-appliance-SMP.patch
+Patch0042:     0042-Update-common-submodule.patch
 
 BuildRequires: autoconf, automake, libtool
 BuildRequires: make
@@ -109,7 +117,7 @@ BuildRequires: perl(IPC::Run3)
 BuildRequires: gcc
 BuildRequires: ocaml >= 4.08
 
-BuildRequires: libguestfs-devel >= 1:1.58.1-2
+BuildRequires: libguestfs-devel >= 1:1.58.1-6
 BuildRequires: augeas-devel
 BuildRequires: bash-completion
 %if 0%{?fedora} || 0%{?rhel} >= 11
@@ -155,7 +163,7 @@ BuildRequires: glibc-static
 BuildRequires: gnupg2
 %endif
 
-Requires:      libguestfs%{?_isa} >= 1:1.58.1-2
+Requires:      libguestfs%{?_isa} >= 1:1.58.1-6
 Requires:      guestfs-tools >= 1.54
 
 # XFS is the default filesystem in Fedora and RHEL.
@@ -404,6 +412,21 @@ done
 
 
 %changelog
+* Fri May 22 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-17
+- Drop 'Fix conversion of encrypted Ubuntu guests' (failed testing)
+  related: RHEL-174515
+- Fix location of Windows Vista and Windows 2008 Server R1 drivers
+  resolves: RHEL-174513
+
+* Tue May 12 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-16
+- Fix binary LUKS keys
+  resolves: RHEL-174520
+- Windows firstboot: Add exit code 250 to skip reboots
+  Rework documentation for firstboot feature
+  resolves: RHEL-174516
+- Use cgroups in SMP calculation
+  resolves: RHEL-174512
+
 * Thu Apr 23 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-13
 - Stop using maxmem (xfs_repair -m option)
   resolves: RHEL-169321

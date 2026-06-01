@@ -1,4 +1,4 @@
-From b00922090f704e97388dbc96f6f710fd5e22af92 Mon Sep 17 00:00:00 2001
+From af3ceff3108a8470b35e3bc78b9d31ff4bd05e91 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Tue, 30 Sep 2014 10:50:27 +0100
 Subject: [PATCH] RHEL: v2v: Disable the --qemu-boot / -oo qemu-boot option
@@ -43,7 +43,7 @@ index 49f00754..bdf12c5d 100644
  =item B<-o null>
  
 diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
-index 04764832..eb550da0 100644
+index ecb29771..41bb58ce 100644
 --- a/docs/virt-v2v.pod
 +++ b/docs/virt-v2v.pod
 @@ -169,11 +169,6 @@ Since F<guest-domain.xml> contains the path(s) to the guest disk
@@ -58,7 +58,7 @@ index 04764832..eb550da0 100644
  =head1 OPTIONS
  
  =over 4
-@@ -578,9 +573,6 @@ This is similar to I<-o local>, except that a shell script is written
+@@ -585,9 +580,6 @@ This is similar to I<-o local>, except that a shell script is written
  which you can use to boot the guest in qemu.  The converted disks and
  shell script are written to the directory specified by I<-os>.
  
@@ -68,7 +68,7 @@ index 04764832..eb550da0 100644
  ifelse(ENABLE_OVIRT, yes, `
  =item B<-o> B<vdsm>
  
-@@ -653,11 +645,6 @@ For I<-o openstack> (L<virt-v2v-output-openstack(1)>) only, set a guest ID
+@@ -660,11 +652,6 @@ For I<-o openstack> (L<virt-v2v-output-openstack(1)>) only, set a guest ID
  which is saved on each Cinder volume in the C<virt_v2v_guest_id>
  volume property.
  

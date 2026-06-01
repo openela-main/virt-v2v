@@ -1,4 +1,4 @@
-From 5bb9b83c288b0c4bdac081e123f2fa54c840a6ca Mon Sep 17 00:00:00 2001
+From a4c0eafbf3888e8d3d03a82ce9ba7d85ad858f03 Mon Sep 17 00:00:00 2001
 From: "Richard W.M. Jones" <rjones@redhat.com>
 Date: Sun, 30 Aug 2015 03:21:57 -0400
 Subject: [PATCH] RHEL: Fixes for libguestfs-winsupport.
@@ -19,10 +19,10 @@ https://bugzilla.redhat.com/show_bug.cgi?id=2187961#c1
  7 files changed, 40 insertions(+), 5 deletions(-)
 
 diff --git a/convert/convert.ml b/convert/convert.ml
-index e3fd41b8..eb51e9b9 100644
+index 1df8699a..5aca94f1 100644
 --- a/convert/convert.ml
 +++ b/convert/convert.ml
-@@ -55,6 +55,7 @@ let rec convert input_disks options source =
+@@ -56,6 +56,7 @@ let rec convert input_disks options source =
  
    message (f_"Opening the source");
    let g = open_guestfs ~identifier:"v2v" () in
