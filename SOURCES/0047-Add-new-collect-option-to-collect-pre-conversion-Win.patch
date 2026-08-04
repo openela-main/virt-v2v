@@ -1,0 +1,441 @@
+From ad3f8921dd6c2a7a715cf8e77b9f49d60d2d8c54 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 26 Jun 2026 05:51:37 +0100
+Subject: [PATCH] Add new --collect option to collect pre-conversion Windows
+ information
+
+'--collect GUEST_DIR[:LOCAL] --collect-output OUTPUT.tar.xz' options
+will collect named files and directories before conversion, which
+might be useful for diagnosing failed conversions later.
+
+Thanks: Vadim Rozenfeld
+Fixes: https://redhat.atlassian.net/browse/RHEL-188772
+(cherry picked from commit 8f994323dedd270e8ff473830221e32233d2c616)
+---
+ convert/convert.ml               | 55 ++++++++++++++++++++++++++++++++
+ convert/convert.mli              |  2 ++
+ docs/virt-v2v.pod                | 37 +++++++++++++++++++++
+ in-place/in_place.ml             | 14 ++++++++
+ in-place/virt-v2v-in-place.pod   |  6 ++++
+ inspector/inspector.ml           | 13 ++++++++
+ inspector/virt-v2v-inspector.pod |  4 +++
+ tests/Makefile.am                |  2 ++
+ tests/test-collect.sh            | 50 +++++++++++++++++++++++++++++
+ v2v/v2v.ml                       | 14 ++++++++
+ 10 files changed, 197 insertions(+)
+ create mode 100755 tests/test-collect.sh
+
+diff --git a/convert/convert.ml b/convert/convert.ml
+index dd033545..d5ef91ae 100644
+--- a/convert/convert.ml
++++ b/convert/convert.ml
+@@ -32,6 +32,8 @@ module G = Guestfs
+ 
+ type options = {
+   block_driver : guestcaps_block_type;
++  collect : (string * string) list;
++  collect_file : string option;
+   keep_serial_console : bool;
+   ks : key_store;
+   memsize : int option;
+@@ -134,6 +136,18 @@ let rec convert input_disks options source =
+          inspect.i_type inspect.i_distro in
+   debug "picked conversion module %s" Conversion_module.name;
+ 
++  (* Pre-conversion data collection ([--collect] option). *)
++  (match options.collect, options.collect_file with
++   | [], _ -> ()
++   | _::_, None ->
++      error (f_"‘--collect’ options found, \
++                but no ‘--collect-output’ specified")
++   | collect_options, Some collect_output ->
++      message (f_"Collecting pre-conversion information in %s")
++        collect_output;
++      pre_conversion_collection g source inspect collect_options collect_output
++  );
++
+   (* Conversion. *)
+   let guestcaps =
+     do_convert g source inspect i_firmware
+@@ -349,6 +363,47 @@ and do_fsck ?(before=false) g =
+          ()
+   ) fses
+ 
++(* Pre-conversion data collection ([--collect] options). *)
++and pre_conversion_collection g source inspect
++                              collect_options collect_output =
++  (* Create temp output directory under large_tmpdir (/var/tmp). *)
++  let tmpdir =
++    let t = Mkdtemp.temp_dir ~base_dir:large_tmpdir "collect." in
++    On_exit.rm_rf t;
++    t in
++
++  (* Copy out directories. *)
++  List.iter (
++    fun (dir, localdir) ->
++      let local_path =
++        match localdir with
++        | "" | "." -> tmpdir
++        | localdir ->
++           if String.starts_with ~prefix:"/" localdir then
++             error (f_"in ‘--collect’ do not use ‘:/dir’, \
++                       drop the ‘/’ character");
++           let p = sprintf "%s/%s" tmpdir localdir in
++           mkdir_p p 0o700;
++           p in
++      try
++        let guest_path = g#case_sensitive_path dir in
++        g#copy_out guest_path local_path
++      with G.Error msg ->
++        debug "--collect: copying out ‘%s’ failed: %s (ignored)"
++          dir msg
++  ) collect_options;
++
++  (* Create final tarball.  We need to ignore the original file
++   * permissions from the guest, otherwise tar might be unable to
++   * read some files (eg [/etc/gshadow]).
++   *)
++  let cmd = sprintf "chmod u+rw -R %s" (quote tmpdir) in
++  ignore (Sys.command cmd);
++  let cmd = sprintf "tar -J -c -f %s -C %s ."
++              (quote collect_output) (quote tmpdir) in
++  if Sys.command cmd <> 0 then
++    error (f_"could not create output tarball for ‘--collect-output’ option")
++
+ (* Conversion. *)
+ and do_convert g source inspect i_firmware
+                block_driver keep_serial_console interfaces
+diff --git a/convert/convert.mli b/convert/convert.mli
+index faf671fc..0ab82bc2 100644
+--- a/convert/convert.mli
++++ b/convert/convert.mli
+@@ -18,6 +18,8 @@
+ 
+ type options = {
+   block_driver : Types.guestcaps_block_type; (** [--block-driver] option *)
++  collect : (string * string) list;(** [--collect] options  *)
++  collect_file : string option;    (** [--collect-output] option *)
+   keep_serial_console : bool;
+   ks : Tools_utils.key_store;      (** [--key] option *)
+   memsize : int option;            (** [--memsize] option *)
+diff --git a/docs/virt-v2v.pod b/docs/virt-v2v.pod
+index 41bb58ce..1b0dedf0 100644
+--- a/docs/virt-v2v.pod
++++ b/docs/virt-v2v.pod
+@@ -241,6 +241,12 @@ Note this has no effect for Linux guests at the moment.  That may be
+ added in future.
+ ')
+ 
++=item B<--collect> GUEST[B<:>LOCAL]
++
++=item B<--collect-output> PATH/TO/OUTPUTB<.tar.xz>
++
++See L</Collecting files for later diagnostics>
++
+ =item B<--colors>
+ 
+ =item B<--colours>
+@@ -1675,6 +1681,37 @@ use the MAC address to set up persistent associations between NICs and
+ internal names (like C<eth0>), with firewall settings, or even for
+ other purposes like software licensing.
+ 
++=head2 Collecting files for later diagnostics
++
++The virt-v2v I<--collect> and I<--collect-output> options are used to
++collect files and directories from inside the guest, before
++conversion, for later diagnosis in case the conversion goes wrong,
++especially if driver installation at firstboot fails.
++
++Typical usage is:
++
++ virt-v2v [...] \
++     --collect /windows/system32/config/ \
++     --collect /windows/system32/winevt/logs/ \
++     --collect /etc/ \
++     --collect-output output.tar.xz
++
++which would save the Windows registry, Windows event logs, and Linux
++F</etc> directory to F<output.tar.xz>.
++
++Guest files/directories which do not exist are ignored.  The
++information collected may include sensitive data like passwords.  The
++output could be arbitrarily large since it copies everything specified
++from the guest.
++
++You can rename directories in the output tarball by adding C<:dir>
++suffix to the I<--collect> option, eg:
++
++ virt-v2v [...] \
++     --collect /windows/system32/config/:registry
++
++which would create a F<registry/> directory in the tarball.
++
+ =head2 Minimal XML for -i libvirtxml option
+ 
+ When using the I<-i libvirtxml> option, you have to supply some
+diff --git a/in-place/in_place.ml b/in-place/in_place.ml
+index a96d55d9..148d6e46 100644
+--- a/in-place/in_place.ml
++++ b/in-place/in_place.ml
+@@ -50,6 +50,11 @@ let rec main () =
+   let bandwidth = ref None in
+   let bandwidth_file = ref None in
+   let block_driver = ref None in
++
++  let collect = ref [] in
++  let add_collect dir = String.split ":" dir |> List.push_back collect in
++  let collect_file = ref None in
++
+   let input_conn = ref None in
+   let input_format = ref None in
+   let input_password = ref None in
+@@ -168,6 +173,10 @@ let rec main () =
+   let argspec = ref [
+     [ S 'b'; L"bridge" ], Getopt.String ("in:out", add_bridge),
+                                     s_"Map bridge ‘in’ to ‘out’";
++    [ L"collect" ],  Getopt.String ("collect", add_collect),
++                                    s_"Collect pre-conversion information";
++    [ L"collect-output" ],  Getopt.String ("collect-output", set_string_option_once "--collect-output" collect_file),
++                                    s_"Collect output to .tar.xz file";
+     [ S 'i' ],       Getopt.String (input_modes, set_input_mode),
+                                     s_"Set input mode (default: libvirt)";
+     [ M"ic" ],       Getopt.String ("uri", set_string_option_once "-ic" input_conn),
+@@ -257,6 +266,8 @@ read the man page virt-v2v-in-place(1).
+     | Some "virtio-scsi" -> Virtio_SCSI
+     | Some driver ->
+        error (f_"unknown block driver ‘--block-driver %s’") driver in
++  let collect = !collect in
++  let collect_file = !collect_file in
+   let customize_ops = get_customize_ops () in
+   let input_conn = !input_conn in
+   let input_mode = !input_mode in
+@@ -285,6 +296,7 @@ read the man page virt-v2v-in-place(1).
+       pr "output-xml-option\n";
+       if Config.enable_block_driver then
+         pr "block-driver-option\n";
++      pr "collect-option\n";
+       Select_input.input_modes |>
+         List.map Select_input.string_of_input_mode |>
+         List.iter (pr "input:%s\n");
+@@ -325,6 +337,8 @@ read the man page virt-v2v-in-place(1).
+   (* Get the conversion options. *)
+   let conv_options = {
+     Convert.block_driver = block_driver;
++    collect;
++    collect_file;
+     keep_serial_console = true;
+     ks = opthandle.ks;
+     memsize;
+diff --git a/in-place/virt-v2v-in-place.pod b/in-place/virt-v2v-in-place.pod
+index ac4142ae..76dba196 100644
+--- a/in-place/virt-v2v-in-place.pod
++++ b/in-place/virt-v2v-in-place.pod
+@@ -88,6 +88,12 @@ Note this has no effect for Linux guests at the moment.  That may be
+ added in future.
+ ')
+ 
++=item B<--collect> GUEST[B<:>LOCAL]
++
++=item B<--collect-output> PATH/TO/OUTPUTB<.tar.xz>
++
++See L<virt-v2v(1)/Collecting files for later diagnostics>
++
+ =item B<--colors>
+ 
+ =item B<--colours>
+diff --git a/inspector/inspector.ml b/inspector/inspector.ml
+index 137d5f61..45b0f0a1 100644
+--- a/inspector/inspector.ml
++++ b/inspector/inspector.ml
+@@ -48,6 +48,10 @@ let rec main () =
+     else output_file := Some filename
+   in
+ 
++  let collect = ref [] in
++  let add_collect dir = String.split ":" dir |> List.push_back collect in
++  let collect_file = ref None in
++
+   let input_conn = ref None in
+   let input_format = ref None in
+   let input_password = ref None in
+@@ -157,6 +161,10 @@ let rec main () =
+   let argspec = [
+     [ S 'b'; L"bridge" ], Getopt.String ("in:out", add_bridge),
+                                     s_"Map bridge ‘in’ to ‘out’";
++    [ L"collect" ],  Getopt.String ("collect", add_collect),
++                                    s_"Collect pre-conversion information";
++    [ L"collect-output" ],  Getopt.String ("collect-output", set_string_option_once "--collect-output" collect_file),
++                                    s_"Collect output to .tar.xz file";
+     [ S 'i' ],       Getopt.String (input_modes, set_input_mode),
+                                     s_"Set input mode (default: libvirt)";
+     [ M"ic" ],       Getopt.String ("uri", set_string_option_once "-ic" input_conn),
+@@ -225,6 +233,8 @@ read the man page virt-v2v-inspector(1).
+ 
+   (* Dereference the arguments. *)
+   let args = List.rev !args in
++  let collect = !collect in
++  let collect_file = !collect_file in
+   let customize_ops = get_customize_ops () in
+   let output_file = !output_file in
+   let input_conn = !input_conn in
+@@ -254,6 +264,7 @@ read the man page virt-v2v-inspector(1).
+       pr "mac-option\n";
+       pr "mac-ip-option\n";
+       pr "customize-ops\n";
++      pr "collect-option\n";
+       Select_input.input_modes |>
+         List.map Select_input.string_of_input_mode |>
+         List.iter (pr "input:%s\n");
+@@ -290,6 +301,8 @@ read the man page virt-v2v-inspector(1).
+   (* Get the conversion options. *)
+   let conv_options = {
+     Convert.block_driver = Virtio_blk;
++    collect;
++    collect_file;
+     keep_serial_console = true;
+     ks = opthandle.ks;
+     memsize;
+diff --git a/inspector/virt-v2v-inspector.pod b/inspector/virt-v2v-inspector.pod
+index 65ce71ce..c35c8779 100644
+--- a/inspector/virt-v2v-inspector.pod
++++ b/inspector/virt-v2v-inspector.pod
+@@ -178,6 +178,10 @@ virt-v2v-inspector.
+ 
+ =item B<--bridge> ...
+ 
++=item B<--collect> ...
++
++=item B<--collect-output> ...
++
+ =item B<--colors>
+ 
+ =item B<--colours>
+diff --git a/tests/Makefile.am b/tests/Makefile.am
+index 9a0726d2..8168cf30 100644
+--- a/tests/Makefile.am
++++ b/tests/Makefile.am
+@@ -63,6 +63,7 @@ TESTS = \
+ 	test-checksum-good-qcow2.sh \
+ 	test-checksum-good.sh \
+ 	test-checksum-print.sh \
++	test-collect.sh \
+ 	test-customize.sh \
+ 	test-fedora-conversion.sh \
+ 	test-fedora-luks-on-lvm-conversion.sh \
+@@ -225,6 +226,7 @@ EXTRA_DIST += \
+ 	test-checksum-good.sh \
+ 	test-checksum-print.sh \
+ 	test-conversion-of.sh \
++	test-collect.sh \
+ 	test-customize.sh \
+ 	test-fedora-btrfs-conversion.sh \
+ 	test-fedora-conversion.sh \
+diff --git a/tests/test-collect.sh b/tests/test-collect.sh
+new file mode 100755
+index 00000000..ea01a5c8
+--- /dev/null
++++ b/tests/test-collect.sh
+@@ -0,0 +1,50 @@
++#!/bin/bash -
++# libguestfs virt-v2v test script
++# Copyright (C) 2024-2026 Red Hat Inc.
++#
++# This program is free software; you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation; either version 2 of the License, or
++# (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program; if not, write to the Free Software
++# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++
++# Test virt-v2v --collect and --collect-output options.
++
++source ./functions.sh
++set -e
++set -x
++
++skip_if_skipped
++windows=../test-data/phony-guests/windows.img
++requires test -s $windows
++
++d=test-collect.d
++rm -rf $d
++cleanup_fn rm -rf $d
++mkdir $d
++
++output=$d/output.tar.xz
++files=$d/output.tar.xz.files
++
++$VG virt-v2v --debug-gc \
++    -i disk $windows \
++    -o null \
++    --collect /windows/system32/config:windows/system32 \
++    --collect-output $output
++
++# Test the tarball was created and contains some expected files/dirs.
++file $output
++
++tar -Jtf $output > $files
++cat $files
++
++grep -i windows/system32/config $files
++grep -i windows/system32/config/SYSTEM $files
+diff --git a/v2v/v2v.ml b/v2v/v2v.ml
+index 480fa81a..3e09553e 100644
+--- a/v2v/v2v.ml
++++ b/v2v/v2v.ml
+@@ -49,6 +49,11 @@ let rec main () =
+   let bandwidth = ref None in
+   let bandwidth_file = ref None in
+   let block_driver = ref None in
++
++  let collect = ref [] in
++  let add_collect dir = String.split ":" dir |> List.push_back collect in
++  let collect_file = ref None in
++
+   let input_conn = ref None in
+   let input_format = ref None in
+   let input_password = ref None in
+@@ -208,6 +213,10 @@ let rec main () =
+                                     s_"Set bandwidth dynamically from file";
+     [ S 'b'; L"bridge" ], Getopt.String ("in:out", add_bridge),
+       s_"Map bridge ‘in’ to ‘out’";
++    [ L"collect" ],  Getopt.String ("collect", add_collect),
++                                    s_"Collect pre-conversion information";
++    [ L"collect-output" ],  Getopt.String ("collect-output", set_string_option_once "--collect-output" collect_file),
++                                    s_"Collect output to .tar.xz file";
+     [ S 'i' ],       Getopt.String (input_modes, set_input_mode),
+       s_"Set input mode (default: libvirt)";
+     [ M"ic" ],       Getopt.String ("uri", set_string_option_once "-ic" input_conn),
+@@ -317,6 +326,8 @@ read the man page virt-v2v(1).
+     | Some "virtio-scsi" -> Virtio_SCSI
+     | Some driver ->
+        error (f_"unknown block driver ‘--block-driver %s’") driver in
++  let collect = !collect in
++  let collect_file = !collect_file in
+   let customize_ops = get_customize_ops () in
+   let input_conn = !input_conn in
+   let input_mode = !input_mode in
+@@ -365,6 +376,7 @@ read the man page virt-v2v(1).
+       pr "customize-ops\n";
+       if Config.enable_block_driver then
+         pr "block-driver-option\n";
++      pr "collect-option\n";
+       Select_input.input_modes |>
+         List.map Select_input.string_of_input_mode |>
+         List.iter (pr "input:%s\n");
+@@ -437,6 +449,8 @@ read the man page virt-v2v(1).
+   (* Get the conversion options. *)
+   let conv_options = {
+     Convert.block_driver = block_driver;
++    collect;
++    collect_file;
+     keep_serial_console = not remove_serial_console;
+     ks = opthandle.ks;
+     memsize;

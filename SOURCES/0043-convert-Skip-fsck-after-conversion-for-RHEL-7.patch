@@ -1,0 +1,48 @@
+From 3ce689d219fa52ad1ffcf5ac5f5f703983b8efc9 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 2 Jul 2026 08:05:18 +0100
+Subject: [PATCH] convert: Skip fsck after conversion for RHEL 7
+
+RHEL 7 XFS has subtle incompatibilties with later kernels.  There is a
+workaround for this in libguestfs, but it does not fix the problem
+entirely.  The fsck after conversion still fails because the block
+count is detected as being wrong.  The easiest thing to do here is to
+skip the fsck after conversion in this narrow case (RHEL 7 only) and
+it will all get fixed up properly when the guest boots next time.
+
+Fixes: https://redhat.atlassian.net/browse/RHEL-178287
+Fixes: https://redhat.atlassian.net/browse/RHEL-191749
+Thanks: Brian Foster, Eric Sandeen
+(cherry picked from commit 0f212025a51f8696e892c00732d1da32d691c87e)
+---
+ convert/convert.ml | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/convert/convert.ml b/convert/convert.ml
+index bd1dfe65..dd033545 100644
+--- a/convert/convert.ml
++++ b/convert/convert.ml
+@@ -160,10 +160,19 @@ let rec convert input_disks options source =
+     message (f_"Skipping fstrim (--no-fstrim specified)")
+   );
+ 
+-  (* Check (fsck) the filesystems after conversion. *)
+-  g#umount_all ();
+-  message (f_"Checking filesystem integrity after conversion");
+-  do_fsck g;
++  (* Check (fsck) the filesystems after conversion.
++   *
++   * Skip this on RHEL 7 because of incompatibility issues with
++   * XFS in later kernels.
++   *)
++  (match inspect.i_distro, inspect.i_major_version with
++   | ("rhel" | "centos"), 7 ->
++      ()
++   | _ ->
++      g#umount_all ();
++      message (f_"Checking filesystem integrity after conversion");
++      do_fsck g;
++  );
+ 
+   message (f_"Closing the overlay");
+   g#umount_all ();

@@ -1,0 +1,47 @@
+From ca3af8b94cdd6e207574f5029645719a16e18c03 Mon Sep 17 00:00:00 2001
+From: Cole Robinson <crobinso@redhat.com>
+Date: Thu, 21 May 2026 12:00:25 -0400
+Subject: [PATCH] convert: fix ubuntu conversion regression
+
+Stock ubuntu 22.04 and 24.04, and probably others, have this:
+
+```
+  # cat /etc/crypttab
+  # <target name> <source device>       <key file>          <options>
+```
+
+The crypttab handling added in commit 9eebf38bcaf does not take
+comments into account though. Leading to error like:
+
+  libguestfs: trace: v2v: aug_get "/files/etc/crypttab/#comment/target"
+  guestfsd: <= aug_get (0x13) request length 80 bytes^M
+  guestfsd: error: no matching node^M
+  guestfsd: => aug_get (0x13) took 0.00 secs^M
+  libguestfs: trace: v2v: aug_get = NULL (error)
+  virt-v2v: error: libguestfs error: aug_get: no matching node
+
+Which breaks conversion. Fix it by only selecting lines that
+have a 'target' field
+
+Fixes: commit 9eebf38bcaf59c1e07102d056c9df363976bf7c2
+Fixes: https://redhat.atlassian.net/browse/RHEL-178432
+(cherry picked from commit 673f2d04a5ba86aec3f72e0a13d7b0db2f7006c1)
+---
+ convert/convert_linux.ml | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/convert/convert_linux.ml b/convert/convert_linux.ml
+index fe7df3aa..7c32d312 100644
+--- a/convert/convert_linux.ml
++++ b/convert/convert_linux.ml
+@@ -638,8 +638,8 @@ fi
+      * boot time crypttab correctly. We work around it by adding
+      * `initramfs` option to every /etc/crypttab entry.
+      *)
+-    (* Get all crypttab entries *)
+-    let entries = g#aug_match "/files/etc/crypttab/*" in
++    (* Get all crypttab entries that have a target node *)
++    let entries = g#aug_match "/files/etc/crypttab/*[target]" in
+     let entries = Array.to_list entries in
+ 
+     let changed = ref false in

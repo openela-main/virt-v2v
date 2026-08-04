@@ -45,7 +45,7 @@ ExclusiveArch: x86_64
 Name:          virt-v2v
 Epoch:         1
 Version:       2.10.0
-Release:       17%{?dist}
+Release:       18%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -107,6 +107,12 @@ Patch0039:     0039-RHEL-Add-warning-about-virt-v2v-in-place-not-being-s.patch
 Patch0040:     0040-RHEL-output-output.ml-Remove-reduce-memory-pressure-.patch
 Patch0041:     0041-smp-use-cgroup-CPU-limits-for-appliance-SMP.patch
 Patch0042:     0042-Update-common-submodule.patch
+Patch0043:     0043-convert-Skip-fsck-after-conversion-for-RHEL-7.patch
+Patch0044:     0044-convert-linux-Fix-encrypted-ubuntu-24.04.patch
+Patch0045:     0045-convert-fix-ubuntu-conversion-regression.patch
+Patch0046:     0046-common-update-submodule.patch
+Patch0047:     0047-Add-new-collect-option-to-collect-pre-conversion-Win.patch
+Patch0048:     0048-inspector-in-place-Add-disk-boot-order-boot-order-to.patch
 
 BuildRequires: autoconf, automake, libtool
 BuildRequires: make
@@ -412,6 +418,18 @@ done
 
 
 %changelog
+* Tue Jul 07 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-18
+- Add <disk> <boot-order>#</boot-order> to XML output
+  resolves: RHEL-193138
+- Add new --collect option to collect pre-conversion information
+  resolves: RHEL-192947
+- Retry qemu-ga installer on failure
+  resolves: RHEL-193139
+- Fix conversions of encrypted Ubuntu guests (second attempt)
+  resolves: RHEL-192921
+- Skip fsck after conversion for RHEL 7
+  resolves: RHEL-192948
+
 * Fri May 22 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-17
 - Drop 'Fix conversion of encrypted Ubuntu guests' (failed testing)
   related: RHEL-174515

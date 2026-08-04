@@ -1,0 +1,55 @@
+From 5f1030ad5d1b65aff2b2e879dd0d89b8c08646ee Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 7 Jul 2026 06:45:35 +0100
+Subject: [PATCH] common: update submodule
+
+  Richard W.M. Jones (3):
+        mlcustomize/inject_virtio_win.ml: Rewrite qemu-ga firstboot using {| |}
+        mlcustomize/inject_virtio_win.ml: Abstract $msi and $logfile
+        mlcustomize/inject_virtio_win.ml: Retry qemu-ga installation
+---
+ common | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Submodule common 3fdd2edc..a901c174:
+diff --git a/common/mlcustomize/inject_virtio_win.ml b/common/mlcustomize/inject_virtio_win.ml
+index ce24332f..0e5dcf05 100644
+--- a/common/mlcustomize/inject_virtio_win.ml
++++ b/common/mlcustomize/inject_virtio_win.ml
+@@ -556,11 +556,31 @@ and configure_qemu_ga t tempdir_win files =
+   add "# Run qemu-ga installers";
+   List.iter (
+     fun msi ->
+-      add (sprintf "Write-Host \"Writing log to %s\\%s.log\""
+-             tempdir_win msi);
+-      (* [`] is an escape char for quotes *)
+-      add (sprintf "Start-Process -Wait -FilePath \"%s\\%s\" -ArgumentList \"/norestart\",\"/qn\",\"/l+*vx\",\"`\"%s\\%s.log`\"\""
+-             tempdir_win msi tempdir_win msi)
++      add (sprintf {|$msi = "%s\%s"|} tempdir_win msi);
++      add {|$logfile = "$msi.log"|};
++      add {|$maxAttempts = 10|};
++      add {|$retryDelay = 60|};
++      add {|for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {|};
++      add {|  Write-Host "Attempt $attempt of $maxAttempts"|};
++      add {|  Write-Host "Writing log to $logfile"|};
++      (* [`] is an escape char for double quotes.
++       * [-PassThru] ensures that [Start-Process] returns the cmd object
++       * so we can get the exit code.
++       *)
++      add {|  $proc = Start-Process -Wait -PassThru -FilePath "$msi" -ArgumentList "/norestart","/qn","/l+*vx","`"$logfile`""|};
++      add {|  $exitCode = $proc.ExitCode|};
++      add {|  Write-Host "Exit code: $exitCode"|};
++      add {|  if ($exitCode -eq 0) {|};
++      add {|    Write-Host "QEMU Guest Agent installed successfully"|};
++      add {|    break|};
++      add {|  }|};
++      add {|  if ($attempt -lt $maxAttempts) {|};
++      add {|    Write-Host "Install failed, retrying in $retryDelay seconds..."|};
++      add {|    Start-Sleep -Seconds $retryDelay|};
++      add {|  } else {|};
++      add {|    Write-Host "Install failed after $maxAttempts attempts"|};
++      add {|  }|};
++      add {|}|}
+   ) files;
+ 
+   Firstboot.add_firstboot_powershell t.g t.root "install-qemu-ga" !script

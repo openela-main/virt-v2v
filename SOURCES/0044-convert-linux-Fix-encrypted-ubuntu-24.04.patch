@@ -1,0 +1,102 @@
+From 142feeb88475ecb426cbbfb9782c744613bf98e5 Mon Sep 17 00:00:00 2001
+From: Cole Robinson <crobinso@redhat.com>
+Date: Wed, 18 Feb 2026 10:35:12 -0500
+Subject: [PATCH] convert: linux: Fix encrypted ubuntu 24.04
+
+A default encrypted ubuntu24.04 VM has a crypttab like this:
+
+  $ cat /etc/crypttab
+  dm_crypt-0 UUID=49b424c0-7374-459f-bac2-4984aa86c1ba none luks
+
+`update-initramfs` machinery is responsible for adding that line
+to the initrd /cryptroot/crypttab file which tells the boot process
+to prompt to unlock that volume.
+
+`update-initramfs` expects that the volume name, /dev/mapper/dm_crypt-0,
+exists on the host at initrd generation time. If it doesn't, it
+skips adding that line to the initrd crypttab. This isn't an issue
+in normal VM operation, however when running under libguestfs,
+dm_crypt-0 is unlikely to exist, instead the volume will be mounted
+at /dev/mapper/luks-$UUID which is the default naming libguestfs uses.
+libguestfs can't know what the expected volume name from crypttab is,
+since libguestfs needs needs to unlock the volume to even read
+crypttab in the first place.
+
+Let's work around it by adding the `initramfs` option to every crypttab
+line on debian based distros. This forces the line to be copied to
+initrd crypttab.
+
+If a VM has multiple crypttab entries, some of which aren't necessary
+for boot, then this may make converted VM bootup prompt for more
+passwords than necessary. Hopefully that's a rare case.
+
+Resolves: https://issues.redhat.com/browse/RHEL-137121
+
+Signed-off-by: Cole Robinson <crobinso@redhat.com>
+(cherry picked from commit 9eebf38bcaf59c1e07102d056c9df363976bf7c2)
+---
+ convert/convert_linux.ml | 44 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+diff --git a/convert/convert_linux.ml b/convert/convert_linux.ml
+index 484148ab..fe7df3aa 100644
+--- a/convert/convert_linux.ml
++++ b/convert/convert_linux.ml
+@@ -632,6 +632,47 @@ fi
+                         install command for package ‘%s’ could not be created: \
+                         %s.") qga_pkg msg
+ 
++  and add_initramfs_option_to_crypttab () =
++    (* For debian based distros that use update-initramfs, an initrd
++     * rebuilt under libguestfs likely won't populate configure
++     * boot time crypttab correctly. We work around it by adding
++     * `initramfs` option to every /etc/crypttab entry.
++     *)
++    (* Get all crypttab entries *)
++    let entries = g#aug_match "/files/etc/crypttab/*" in
++    let entries = Array.to_list entries in
++
++    let changed = ref false in
++
++    List.iter (
++      fun entry_path ->
++        (* Check if this entry already has the initramfs option *)
++        let opts = g#aug_match (sprintf "%s/opt" entry_path) in
++        let opts = Array.to_list opts in
++
++        let has_initramfs = List.exists (
++          fun opt_path ->
++            let opt_name = g#aug_get opt_path in
++            opt_name = "initramfs"
++        ) opts in
++
++        if not has_initramfs then (
++          (* Add the initramfs option *)
++          let new_opt_path = sprintf "%s/opt[last()+1]" entry_path in
++          g#aug_set new_opt_path "initramfs";
++          changed := true;
++
++          let target = g#aug_get (sprintf "%s/target" entry_path) in
++          debug "convert_linux: added 'initramfs' option to crypttab entry '%s'" target
++        )
++    ) entries;
++
++    (* Save changes if any were made *)
++    if !changed then (
++      g#aug_save ();
++      Linux.augeas_reload g
++    )
++
+   and configure_kernel () =
+     (* Previously this function would try to install kernels, but we
+      * don't do that any longer.
+@@ -799,6 +840,9 @@ fi
+           g#aug_save ();
+         );
+ 
++        (* Add initramfs option to crypttab entries *)
++        add_initramfs_option_to_crypttab ();
++
+         run_update_initramfs_command ()
+       )
+       else if g#is_file ~followsymlinks:true "/usr/sbin/make-initrd" then (
