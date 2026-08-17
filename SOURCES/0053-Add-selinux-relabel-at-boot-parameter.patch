@@ -1,0 +1,297 @@
+From 3247b03c92f133916ff486c118a05a058523dc28 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 14 Aug 2026 07:38:58 +0100
+Subject: [PATCH] Add --selinux-relabel-at-boot parameter
+
+  Richard W.M. Jones (5):
+        mlcustomize: Update generated files for --selinux-relabel-at-boot
+        mlcustomize: Turn excludes parameter into a labelled parameter
+        mlcustomize/SELinux_relabel.ml: Refactor touch /.autorelabel
+        mlcustomize: Add --selinux-relabel-at-boot functionality
+        mlcustomize/SELinux_relabel.ml: Set SELinux label on /.autorelabel
+
+(cherry picked from commit a690b4a1fa9d8d0444e0bdeb39f0a274293ff80f)
+---
+ common                | 2 +-
+ tests/functions.sh.in | 1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+Submodule common 877c8ca0..fbcd2ef6:
+diff --git a/common/mlcustomize/SELinux_relabel.ml b/common/mlcustomize/SELinux_relabel.ml
+index 3fd97221..08c05600 100644
+--- a/common/mlcustomize/SELinux_relabel.ml
++++ b/common/mlcustomize/SELinux_relabel.ml
+@@ -28,19 +28,26 @@ module G = Guestfs
+  * [libguestfs.git/daemon/selinux.ml].
+  *)
+ 
+-let rec relabel (g : G.guestfs) excludes =
++let rec relabel ?(at_boot = false) ?(excludes = []) (g : G.guestfs) =
+   (* Is the guest using SELinux?  (Otherwise this is a no-op). *)
+   if is_selinux_guest g then (
+-    try
+-      use_setfiles g excludes;
+-      (* That worked, so we don't need to autorelabel. *)
+-      g#rm_f "/.autorelabel"
+-    with Failure _ ->
+-      (* This is the fallback in case something in the setfiles
+-       * method didn't work.  That includes the case where a non-SELinux
+-       * host is processing an SELinux guest, and other things.
+-       *)
+-      g#touch "/.autorelabel"
++    if not at_boot then (
++      try
++        (* Try to relabel during customization/conversion. *)
++        use_setfiles g excludes;
++        (* That worked, so we don't need to autorelabel. *)
++        g#rm_f "/.autorelabel"
++      with Failure _ ->
++        (* This is the fallback in case something in the setfiles
++         * method didn't work.  That includes the case where a non-SELinux
++         * host is processing an SELinux guest, and other things.
++         *)
++        touch_autorelabel g
++    )
++    else (
++      (* Always do it at boot. *)
++      touch_autorelabel g
++    )
+   )
+ 
+ and is_selinux_guest g =
+@@ -126,3 +133,19 @@ and use_setfiles g excludes =
+ 
+   (* Relabel everything. *)
+   g#setfiles ~excludes specfile mps
++
++and touch_autorelabel g =
++  let path = "/.autorelabel" in
++  g#touch path;
++
++  (* You cannot just touch /.autorelabel because SELinux itself
++   * will prevent this file from being read and prevent the
++   * autorelabel service from running(!)  Therefore we have to
++   * guess at the correct label here.  Ugh.
++   *
++   * This label name has been stable from at least RHEL 7 up to
++   * Fedora 45.
++   *)
++  let label = "system_u:object_r:etc_runtime_t:s0" in
++  let len = String.length label in
++  g#setxattr "security.selinux" label len path
+diff --git a/common/mlcustomize/SELinux_relabel.mli b/common/mlcustomize/SELinux_relabel.mli
+index 5f1ae7ff..eaee76c2 100644
+--- a/common/mlcustomize/SELinux_relabel.mli
++++ b/common/mlcustomize/SELinux_relabel.mli
+@@ -18,15 +18,20 @@
+ 
+ (** SELinux-relabel the filesystem. *)
+ 
+-val relabel : Guestfs.guestfs -> string list -> unit
++val relabel : ?at_boot : bool -> ?excludes : string list ->
++              Guestfs.guestfs -> unit
+ (** Relabel the mounted guestfs filesystem using the current SELinux
+     policy that applies to the guest.
+ 
+     If the guest does not look like it uses SELinux, this does nothing.
+ 
+-    The parameters are the guestfs handle and a list of directories
+-    that may be excluded (by passing I<--selinux-relabel-exclude>
+-    one or more times).
++    The required parameter is the guestfs handle.
++
++    Optional [?at_boot] (if true) defers labelling to boot
++    (I<--selinux-relabel-at-boot>).
++
++    Optional [?excludes] is a list of directories that may be excluded
++    (by passing I<--selinux-relabel-exclude> one or more times).
+ 
+     In case relabelling is not possible (since it is an optional
+     feature which requires the setfiles(8) program), instead we
+diff --git a/common/mlcustomize/customize-options.pod b/common/mlcustomize/customize-options.pod
+index f6e68f1e..cd3cb8b9 100644
+--- a/common/mlcustomize/customize-options.pod
++++ b/common/mlcustomize/customize-options.pod
+@@ -386,6 +386,36 @@ It cannot delete directories, only regular files.
+ 
+ This is a compatibility option that does nothing.
+ 
++=item B<--selinux-relabel-at-boot>
++
++This advanced option lets you defer
++SELinux relabelling until the first time the guest boots
++after conversion.
++
++The advantage of doing this is that conversion is quicker
++and uses less memory.
++
++The disadvantages are:
++
++=over 4
++
++=item *
++
++The guest will take I<much> longer to boot up and become ready
++the first time it boots.
++
++=item *
++
++The guest will reboot at least once.
++
++=item *
++
++SELinux relabelling problems cannot be detected during conversion.
++
++=back
++
++If in doubt, do not use this option.
++
+ =item B<--selinux-relabel-exclude> DIR
+ 
+ Exclude directories from being relabelled.
+diff --git a/common/mlcustomize/customize-synopsis.pod b/common/mlcustomize/customize-synopsis.pod
+index d6c4a280..2484b317 100644
+--- a/common/mlcustomize/customize-synopsis.pod
++++ b/common/mlcustomize/customize-synopsis.pod
+@@ -15,3 +15,4 @@
+     [--upload FILE:DEST] [--write FILE:CONTENT] [--no-logfile]
+     [--password-crypto md5|sha256|sha512] [--no-selinux-relabel]
+     [--selinux-relabel] [--selinux-relabel-exclude DIR]
++    [--selinux-relabel-at-boot]
+diff --git a/common/mlcustomize/customize_cmdline.ml b/common/mlcustomize/customize_cmdline.ml
+index 24e05dc9..7a79f546 100644
+--- a/common/mlcustomize/customize_cmdline.ml
++++ b/common/mlcustomize/customize_cmdline.ml
+@@ -117,6 +117,8 @@ and flags = {
+       (* --selinux-relabel *)
+   selinux_relabel_excludes : string list;
+       (* --selinux-relabel-exclude *)
++  selinux_relabel_at_boot : bool;
++      (* --selinux-relabel-at-boot *)
+ }
+ 
+ type argspec = Getopt.keys * Getopt.spec * Getopt.doc
+@@ -128,6 +130,7 @@ let rec argspec ?(v2v = false) () =
+   let no_selinux_relabel = ref false in
+   let selinux_relabel_ignored = ref false in
+   let selinux_relabel_excludes = ref [] in
++  let selinux_relabel_at_boot = ref false in
+ 
+   let rec get_ops () = {
+     ops = List.rev !ops;
+@@ -139,6 +142,7 @@ let rec argspec ?(v2v = false) () =
+     no_selinux_relabel = !no_selinux_relabel;
+     selinux_relabel_ignored = !selinux_relabel_ignored;
+     selinux_relabel_excludes = !selinux_relabel_excludes;
++    selinux_relabel_at_boot = !selinux_relabel_at_boot;
+   }
+   in
+ 
+@@ -501,6 +505,12 @@ let rec argspec ?(v2v = false) () =
+       s_"Exclude directories from SELinux relabelling"
+     ),
+     Some "DIR", "Exclude directories from being relabelled.\n\nThis advanced option lets you list directories in the guest which\nshould not be relabelled, even when SELinux relabelling is\nenabled.  Use this carefully, as any changes that are made\ninside these directories during customization will have incorrect\nSELinux labels, leading to potential failures later, so you must\nbe sure that the directories do not need relabelling.\n\nIf in doubt, do not use this option.\n\nYou can pass the option multiple times, eg.\nI<--selinux-relabel-exclude=/foo> I<--selinux-relabel-exclude=/bar>", false;
++    (
++      [ L"selinux-relabel-at-boot" ],
++      Getopt.Set selinux_relabel_at_boot,
++      s_"Defer SELinux relabelling until boot"
++    ),
++    None, "This advanced option lets you defer\nSELinux relabelling until the first time the guest boots\nafter conversion.\n\nThe advantage of doing this is that conversion is quicker\nand uses less memory.\n\nThe disadvantages are:\n\n=over 4\n\n=item *\n\nThe guest will take I<much> longer to boot up and become ready\nthe first time it boots.\n\n=item *\n\nThe guest will reboot at least once.\n\n=item *\n\nSELinux relabelling problems cannot be detected during conversion.\n\n=back\n\nIf in doubt, do not use this option.", false;
+   ]
+   and customize_read_from_file filename =
+     let forbidden_commands = [
+diff --git a/common/mlcustomize/customize_cmdline.mli b/common/mlcustomize/customize_cmdline.mli
+index abe10953..7770d5d4 100644
+--- a/common/mlcustomize/customize_cmdline.mli
++++ b/common/mlcustomize/customize_cmdline.mli
+@@ -109,6 +109,8 @@ and flags = {
+       (* --selinux-relabel *)
+   selinux_relabel_excludes : string list;
+       (* --selinux-relabel-exclude *)
++  selinux_relabel_at_boot : bool;
++      (* --selinux-relabel-at-boot *)
+ }
+ 
+ type argspec = Getopt.keys * Getopt.spec * Getopt.doc
+diff --git a/common/mlcustomize/customize_run.ml b/common/mlcustomize/customize_run.ml
+index 4878c00f..73585a53 100644
+--- a/common/mlcustomize/customize_run.ml
++++ b/common/mlcustomize/customize_run.ml
+@@ -360,8 +360,13 @@ let run (g : G.guestfs) root (ops : ops) =
+   );
+ 
+   if not ops.flags.no_selinux_relabel then (
+-    message (f_"SELinux relabelling");
+-    SELinux_relabel.relabel g ops.flags.selinux_relabel_excludes
++    let at_boot = ops.flags.selinux_relabel_at_boot in
++    if not at_boot then
++      message (f_"SELinux relabelling")
++    else
++      message (f_"SELinux relabelling deferred to first boot");
++    let excludes = ops.flags.selinux_relabel_excludes in
++    SELinux_relabel.relabel ~at_boot ~excludes g
+   );
+ 
+   (* Clean up the log file:
+diff --git a/common/mlcustomize/v2v-customize-options.pod b/common/mlcustomize/v2v-customize-options.pod
+index fee5f984..c91c1491 100644
+--- a/common/mlcustomize/v2v-customize-options.pod
++++ b/common/mlcustomize/v2v-customize-options.pod
+@@ -332,6 +332,36 @@ It cannot delete directories, only regular files.
+ 
+ This is a compatibility option that does nothing.
+ 
++=item B<--selinux-relabel-at-boot>
++
++This advanced option lets you defer
++SELinux relabelling until the first time the guest boots
++after conversion.
++
++The advantage of doing this is that conversion is quicker
++and uses less memory.
++
++The disadvantages are:
++
++=over 4
++
++=item *
++
++The guest will take I<much> longer to boot up and become ready
++the first time it boots.
++
++=item *
++
++The guest will reboot at least once.
++
++=item *
++
++SELinux relabelling problems cannot be detected during conversion.
++
++=back
++
++If in doubt, do not use this option.
++
+ =item B<--selinux-relabel-exclude> DIR
+ 
+ Exclude directories from being relabelled.
+diff --git a/common/mlcustomize/v2v-customize-synopsis.pod b/common/mlcustomize/v2v-customize-synopsis.pod
+index 5a1bc009..04d02024 100644
+--- a/common/mlcustomize/v2v-customize-synopsis.pod
++++ b/common/mlcustomize/v2v-customize-synopsis.pod
+@@ -13,3 +13,4 @@
+     [--upload FILE:DEST] [--write FILE:CONTENT] [--no-logfile]
+     [--password-crypto md5|sha256|sha512] [--no-selinux-relabel]
+     [--selinux-relabel] [--selinux-relabel-exclude DIR]
++    [--selinux-relabel-at-boot]
+diff --git a/tests/functions.sh.in b/tests/functions.sh.in
+index f3911c07..143d3d0f 100644
+--- a/tests/functions.sh.in
++++ b/tests/functions.sh.in
+@@ -77,6 +77,7 @@ virt_customize_options=\
+ --run-command,\
+ --scrub,\
+ --selinux-relabel,\
++--selinux-relabel-at-boot,\
+ --selinux-relabel-exclude,\
+ --ssh-inject,\
+ --tar-in,\

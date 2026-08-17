@@ -45,7 +45,7 @@ ExclusiveArch: x86_64
 Name:          virt-v2v
 Epoch:         1
 Version:       2.10.0
-Release:       18%{?dist}
+Release:       20%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -113,6 +113,11 @@ Patch0045:     0045-convert-fix-ubuntu-conversion-regression.patch
 Patch0046:     0046-common-update-submodule.patch
 Patch0047:     0047-Add-new-collect-option-to-collect-pre-conversion-Win.patch
 Patch0048:     0048-inspector-in-place-Add-disk-boot-order-boot-order-to.patch
+Patch0049:     0049-common-update-submodule.patch
+Patch0050:     0050-mlcustomize-Add-new-selinux-relabel-excludes-flag.patch
+Patch0051:     0051-common-update-submodule.patch
+Patch0052:     0052-tests-functions.sh.in-Fix-podcheck-to-ignore-new-vir.patch
+Patch0053:     0053-Add-selinux-relabel-at-boot-parameter.patch
 
 BuildRequires: autoconf, automake, libtool
 BuildRequires: make
@@ -123,7 +128,7 @@ BuildRequires: perl(IPC::Run3)
 BuildRequires: gcc
 BuildRequires: ocaml >= 4.08
 
-BuildRequires: libguestfs-devel >= 1:1.58.1-6
+BuildRequires: libguestfs-devel >= 1:1.58.1-9
 BuildRequires: augeas-devel
 BuildRequires: bash-completion
 %if 0%{?fedora} || 0%{?rhel} >= 11
@@ -169,7 +174,7 @@ BuildRequires: glibc-static
 BuildRequires: gnupg2
 %endif
 
-Requires:      libguestfs%{?_isa} >= 1:1.58.1-6
+Requires:      libguestfs%{?_isa} >= 1:1.58.1-9
 Requires:      guestfs-tools >= 1.54
 
 # XFS is the default filesystem in Fedora and RHEL.
@@ -418,6 +423,16 @@ done
 
 
 %changelog
+* Fri Aug 14 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-20
+- Fix SELinux relabelling of podman rootless containers
+  resolves: RHEL-239852
+- Add --selinux-relabel-exclude parameter
+  resolves: RHEL-239809
+- Add --selinux-relabel-at-boot parameter
+  resolves: RHEL-RHEL-240649
+- Change '::' to 'REM' in Windows batch files for improved reliability
+  resolves: RHEL-239810
+
 * Tue Jul 07 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-18
 - Add <disk> <boot-order>#</boot-order> to XML output
   resolves: RHEL-193138

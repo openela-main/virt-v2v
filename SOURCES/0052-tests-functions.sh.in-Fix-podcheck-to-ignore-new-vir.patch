@@ -1,0 +1,28 @@
+From c1f7d15cd370b29b00eca206751d6ad8e5585a15 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Thu, 6 Aug 2026 08:09:10 +0100
+Subject: [PATCH] tests/functions.sh.in: Fix podcheck to ignore new
+ virt-customize option
+
+The error from (eg) inspector/test-docs.sh was:
+
+  podcheck.pl: virt-v2v-inspector.pod does not define --selinux-relabel-exclude
+
+Fixes: commit 4dcf8ea13ca2516005cdb64edbbb2534fe612d49
+(cherry picked from commit 47443bd5787701b75b513b985e48a5bb481f3750)
+---
+ tests/functions.sh.in | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tests/functions.sh.in b/tests/functions.sh.in
+index e70c7028..f3911c07 100644
+--- a/tests/functions.sh.in
++++ b/tests/functions.sh.in
+@@ -77,6 +77,7 @@ virt_customize_options=\
+ --run-command,\
+ --scrub,\
+ --selinux-relabel,\
++--selinux-relabel-exclude,\
+ --ssh-inject,\
+ --tar-in,\
+ --timezone,\
