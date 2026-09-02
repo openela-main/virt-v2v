@@ -45,7 +45,7 @@ ExclusiveArch: x86_64
 Name:          virt-v2v
 Epoch:         1
 Version:       2.10.0
-Release:       20%{?dist}
+Release:       21%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -118,6 +118,10 @@ Patch0050:     0050-mlcustomize-Add-new-selinux-relabel-excludes-flag.patch
 Patch0051:     0051-common-update-submodule.patch
 Patch0052:     0052-tests-functions.sh.in-Fix-podcheck-to-ignore-new-vir.patch
 Patch0053:     0053-Add-selinux-relabel-at-boot-parameter.patch
+Patch0054:     0054-Add-it-nfc-mode.patch
+Patch0055:     0055-input-input_nfc.ml-Increase-wait-for-nbdkit-timeout-.patch
+Patch0056:     0056-lib-nbdkit.mli-Additional-documentation-caveats-for-.patch
+Patch0057:     0057-input-input_nfc.ml-Send-dump-plugin-output-to-stderr.patch
 
 BuildRequires: autoconf, automake, libtool
 BuildRequires: make
@@ -423,6 +427,12 @@ done
 
 
 %changelog
+* Wed Sep 02 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-21
+- Add -it nfc support
+  resolves: RHEL-248249
+- Increase timeout
+  resolves: RHEL-252892
+
 * Fri Aug 14 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-20
 - Fix SELinux relabelling of podman rootless containers
   resolves: RHEL-239852

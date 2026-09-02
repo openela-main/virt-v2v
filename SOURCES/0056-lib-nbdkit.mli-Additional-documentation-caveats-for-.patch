@@ -1,0 +1,29 @@
+From b43a6c55bed4656b7b0c1765a294c19aeaa9747a Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Wed, 2 Sep 2026 11:20:22 +0100
+Subject: [PATCH] lib/nbdkit.mli: Additional documentation caveats for
+ set_timeout
+
+Updates: commit 31fdc159047f0e0b803b2da4bea3ca6917adc02f
+(cherry picked from commit 475ce1dda0ed8976037314719006ef00b711c06c)
+---
+ lib/nbdkit.mli | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/lib/nbdkit.mli b/lib/nbdkit.mli
+index bfd90107..4f6d4d6a 100644
+--- a/lib/nbdkit.mli
++++ b/lib/nbdkit.mli
+@@ -96,7 +96,11 @@ val set_threads : cmd -> int -> unit
+ 
+ val set_timeout : cmd -> int -> unit
+ (** Set the number of seconds to wait for nbdkit to start up.
+-    The default is 30 seconds. *)
++    The default is 30 seconds.
++
++    Note: This should not usually be increased.  Increasing it
++    will cause login failures to take ages to time out.  It is
++    better to fix long start-up times in nbdkit instead. *)
+ 
+ val add_filter : cmd -> string -> unit
+ (** Add a filter.  You may need to use {!probe_filter} first to check

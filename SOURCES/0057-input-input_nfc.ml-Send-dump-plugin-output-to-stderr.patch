@@ -1,0 +1,48 @@
+From 850efc29cfc485ad5eb58bdf72605cc3d82a569e Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Wed, 2 Sep 2026 11:24:33 +0100
+Subject: [PATCH] input/input_nfc.ml: Send --dump-plugin output to stderr (if
+ verbose)
+
+In debugging mode, it's useful to capture the nbdkit nfc --dump-plugin
+output.  In the latest version this contains the plugin version as
+well as other useful information.
+
+In the debug output you will see:
+
+path=/usr/lib64/nbdkit/plugins/nbdkit-nfc-plugin.so
+name=nfc
+version=v0.1.1
+api_version=2
+struct_size=384
+max_thread_model=parallel
+thread_model=parallel
+[etc]
+
+(cherry picked from commit d705918384faa18bfd61ac4ff9b3a6f9cef52687)
+---
+ input/input_nfc.ml | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/input/input_nfc.ml b/input/input_nfc.ml
+index de70d63a..f728caa2 100644
+--- a/input/input_nfc.ml
++++ b/input/input_nfc.ml
+@@ -211,12 +211,13 @@ these settings.
+     if not (Nbdkit.probe_filter "cow") then
+       error (f_"nbdkit-cow-filter is not installed or not working");
+ 
+-    (* Check that nbdkit-nfc-plugin is installed and working.  We also
+-     * check this later when calling common_create, but this version
+-     * has better troubleshooting output.
++    (* Check that nbdkit-nfc-plugin is installed and working.  As a
++     * side effect dump plugin information into the debug output.
+      *)
+     let error_unless_nbdkit_nfc_working () =
+-      let cmd = "nbdkit nfc --dump-plugin >/dev/null" in
++      let cmd =
++        sprintf "nbdkit nfc --dump-plugin >%s"
++          (if verbose () then "&2" else "/dev/null") in
+       if Sys.command cmd <> 0 then (
+           error (f_"nbdkit nfc plugin is not installed or not working.  It is required if you want to use ‘-it nfc’.
+ 
