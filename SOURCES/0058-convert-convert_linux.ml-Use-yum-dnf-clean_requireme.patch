@@ -1,0 +1,114 @@
+From d7b19e3f5619479e173a8ad0534f857571f14d1f Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 7 Aug 2026 15:48:48 +0100
+Subject: [PATCH] convert/convert_linux.ml: Use yum/dnf
+ clean_requirements_on_remove=False
+
+When removing packages, use the yum or dnf option
+--setopt=clean_requirements_on_remove=False (in dnf this is also known
+as --no-autoremove).  This removes only the named package, not
+dependencies.  This is in the interests of making the most minimal
+change possible to the guest during conversion.
+
+Update the common submodule:
+
+  Richard W.M. Jones (1):
+        mlcustomize/guest_packages.ml: Add clean_requirements_on_remove option
+
+Fixes: https://redhat.atlassian.net/browse/RHEL-233944
+(cherry picked from commit af8fbd3ea0e24cc8cfb4297724916db87a36ad04)
+---
+ common                   | 2 +-
+ convert/convert_linux.ml | 4 +++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+Submodule common fbcd2ef6..8a580efc:
+diff --git a/common/mlcustomize/guest_packages.ml b/common/mlcustomize/guest_packages.ml
+index 5431811f..ba0ebdd2 100644
+--- a/common/mlcustomize/guest_packages.ml
++++ b/common/mlcustomize/guest_packages.ml
+@@ -104,8 +104,14 @@ let update_command package_management =
+   | pm ->
+     error_unimplemented_package_manager "--update" pm
+ 
+-let uninstall_command packages package_management =
++let uninstall_command ?clean_requirements_on_remove
++      packages package_management =
+   let quoted_args = String.concat " " (List.map quote packages) in
++  let dnf_yum_clean_requirements_on_remove =
++    match clean_requirements_on_remove with
++    | None -> ""
++    | Some true -> "--setopt=clean_requirements_on_remove=True"
++    | Some false -> "--setopt=clean_requirements_on_remove=False" in
+   match package_management with
+   | "apk" -> sprintf "apk del %s" quoted_args
+   | "apt" ->
+@@ -115,14 +121,24 @@ let uninstall_command packages package_management =
+       apt_opts='-q -y -o Dpkg::Options::=--force-confnew'
+       apt-get $apt_opts remove %s
+     " quoted_args
+-  | "dnf" ->    sprintf "dnf -y remove %s" quoted_args
+-  | "pisi" ->   sprintf "pisi rm %s" quoted_args
+-  | "pacman" -> sprintf "pacman -R %s" quoted_args
+-  | "urpmi" ->  sprintf "urpme %s" quoted_args
+-  | "xbps" ->   sprintf "xbps-remove -Sy %s" quoted_args
+-  | "yum" ->    sprintf "yum -y remove %s" quoted_args
+-  | "zypper" -> sprintf "zypper -n rm %s" quoted_args
+-
++  | "dnf" ->
++     sprintf "dnf -y %s \
++              remove %s"
++       dnf_yum_clean_requirements_on_remove quoted_args
++  | "pisi" ->
++     sprintf "pisi rm %s" quoted_args
++  | "pacman" ->
++     sprintf "pacman -R %s" quoted_args
++  | "urpmi" ->
++     sprintf "urpme %s" quoted_args
++  | "xbps" ->
++     sprintf "xbps-remove -Sy %s" quoted_args
++  | "yum" ->
++     sprintf "yum -y  %s \
++              remove %s"
++       dnf_yum_clean_requirements_on_remove quoted_args
++  | "zypper" ->
++     sprintf "zypper -n rm %s" quoted_args
+   | "unknown" ->
+     error_unknown_package_manager "--uninstall"
+   | pm ->
+diff --git a/common/mlcustomize/guest_packages.mli b/common/mlcustomize/guest_packages.mli
+index 5f0925a0..ee03ca88 100644
+--- a/common/mlcustomize/guest_packages.mli
++++ b/common/mlcustomize/guest_packages.mli
+@@ -38,7 +38,14 @@ val update_command : string -> string
+     script) for updating the OS packages that are currently installed in the
+     guest. *)
+ 
+-val uninstall_command : string list -> string -> string
++val uninstall_command : ?clean_requirements_on_remove:bool ->
++                        string list -> string -> string
+ (** [uninstall_command packages package_management] produces a properly quoted
+     shell command string suitable for execution in the guest (directly or via a
+-    Firstboot script) for uninstalling the OS packages listed in [packages]. *)
++    Firstboot script) for uninstalling the OS packages listed in [packages].
++
++    If used, [?clean_requirements_on_remove] will add
++    [--setopt=clean_requirements_on_remove=(True|False)] to the
++    command.  This is used by virt-v2v to avoid removing
++    dependencies (ie behaving like "noautoremove"). It currently
++    only works for yum/dmf. *)
+diff --git a/convert/convert_linux.ml b/convert/convert_linux.ml
+index 7c32d312..355c3770 100644
+--- a/convert/convert_linux.ml
++++ b/convert/convert_linux.ml
+@@ -1453,7 +1453,9 @@ fi
+   and uninstall_packages_nonfatal pkgs =
+     if pkgs <> [] then (
+       let cmd =
+-        try Guest_packages.uninstall_command pkgs inspect.i_package_management
++        try
++          Guest_packages.uninstall_command ~clean_requirements_on_remove:false
++            pkgs inspect.i_package_management
+         with
+         | Guest_packages.Unknown_package_manager msg
+         | Guest_packages.Unimplemented_package_manager msg ->

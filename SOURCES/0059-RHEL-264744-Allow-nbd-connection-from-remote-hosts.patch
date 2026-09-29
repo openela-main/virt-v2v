@@ -1,0 +1,35 @@
+From 21332055b5a515d1bd97cae65f3ca1ba1615e903 Mon Sep 17 00:00:00 2001
+From: Martin Necas <mnecas@redhat.com>
+Date: Mon, 21 Sep 2026 17:07:57 +0900
+Subject: [PATCH] RHEL-264744 | Allow nbd connection from remote hosts
+
+Right now if you specify NBD disk conneciton inside libvirt domain the virt-v2v fails with:
+```
+virt-v2v: warning: <disk type='network'> with <source protocol='nbd'> was ignored
+```
+This commit allows to specify NBD disks from remote hosts.
+
+Signed-off-by: Martin Necas <mnecas@redhat.com>
+(cherry picked from commit e625e917dc1da59a02a88f30e16213eb98fdbaf0)
+(cherry picked from commit 68b91282a7e7f8ebd3e6ef6fadacfc346e60cf48)
+---
+ input/parse_libvirt_xml.ml | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/input/parse_libvirt_xml.ml b/input/parse_libvirt_xml.ml
+index 96b8e413..30762d73 100644
+--- a/input/parse_libvirt_xml.ml
++++ b/input/parse_libvirt_xml.ml
+@@ -315,8 +315,10 @@ let parse_libvirt_xml ?conn xml =
+                 xpath_int "source/host/@port") with
+         | None, _, _ ->
+            warning (f_"<disk type='%s'> was ignored") "network"
+-        | Some "nbd", Some ("localhost" as host), Some port when port > 0 ->
+-           (* <source protocol="nbd"> with host localhost is used by virt-p2v *)
++        | Some "nbd", Some host, Some port when port > 0 ->
++           (* <source protocol="nbd"> with host localhost is used by virt-p2v
++            * or host exposing disk as with NBD.
++            *)
+            add_disk format controller (NBD (host, port)) checksum
+         | Some ("http"|"https" as driver), Some (_ as host), port ->
+            (* This is for testing curl, eg for testing VMware conversions

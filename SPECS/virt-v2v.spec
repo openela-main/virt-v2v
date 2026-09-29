@@ -45,7 +45,7 @@ ExclusiveArch: x86_64
 Name:          virt-v2v
 Epoch:         1
 Version:       2.10.0
-Release:       21%{?dist}
+Release:       23%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -122,6 +122,8 @@ Patch0054:     0054-Add-it-nfc-mode.patch
 Patch0055:     0055-input-input_nfc.ml-Increase-wait-for-nbdkit-timeout-.patch
 Patch0056:     0056-lib-nbdkit.mli-Additional-documentation-caveats-for-.patch
 Patch0057:     0057-input-input_nfc.ml-Send-dump-plugin-output-to-stderr.patch
+Patch0058:     0058-convert-convert_linux.ml-Use-yum-dnf-clean_requireme.patch
+Patch0059:     0059-RHEL-264744-Allow-nbd-connection-from-remote-hosts.patch
 
 BuildRequires: autoconf, automake, libtool
 BuildRequires: make
@@ -427,6 +429,14 @@ done
 
 
 %changelog
+* Wed Sep 23 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-23
+- Allow NBD connections from remote hosts in -i libvirtxml input mode
+  resolves: RHEL-267140
+
+* Thu Sep 10 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-22
+- For Linux conversions use yum/dnf clean_requirements_on_remove=False
+  resolves: RHEL-257319
+
 * Wed Sep 02 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-21
 - Add -it nfc support
   resolves: RHEL-248249
