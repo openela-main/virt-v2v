@@ -45,7 +45,7 @@ ExclusiveArch: x86_64
 Name:          virt-v2v
 Epoch:         1
 Version:       2.10.0
-Release:       23%{?dist}
+Release:       24%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -124,6 +124,7 @@ Patch0056:     0056-lib-nbdkit.mli-Additional-documentation-caveats-for-.patch
 Patch0057:     0057-input-input_nfc.ml-Send-dump-plugin-output-to-stderr.patch
 Patch0058:     0058-convert-convert_linux.ml-Use-yum-dnf-clean_requireme.patch
 Patch0059:     0059-RHEL-264744-Allow-nbd-connection-from-remote-hosts.patch
+Patch0060:     0060-i-libvirt-Add-io-nbd-tls-certificates-for-NBD-disks.patch
 
 BuildRequires: autoconf, automake, libtool
 BuildRequires: make
@@ -429,6 +430,10 @@ done
 
 
 %changelog
+* Mon Oct 05 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-24
+- -i libvirtxml: Add -io nbd-tls-certificates for NBD disks
+  resolves: RHEL-276238
+
 * Wed Sep 23 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-23
 - Allow NBD connections from remote hosts in -i libvirtxml input mode
   resolves: RHEL-267140
