@@ -1,0 +1,40 @@
+From 20995fbbf478869cf017cfbfa41f5aa652e2e1b7 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 9 Jul 2024 11:30:09 +0100
+Subject: [PATCH] RHEL: Add warning about virt-v2v-in-place not being supported
+
+Fixes: https://issues.redhat.com/browse/RHEL-40903
+---
+ in-place/in_place.ml           | 3 +++
+ in-place/virt-v2v-in-place.pod | 4 ++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/in-place/in_place.ml b/in-place/in_place.ml
+index 3539c64c..148d6e46 100644
+--- a/in-place/in_place.ml
++++ b/in-place/in_place.ml
+@@ -241,6 +241,9 @@ read the man page virt-v2v-in-place(1).
+   let opthandle = create_standard_options argspec ~anon_fun ~key_opts:true ~machine_readable:true usage_msg in
+   Getopt.parse opthandle.getopt;
+ 
++  warning "virt-v2v-in-place is NOT SUPPORTED for command line use. \
++           It is almost always better to use virt-v2v instead of this tool.";
++
+   (* Print the version, easier than asking users to tell us. *)
+   debug "info: %s: %s %s (%s)"
+         prog Config.package_name Config.package_version_full
+diff --git a/in-place/virt-v2v-in-place.pod b/in-place/virt-v2v-in-place.pod
+index f3a95409..6a1e556d 100644
+--- a/in-place/virt-v2v-in-place.pod
++++ b/in-place/virt-v2v-in-place.pod
+@@ -16,6 +16,10 @@ virt-v2v-in-place - Convert a guest to use KVM in-place
+ 
+ =head1 DESCRIPTION
+ 
++B<virt-v2v-in-place is NOT SUPPORTED for command line use in Red Hat
++Enterprise Linux>.  It is almost always better to use L<virt-v2v(1)>
++instead of this tool.
++
+ Virt-v2v-in-place converts a single guest from a foreign hypervisor to
+ run on KVM.  It does this conversion in place, modifying the original
+ disk.

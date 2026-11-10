@@ -1,0 +1,455 @@
+From ff3a5eace1a749e31d224ae5640f1c267c519ac5 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Sat, 8 Aug 2026 08:08:18 +0100
+Subject: [PATCH] common: update submodule
+
+  Richard W.M. Jones (2):
+        mlcustomize/firstboot.ml: Print the version of Windows
+        mlcustomize/firstboot.ml: Use rem for comments (instead of '::')
+
+(cherry picked from commit da0c19d25df40e31d6bf7c8f349478ddf616e02b)
+---
+ common | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Submodule common f865077d..b3841fbc:
+diff --git a/common/mlcustomize/SELinux_relabel.ml b/common/mlcustomize/SELinux_relabel.ml
+index 62450e41..3fd97221 100644
+--- a/common/mlcustomize/SELinux_relabel.ml
++++ b/common/mlcustomize/SELinux_relabel.ml
+@@ -28,11 +28,11 @@ module G = Guestfs
+  * [libguestfs.git/daemon/selinux.ml].
+  *)
+ 
+-let rec relabel (g : G.guestfs) =
++let rec relabel (g : G.guestfs) excludes =
+   (* Is the guest using SELinux?  (Otherwise this is a no-op). *)
+   if is_selinux_guest g then (
+     try
+-      use_setfiles g;
++      use_setfiles g excludes;
+       (* That worked, so we don't need to autorelabel. *)
+       g#rm_f "/.autorelabel"
+     with Failure _ ->
+@@ -47,7 +47,7 @@ and is_selinux_guest g =
+   g#is_file ~followsymlinks:true "/usr/sbin/load_policy" &&
+   g#is_file ~followsymlinks:true "/etc/selinux/config"
+ 
+-and use_setfiles g =
++and use_setfiles g excludes =
+   (* Is setfiles / SELinux relabelling functionality available? *)
+   if not (g#feature_available [| "selinuxrelabel" |]) then
+     failwith "no selinux relabel feature";
+@@ -121,5 +121,8 @@ and use_setfiles g =
+             List.sort compare |>  (* sort them for consistency *)
+             Array.of_list in
+ 
++  (* Excludes is actually a string array, not string list. *)
++  let excludes = Array.of_list excludes in
++
+   (* Relabel everything. *)
+-  g#setfiles specfile mps
++  g#setfiles ~excludes specfile mps
+diff --git a/common/mlcustomize/SELinux_relabel.mli b/common/mlcustomize/SELinux_relabel.mli
+index 7b4f7ff2..5f1ae7ff 100644
+--- a/common/mlcustomize/SELinux_relabel.mli
++++ b/common/mlcustomize/SELinux_relabel.mli
+@@ -18,12 +18,19 @@
+ 
+ (** SELinux-relabel the filesystem. *)
+ 
+-val relabel : Guestfs.guestfs -> unit
++val relabel : Guestfs.guestfs -> string list -> unit
+ (** Relabel the mounted guestfs filesystem using the current SELinux
+     policy that applies to the guest.
+ 
+     If the guest does not look like it uses SELinux, this does nothing.
+ 
++    The parameters are the guestfs handle and a list of directories
++    that may be excluded (by passing I<--selinux-relabel-exclude>
++    one or more times).
++
+     In case relabelling is not possible (since it is an optional
+     feature which requires the setfiles(8) program), instead we
+-    fall back to touching [/.autorelabel]. *)
++    fall back to touching [/.autorelabel].
++
++    The excludes list only affects setfiles relabelling,
++    not [/.autorelabel] since we do not control how that works. *)
+diff --git a/common/mlcustomize/customize-options.pod b/common/mlcustomize/customize-options.pod
+index 95767cc7..f6e68f1e 100644
+--- a/common/mlcustomize/customize-options.pod
++++ b/common/mlcustomize/customize-options.pod
+@@ -386,6 +386,22 @@ It cannot delete directories, only regular files.
+ 
+ This is a compatibility option that does nothing.
+ 
++=item B<--selinux-relabel-exclude> DIR
++
++Exclude directories from being relabelled.
++
++This advanced option lets you list directories in the guest which
++should not be relabelled, even when SELinux relabelling is
++enabled.  Use this carefully, as any changes that are made
++inside these directories during customization will have incorrect
++SELinux labels, leading to potential failures later, so you must
++be sure that the directories do not need relabelling.
++
++If in doubt, do not use this option.
++
++You can pass the option multiple times, eg.
++I<--selinux-relabel-exclude=/foo> I<--selinux-relabel-exclude=/bar>
++
+ =item B<--ssh-inject> USER[:SELECTOR]
+ 
+ Inject an ssh key so the given C<USER> will be able to log in over
+diff --git a/common/mlcustomize/customize-synopsis.pod b/common/mlcustomize/customize-synopsis.pod
+index f5eeb69d..d6c4a280 100644
+--- a/common/mlcustomize/customize-synopsis.pod
++++ b/common/mlcustomize/customize-synopsis.pod
+@@ -14,4 +14,4 @@
+     [--truncate-recursive PATH] [--uninstall PKG,PKG..] [--update]
+     [--upload FILE:DEST] [--write FILE:CONTENT] [--no-logfile]
+     [--password-crypto md5|sha256|sha512] [--no-selinux-relabel]
+-    [--selinux-relabel]
++    [--selinux-relabel] [--selinux-relabel-exclude DIR]
+diff --git a/common/mlcustomize/customize_cmdline.ml b/common/mlcustomize/customize_cmdline.ml
+index b8eda519..24e05dc9 100644
+--- a/common/mlcustomize/customize_cmdline.ml
++++ b/common/mlcustomize/customize_cmdline.ml
+@@ -115,6 +115,8 @@ and flags = {
+       (* --no-selinux-relabel *)
+   selinux_relabel_ignored : bool;
+       (* --selinux-relabel *)
++  selinux_relabel_excludes : string list;
++      (* --selinux-relabel-exclude *)
+ }
+ 
+ type argspec = Getopt.keys * Getopt.spec * Getopt.doc
+@@ -125,6 +127,7 @@ let rec argspec ?(v2v = false) () =
+   let password_crypto = ref None in
+   let no_selinux_relabel = ref false in
+   let selinux_relabel_ignored = ref false in
++  let selinux_relabel_excludes = ref [] in
+ 
+   let rec get_ops () = {
+     ops = List.rev !ops;
+@@ -135,6 +138,7 @@ let rec argspec ?(v2v = false) () =
+     password_crypto = !password_crypto;
+     no_selinux_relabel = !no_selinux_relabel;
+     selinux_relabel_ignored = !selinux_relabel_ignored;
++    selinux_relabel_excludes = !selinux_relabel_excludes;
+   }
+   in
+ 
+@@ -488,6 +492,15 @@ let rec argspec ?(v2v = false) () =
+       s_"Compatibility option doing nothing"
+     ),
+     None, "This is a compatibility option that does nothing.", false;
++    (
++      [ L"selinux-relabel-exclude" ],
++      Getopt.String (
++        s_"DIR",
++        List.push_back selinux_relabel_excludes
++      ),
++      s_"Exclude directories from SELinux relabelling"
++    ),
++    Some "DIR", "Exclude directories from being relabelled.\n\nThis advanced option lets you list directories in the guest which\nshould not be relabelled, even when SELinux relabelling is\nenabled.  Use this carefully, as any changes that are made\ninside these directories during customization will have incorrect\nSELinux labels, leading to potential failures later, so you must\nbe sure that the directories do not need relabelling.\n\nIf in doubt, do not use this option.\n\nYou can pass the option multiple times, eg.\nI<--selinux-relabel-exclude=/foo> I<--selinux-relabel-exclude=/bar>", false;
+   ]
+   and customize_read_from_file filename =
+     let forbidden_commands = [
+diff --git a/common/mlcustomize/customize_cmdline.mli b/common/mlcustomize/customize_cmdline.mli
+index baacda9d..abe10953 100644
+--- a/common/mlcustomize/customize_cmdline.mli
++++ b/common/mlcustomize/customize_cmdline.mli
+@@ -107,17 +107,24 @@ and flags = {
+       (* --no-selinux-relabel *)
+   selinux_relabel_ignored : bool;
+       (* --selinux-relabel *)
++  selinux_relabel_excludes : string list;
++      (* --selinux-relabel-exclude *)
+ }
+ 
+ type argspec = Getopt.keys * Getopt.spec * Getopt.doc
+ val argspec : ?v2v:bool -> unit -> (argspec * string option * string) list * (unit -> ops)
+-(** This returns a pair [(list, get_ops)].
++(** Return the argspec (a list of arguments, see {!Getopt} module)
++    with the full list of virt-customize options.
++
++    If the parameter [~v2v] is true then this excludes parameters
++    that should be excluded from virt-v2v.  For example
++    [--inject-qemu-ga] is excluded from the list because virt-v2v
++    decides itself whether and how to inject the QEMU guest agent.
++
++    This returns a pair [(list, get_ops)].
+ 
+     [list] is a list of the command line arguments, plus some extra data.
+ 
+     [get_ops] is a function you can call {i after} command line parsing
+     which will return the actual operations specified by the user on the
+-    command line.
+-
+-    If the parameter [~v2v] is true then this excludes parameters
+-    that should be excluded from virt-v2v. *)
+\ No newline at end of file
++    command line.  This can be passed to {!Customize_run.run} *)
+\ No newline at end of file
+diff --git a/common/mlcustomize/customize_run.ml b/common/mlcustomize/customize_run.ml
+index 1baf0f3c..4878c00f 100644
+--- a/common/mlcustomize/customize_run.ml
++++ b/common/mlcustomize/customize_run.ml
+@@ -361,7 +361,7 @@ let run (g : G.guestfs) root (ops : ops) =
+ 
+   if not ops.flags.no_selinux_relabel then (
+     message (f_"SELinux relabelling");
+-    SELinux_relabel.relabel g
++    SELinux_relabel.relabel g ops.flags.selinux_relabel_excludes
+   );
+ 
+   (* Clean up the log file:
+diff --git a/common/mlcustomize/firstboot.ml b/common/mlcustomize/firstboot.ml
+index 366beca9..74342be8 100644
+--- a/common/mlcustomize/firstboot.ml
++++ b/common/mlcustomize/firstboot.ml
+@@ -299,12 +299,13 @@ exit /b
+ :main
+ echo starting firstboot service
+ echo effective user: %%USERNAME%% domain: %%USERDOMAIN%%
++ver
+ 
+ if not exist "%%scripts_done%%" (
+   mkdir "%%scripts_done%%"
+ )
+ 
+-:: Pick the next script to run.
++rem Pick the next script to run.
+ for %%%%f in ("%%scripts%%"\*.bat) do (
+   echo running "%%%%f"
+   pushd "%%scripts%%"
+@@ -320,23 +321,23 @@ for %%%%f in ("%%scripts%%"\*.bat) do (
+     echo Script failed, will retry on next boot
+   )
+ 
+-  :: Reboot the computer only if exit code indicates.
+-  :: Exit code 250 means do not reboot, otherwise reboot
+-  :: Reboot is necessary to free any locked files which
+-  :: may prevent later scripts from running.
++  rem Reboot the computer only if exit code indicates.
++  rem Exit code 250 means do not reboot, otherwise reboot.
++  rem Reboot is necessary to free any locked files which
++  rem may prevent later scripts from running.
+   if !elvl! NEQ 250 (
+     shutdown /r /t 0 /y
+ 
+-    :: Exit the script (in case shutdown returns before rebooting).
+-    :: On next boot, the whole firstboot service will be called again.
+-
++    rem Exit the script (in case shutdown returns before
++    rem rebooting).  On next boot, the whole firstboot
++    rem service will be called again.
+     exit /b
+   )
+ )
+ 
+-:: Fallthrough here if there are no scripts.
++rem Fallthrough here if there are no scripts.
+ 
+-:: Touch a sentinel file to say we have finished.
++rem Touch a sentinel file to say we have finished.
+ type nul > "%%firstboot%%\complete"
+ 
+ echo uninstalling firstboot service
+diff --git a/common/mlcustomize/guest_packages.ml b/common/mlcustomize/guest_packages.ml
+index 5431811f..933b8c20 100644
+--- a/common/mlcustomize/guest_packages.ml
++++ b/common/mlcustomize/guest_packages.ml
+@@ -44,7 +44,13 @@ let error_unimplemented_package_manager flag pm =
+                     flag pm in
+   raise (Unimplemented_package_manager msg)
+ 
+-(* http://distrowatch.com/dwres.php?resource=package-management *)
++(* http://distrowatch.com/dwres.php?resource=package-management
++ *
++ * yum/dnf --setopt=skip_if_unavailable=True makes package installation
++ * a bit more reliable if an unrelated repo, or the network, are not
++ * available.  The command will still fail if the package itself cannot
++ * be downloaded.
++ *)
+ let install_command packages package_management =
+   let quoted_args = String.concat " " (List.map quote packages) in
+   match package_management with
+@@ -61,13 +67,20 @@ let install_command packages package_management =
+       apt-get $apt_opts update
+       apt-get $apt_opts install %s
+     " quoted_args
+-  | "dnf" ->    sprintf "dnf -y install %s" quoted_args
+-  | "pisi" ->   sprintf "pisi it %s" quoted_args
+-  | "pacman" -> sprintf "pacman -S --noconfirm %s" quoted_args
+-  | "urpmi" ->  sprintf "urpmi %s" quoted_args
+-  | "xbps" ->   sprintf "xbps-install -Sy %s" quoted_args
+-  | "yum" ->    sprintf "yum -y install %s" quoted_args
+-  | "zypper" -> sprintf "zypper -n in -l %s" quoted_args
++  | "dnf" ->
++     sprintf "dnf --setopt=skip_if_unavailable=True -y install %s" quoted_args
++  | "pisi" ->
++     sprintf "pisi it %s" quoted_args
++  | "pacman" ->
++     sprintf "pacman -S --noconfirm %s" quoted_args
++  | "urpmi" ->
++     sprintf "urpmi %s" quoted_args
++  | "xbps" ->
++     sprintf "xbps-install -Sy %s" quoted_args
++  | "yum" ->
++     sprintf "yum --setopt=skip_if_unavailable=True -y install %s" quoted_args
++  | "zypper" ->
++     sprintf "zypper -n in -l %s" quoted_args
+ 
+   | "unknown" ->
+     error_unknown_package_manager "--install"
+@@ -90,13 +103,18 @@ let update_command package_management =
+       apt-get $apt_opts upgrade
+     "
+   | "dnf" ->
+-     sprintf "dnf%s -y --best upgrade"
++     sprintf "dnf%s --setopt=skip_if_unavailable=True -y --best upgrade"
+              (if verbose () then " --verbose" else "")
+-  | "pisi" ->   "pisi upgrade"
+-  | "pacman" -> "pacman -Su"
+-  | "urpmi" ->  "urpmi --auto-select"
+-  | "xbps" ->   "xbps-install -Suy"
+-  | "yum" ->    "yum -y update"
++  | "pisi" ->
++     "pisi upgrade"
++  | "pacman" ->
++     "pacman -Su"
++  | "urpmi" ->
++     "urpmi --auto-select"
++  | "xbps" ->
++     "xbps-install -Suy"
++  | "yum" ->
++     "yum -y --setopt=skip_if_unavailable=True update"
+   | "zypper" -> "zypper -n dup -l"
+ 
+   | "unknown" ->
+@@ -115,13 +133,21 @@ let uninstall_command packages package_management =
+       apt_opts='-q -y -o Dpkg::Options::=--force-confnew'
+       apt-get $apt_opts remove %s
+     " quoted_args
+-  | "dnf" ->    sprintf "dnf -y remove %s" quoted_args
+-  | "pisi" ->   sprintf "pisi rm %s" quoted_args
+-  | "pacman" -> sprintf "pacman -R %s" quoted_args
+-  | "urpmi" ->  sprintf "urpme %s" quoted_args
+-  | "xbps" ->   sprintf "xbps-remove -Sy %s" quoted_args
+-  | "yum" ->    sprintf "yum -y remove %s" quoted_args
+-  | "zypper" -> sprintf "zypper -n rm %s" quoted_args
++  | "dnf" ->
++     sprintf "dnf -y --setopt=skip_if_unavailable=True --disableplugin=subscription-manager remove %s"
++             quoted_args
++  | "pisi" ->
++     sprintf "pisi rm %s" quoted_args
++  | "pacman" ->
++     sprintf "pacman -R %s" quoted_args
++  | "urpmi" ->
++     sprintf "urpme %s" quoted_args
++  | "xbps" ->
++     sprintf "xbps-remove -Sy %s" quoted_args
++  | "yum" ->
++     sprintf "yum -y --setopt=skip_if_unavailable=True remove %s" quoted_args
++  | "zypper" ->
++     sprintf "zypper -n rm %s" quoted_args
+ 
+   | "unknown" ->
+     error_unknown_package_manager "--uninstall"
+diff --git a/common/mlcustomize/inject_virtio_win.ml b/common/mlcustomize/inject_virtio_win.ml
+index 0e5dcf05..6d7cf1a1 100644
+--- a/common/mlcustomize/inject_virtio_win.ml
++++ b/common/mlcustomize/inject_virtio_win.ml
+@@ -43,15 +43,6 @@ type t = {
+   virtio_win : string;
+   (** Path to the virtio-win ISO or directory. *)
+ 
+-  was_set : bool;
+-  (** If the virtio_win path was explicitly set, for example by
+-      the user setting an environment variable.
+-
+-      This is used to "show intention" to use virtio-win instead
+-      of libosinfo.  Although this behaviour is documented, IMHO it has
+-      always been a bad idea.  We should change this in future to allow
+-      the user to select where they want to get drivers from. XXX *)
+-
+   mutable block_driver_priority : string list
+   (** List of block drivers *)
+ }
+@@ -74,20 +65,20 @@ type virtio_win_installed = {
+ let rec from_environment g root datadir =
+   let t = get_inspection g root in
+ 
+-  let virtio_win, was_set =
+-    try Sys.getenv "VIRTIO_WIN", true
++  let virtio_win =
++    try Sys.getenv "VIRTIO_WIN"
+     with Not_found ->
+-      try Sys.getenv "VIRTIO_WIN_DIR" (* old name for VIRTIO_WIN *), true
++      try Sys.getenv "VIRTIO_WIN_DIR" (* old name for VIRTIO_WIN *)
+       with Not_found ->
+         let iso = datadir // "virtio-win" // "virtio-win.iso" in
+         (if Sys.file_exists iso then iso
+-         else datadir // "virtio-win"), false in
++         else datadir // "virtio-win") in
+ 
+-  { t with virtio_win; was_set }
++  { t with virtio_win }
+ 
+ and from_path g root path =
+   let t = get_inspection g root in
+-  { t with virtio_win = path; was_set = true }
++  { t with virtio_win = path }
+ 
+ and get_inspection g root =
+   (* Fail hard if inspection hasn't been done or it's not a Windows
+@@ -108,7 +99,7 @@ and get_inspection g root =
+   { g; root;
+     i_arch; i_major_version; i_minor_version; i_osinfo;
+     i_product_variant; i_windows_current_control_set; i_windows_systemroot;
+-    virtio_win = ""; was_set = false;
++    virtio_win = "";
+     block_driver_priority = ["virtio_blk"; "vrtioblk"; "viostor"] }
+ 
+ let get_block_driver_priority t   = t.block_driver_priority
+diff --git a/common/mlcustomize/v2v-customize-options.pod b/common/mlcustomize/v2v-customize-options.pod
+index 6252ffe9..fee5f984 100644
+--- a/common/mlcustomize/v2v-customize-options.pod
++++ b/common/mlcustomize/v2v-customize-options.pod
+@@ -332,6 +332,22 @@ It cannot delete directories, only regular files.
+ 
+ This is a compatibility option that does nothing.
+ 
++=item B<--selinux-relabel-exclude> DIR
++
++Exclude directories from being relabelled.
++
++This advanced option lets you list directories in the guest which
++should not be relabelled, even when SELinux relabelling is
++enabled.  Use this carefully, as any changes that are made
++inside these directories during customization will have incorrect
++SELinux labels, leading to potential failures later, so you must
++be sure that the directories do not need relabelling.
++
++If in doubt, do not use this option.
++
++You can pass the option multiple times, eg.
++I<--selinux-relabel-exclude=/foo> I<--selinux-relabel-exclude=/bar>
++
+ =item B<--ssh-inject> USER[:SELECTOR]
+ 
+ Inject an ssh key so the given C<USER> will be able to log in over
+diff --git a/common/mlcustomize/v2v-customize-synopsis.pod b/common/mlcustomize/v2v-customize-synopsis.pod
+index 4c1a1547..5a1bc009 100644
+--- a/common/mlcustomize/v2v-customize-synopsis.pod
++++ b/common/mlcustomize/v2v-customize-synopsis.pod
+@@ -12,4 +12,4 @@
+     [--truncate-recursive PATH] [--uninstall PKG,PKG..] [--update]
+     [--upload FILE:DEST] [--write FILE:CONTENT] [--no-logfile]
+     [--password-crypto md5|sha256|sha512] [--no-selinux-relabel]
+-    [--selinux-relabel]
++    [--selinux-relabel] [--selinux-relabel-exclude DIR]

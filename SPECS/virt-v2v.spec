@@ -2,7 +2,7 @@
 %global verify_tarball_signature 1
 
 # The source directory.
-%global source_directory 2.10-stable
+%global source_directory 2.12-stable
 
 %if !0%{?rhel}
 # Optional features enabled in this build for Fedora.
@@ -44,8 +44,8 @@ ExclusiveArch: x86_64
 
 Name:          virt-v2v
 Epoch:         1
-Version:       2.10.0
-Release:       24%{?dist}
+Version:       2.12.0
+Release:       3%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -62,69 +62,30 @@ Source2:       libguestfs.keyring
 Source3:       copy-patches.sh
 
 # Patches are maintained in the following repository:
-# https://github.com/libguestfs/virt-v2v/commits/rhel-10.2
+# https://github.com/libguestfs/virt-v2v/commits/rhel-10.3
 
 # Patches.
-Patch0001:     0001-docs-virt-v2v.pod-Document-Windows-vTPM-and-BitLocke.patch
-Patch0002:     0002-input-ssh.ml-Add-debugging-around-remote_file_exists.patch
-Patch0003:     0003-input-ssh.ml-Fix-Ssh.remote_file_exists.patch
-Patch0004:     0004-Update-common-submodule.patch
-Patch0005:     0005-v2v-Enhance-inspection-with-filesystems-information.patch
-Patch0006:     0006-inspector-Enhance-virt-v2v-inspector-output-with-fil.patch
-Patch0007:     0007-convert-convert_linux.ml-Add-debian-12-UEFI.patch
-Patch0008:     0008-input-vcenter-double-uri_encode-dcPath-and-dsName.patch
-Patch0009:     0009-lib-Replace-nbdkit-file-cache-none-with-reduce-memor.patch
-Patch0010:     0010-convert-convert_linux.ml-Condense-device-regex-handl.patch
-Patch0011:     0011-convert-linux-replace-etc-crypttab-dev-sdX-with-UUID.patch
-Patch0012:     0012-build-replace-AM_GNU_GETTEXT-with-simpler-LIBINTL-ch.patch
-Patch0013:     0013-docs-Drop-references-to-virtio-win-osinfo-usage.patch
-Patch0014:     0014-docs-update-virtio-win-exploded-tree-docs.patch
-Patch0015:     0015-ocaml-link.sh.in-pass-explicit-guestfs-search-path.patch
-Patch0016:     0016-output-introduce-disk_name-helper.patch
-Patch0017:     0017-output-Replace-in-VM-names-with-_.patch
-Patch0018:     0018-output-sanitize-guest-names-in-metadata-file-paths.patch
-Patch0019:     0019-output-sanitize-VM-names-in-libvirt-XML.patch
-Patch0020:     0020-Update-common-submodule.patch
-Patch0021:     0021-convert-linux-properly-match-etc-crypttab.patch
-Patch0022:     0022-Update-common-submodule.patch
-Patch0023:     0023-Add-no-fstrim-option-to-disable-fstrim-during-conver.patch
-Patch0024:     0024-convert-Stop-using-maxmem-xfs_repair-m-option.patch
-Patch0025:     0025-Update-common-submodule.patch
-Patch0026:     0026-docs-Show-input-parameters-for-i-input-methods.patch
-Patch0027:     0027-docs-i-disk-allows-multiple-disk-images.patch
-Patch0028:     0028-i-disk-Allow-nbd-URIs-for-input-disks.patch
-Patch0029:     0029-tests-Add-test-for-i-disk-nbd-URI.patch
-Patch0030:     0030-common-update-submodule.patch
-Patch0031:     0031-common-update-submodule.patch
-Patch0032:     0032-RHEL-Fixes-for-libguestfs-winsupport.patch
-Patch0033:     0033-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
-Patch0034:     0034-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
-Patch0035:     0035-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
-Patch0036:     0036-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
-Patch0037:     0037-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
-Patch0038:     0038-RHEL-tests-Remove-btrfs-test.patch
-Patch0039:     0039-RHEL-Add-warning-about-virt-v2v-in-place-not-being-s.patch
-Patch0040:     0040-RHEL-output-output.ml-Remove-reduce-memory-pressure-.patch
-Patch0041:     0041-smp-use-cgroup-CPU-limits-for-appliance-SMP.patch
-Patch0042:     0042-Update-common-submodule.patch
-Patch0043:     0043-convert-Skip-fsck-after-conversion-for-RHEL-7.patch
-Patch0044:     0044-convert-linux-Fix-encrypted-ubuntu-24.04.patch
-Patch0045:     0045-convert-fix-ubuntu-conversion-regression.patch
-Patch0046:     0046-common-update-submodule.patch
-Patch0047:     0047-Add-new-collect-option-to-collect-pre-conversion-Win.patch
-Patch0048:     0048-inspector-in-place-Add-disk-boot-order-boot-order-to.patch
-Patch0049:     0049-common-update-submodule.patch
-Patch0050:     0050-mlcustomize-Add-new-selinux-relabel-excludes-flag.patch
-Patch0051:     0051-common-update-submodule.patch
-Patch0052:     0052-tests-functions.sh.in-Fix-podcheck-to-ignore-new-vir.patch
-Patch0053:     0053-Add-selinux-relabel-at-boot-parameter.patch
-Patch0054:     0054-Add-it-nfc-mode.patch
-Patch0055:     0055-input-input_nfc.ml-Increase-wait-for-nbdkit-timeout-.patch
-Patch0056:     0056-lib-nbdkit.mli-Additional-documentation-caveats-for-.patch
-Patch0057:     0057-input-input_nfc.ml-Send-dump-plugin-output-to-stderr.patch
-Patch0058:     0058-convert-convert_linux.ml-Use-yum-dnf-clean_requireme.patch
-Patch0059:     0059-RHEL-264744-Allow-nbd-connection-from-remote-hosts.patch
-Patch0060:     0060-i-libvirt-Add-io-nbd-tls-certificates-for-NBD-disks.patch
+Patch0001:     0001-RHEL-Fixes-for-libguestfs-winsupport.patch
+Patch0002:     0002-RHEL-v2v-Select-correct-qemu-binary-for-o-qemu-mode-.patch
+Patch0003:     0003-RHEL-v2v-Disable-the-qemu-boot-oo-qemu-boot-option-R.patch
+Patch0004:     0004-RHEL-Fix-list-of-supported-sound-cards-to-match-RHEL.patch
+Patch0005:     0005-RHEL-v2v-i-disk-force-VNC-as-display-RHBZ-1372671.patch
+Patch0006:     0006-RHEL-point-to-KB-for-supported-v2v-hypervisors-guest.patch
+Patch0007:     0007-RHEL-tests-Remove-btrfs-test.patch
+Patch0008:     0008-RHEL-Add-warning-about-virt-v2v-in-place-not-being-s.patch
+Patch0009:     0009-RHEL-output-output.ml-Remove-reduce-memory-pressure-.patch
+Patch0010:     0010-convert-windows-Fix-online-disks-script-for-PowerShe.patch
+Patch0011:     0011-convert-convert_linux.ml-Use-yum-dnf-clean_requireme.patch
+Patch0012:     0012-common-update-submodule.patch
+Patch0013:     0013-mlcustomize-Add-new-selinux-relabel-excludes-flag.patch
+Patch0014:     0014-common-update-submodule.patch
+Patch0015:     0015-common-update-submodule.patch
+Patch0016:     0016-tests-functions.sh.in-Fix-podcheck-to-ignore-new-vir.patch
+Patch0017:     0017-Add-selinux-relabel-at-boot-parameter.patch
+Patch0018:     0018-Add-it-nfc-mode.patch
+Patch0019:     0019-input-input_nfc.ml-Increase-wait-for-nbdkit-timeout-.patch
+Patch0020:     0020-lib-nbdkit.mli-Additional-documentation-caveats-for-.patch
+Patch0021:     0021-input-input_nfc.ml-Send-dump-plugin-output-to-stderr.patch
 
 BuildRequires: autoconf, automake, libtool
 BuildRequires: make
@@ -135,7 +96,7 @@ BuildRequires: perl(IPC::Run3)
 BuildRequires: gcc
 BuildRequires: ocaml >= 4.08
 
-BuildRequires: libguestfs-devel >= 1:1.58.1-9
+BuildRequires: libguestfs-devel >= 1:1.59.7-1
 BuildRequires: augeas-devel
 BuildRequires: bash-completion
 %if 0%{?fedora} || 0%{?rhel} >= 11
@@ -181,7 +142,7 @@ BuildRequires: glibc-static
 BuildRequires: gnupg2
 %endif
 
-Requires:      libguestfs%{?_isa} >= 1:1.58.1-9
+Requires:      libguestfs%{?_isa} >= 1:1.59.7-1
 Requires:      guestfs-tools >= 1.54
 
 # XFS is the default filesystem in Fedora and RHEL.
@@ -430,76 +391,66 @@ done
 
 
 %changelog
-* Mon Oct 05 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-24
-- -i libvirtxml: Add -io nbd-tls-certificates for NBD disks
-  resolves: RHEL-276238
+* Thu Sep 17 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.12.0-3
+- Add --selinux-relabel-at-boot
+  resolves: RHEL-262352
+- Add -it nfc mode
+  resolves: RHEL-248250, RHEL-252891
 
-* Wed Sep 23 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-23
-- Allow NBD connections from remote hosts in -i libvirtxml input mode
-  resolves: RHEL-267140
+* Mon Aug 17 2026 Srihari Parimi <sparimi@redhat.com> - 1:2.12.0-2
+- Fix missing libxslt library after VMware to OpenShift VM migration
+  resolves: RHEL-233944
+- Fix online-disks firstboot script under PowerShell Constrained Language Mode
+  resolves: RHEL-210639
+- Fix delay during open-vm-tools removal when RHSM is unreachable
+  resolves: RHEL-214049
+- Allow qemu-guest-agent install to skip unreachable guest repos
+  resolves: RHEL-217581
+- Fix conversion pod crash during SELinux relabeling of large XFS filesystems
+  resolves: RHEL-222316
+- Prevent multiple appliance launches for virtio-win.iso content
+  resolves: RHEL-124850
 
-* Thu Sep 10 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-22
-- For Linux conversions use yum/dnf clean_requirements_on_remove=False
-  resolves: RHEL-257319
-
-* Wed Sep 02 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-21
-- Add -it nfc support
-  resolves: RHEL-248249
-- Increase timeout
-  resolves: RHEL-252892
-
-* Fri Aug 14 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-20
-- Fix SELinux relabelling of podman rootless containers
-  resolves: RHEL-239852
-- Add --selinux-relabel-exclude parameter
-  resolves: RHEL-239809
-- Add --selinux-relabel-at-boot parameter
-  resolves: RHEL-RHEL-240649
-- Change '::' to 'REM' in Windows batch files for improved reliability
-  resolves: RHEL-239810
-
-* Tue Jul 07 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-18
-- Add <disk> <boot-order>#</boot-order> to XML output
-  resolves: RHEL-193138
-- Add new --collect option to collect pre-conversion information
-  resolves: RHEL-192947
-- Retry qemu-ga installer on failure
-  resolves: RHEL-193139
-- Fix conversions of encrypted Ubuntu guests (second attempt)
-  resolves: RHEL-192921
-- Skip fsck after conversion for RHEL 7
-  resolves: RHEL-192948
-
-* Fri May 22 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-17
-- Drop 'Fix conversion of encrypted Ubuntu guests' (failed testing)
-  related: RHEL-174515
-- Fix location of Windows Vista and Windows 2008 Server R1 drivers
-  resolves: RHEL-174513
-
-* Tue May 12 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-16
+* Tue Jul 14 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.12.0-1
+- Rebase to virt-v2v 2.12.0
+  Synchronize spec file with Fedora
+  resolves: RHEL-153361
+- Fixes incorrect driver location for Windows 2008 SP2
+  resolves: RHEL-159888
+- Create sentinel file after all firstboot scripts have finished running
+  resolves: RHEL-152939
+- Obey cgroups when computing SMP
+  resolves: RHEL-152766
+- Fix encrypted Ubuntu guest fail to boot after conversion
+  resolves: RHEL-137121, RHEL-178432
+- Stop using maxmem (xfs_repair -m option)
+  resolves: RHEL-165677
+- Fix CHS geometry error for Veritas/Sun partitions
+  resolves: RHEL-165220
 - Fix binary LUKS keys
-  resolves: RHEL-174520
+  resolves: RHEL-170864
 - Windows firstboot: Add exit code 250 to skip reboots
   Rework documentation for firstboot feature
-  resolves: RHEL-174516
-- Use cgroups in SMP calculation
-  resolves: RHEL-174512
+  resolves: RHEL-174312
+- Skip fsck after conversion for RHEL 7
+  resolves: RHEL-191749
+- Add new --collect option to collect pre-conversion information
+  resolves: RHEL-188772
+- Add disk boot-order to inspector and in-place XML output
+  resolves: RHEL-184508
+- Allow conversion with immutable resolv.conf
+  related: RHEL-178556
+- Add note about PowerShell ExecutionPolicy AllSigned (MTV-4424)
+- Retry qemu-guest-agent MSI installer on failure
+  resolves: RHEL-186301
+- Fix online-disks firstboot in Powershell Constrained Language Mode
+  resolves: RHEL-210639
 
-* Thu Apr 23 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-13
-- Stop using maxmem (xfs_repair -m option)
-  resolves: RHEL-169321
-- Fix CHS geometry error for Veritas/Sun partitions
-  resolves: RHEL-169225
-
-* Fri Apr 03 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-11
+* Fri Apr 03 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.10.0-9
 - Add --no-fstrim option
-  resolves: RHEL-164583
+  resolves: RHEL-164271
 
-* Fri Mar 27 2026 Richard W.M. Jones <rjones@redhat.com> - 1::2.10.0-10
-- Create sentinel file after all firstboot scripts have finished running
-  resolves: RHEL-161192
-
-* Mon Mar 23 2026 Richard W.M. Jones <rjones@redhat.com> - 1::2.10.0-9
+* Thu Mar 12 2026 Richard W.M. Jones <rjones@redhat.com> - 1::2.10.0-8
 - Requires openssl (for finding thumbprint)
   resolves: RHEL-155204
 

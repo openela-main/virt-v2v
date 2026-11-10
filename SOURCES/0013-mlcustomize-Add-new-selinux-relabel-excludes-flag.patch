@@ -1,0 +1,38 @@
+From 5f8b6a6a12809d8a72aec96b2cf7691385099aa9 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Mon, 3 Aug 2026 13:35:08 +0100
+Subject: [PATCH] mlcustomize: Add new --selinux-relabel-excludes flag
+
+https://github.com/libguestfs/libguestfs/commit/f5ad08415182cd7ecac376aad19ffaa81bec7503
+
+Update m4/guestfs-libraries.m4 to make libguestfs 1.61.1 required.
+This is for the new guestfs_setfiles 'excludes' parameter, added in:
+
+https://github.com/libguestfs/libguestfs/commit/5364e6abbcd1ee42f23b26306225269329e7c663
+
+Update the common submodule, bringing in:
+
+  Richard W.M. Jones (3):
+        mlcustomize/customize_cmdline.mli: Fix differences in generated code
+        mlcustomize: Update generated files
+        mlcustomize: Pass --selinux-relabel-excludes through to setfiles
+
+(cherry picked from commit 4dcf8ea13ca2516005cdb64edbbb2534fe612d49)
+---
+ m4/guestfs-libraries.m4 | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/m4/guestfs-libraries.m4 b/m4/guestfs-libraries.m4
+index 81f4ce98..14154724 100644
+--- a/m4/guestfs-libraries.m4
++++ b/m4/guestfs-libraries.m4
+@@ -21,7 +21,8 @@ dnl Of course we need libguestfs.
+ dnl
+ dnl We need libguestfs 1.59.2 for guestfs_xfs_info2.
+ dnl We need libguestfs 1.59.7 for text: and base64: prefix in LUKS funcs.
+-PKG_CHECK_MODULES([LIBGUESTFS], [libguestfs >= 1.59.7])
++dnl We need libguestfs 1.61.1 for guestfs_setfiles excludes parameter.
++PKG_CHECK_MODULES([LIBGUESTFS], [libguestfs >= 1.61.1])
+ printf "libguestfs version is "; $PKG_CONFIG --modversion libguestfs
+ 
+ dnl And libnbd.

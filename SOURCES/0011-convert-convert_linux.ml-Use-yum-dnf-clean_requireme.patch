@@ -1,0 +1,38 @@
+From 785e1f1782025a7fdb79a5cb663a806294a73350 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 7 Aug 2026 15:48:48 +0100
+Subject: [PATCH] convert/convert_linux.ml: Use yum/dnf
+ clean_requirements_on_remove=False
+
+When removing packages, use the yum or dnf option
+--setopt=clean_requirements_on_remove=False (in dnf this is also known
+as --no-autoremove).  This removes only the named package, not
+dependencies.  This is in the interests of making the most minimal
+change possible to the guest during conversion.
+
+Update the common submodule:
+
+  Richard W.M. Jones (1):
+        mlcustomize/guest_packages.ml: Add clean_requirements_on_remove option
+
+Fixes: https://redhat.atlassian.net/browse/RHEL-233944
+(cherry picked from commit af8fbd3ea0e24cc8cfb4297724916db87a36ad04)
+---
+ convert/convert_linux.ml | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/convert/convert_linux.ml b/convert/convert_linux.ml
+index 979b3581..72220830 100644
+--- a/convert/convert_linux.ml
++++ b/convert/convert_linux.ml
+@@ -1453,7 +1453,9 @@ fi
+   and uninstall_packages_nonfatal pkgs =
+     if pkgs <> [] then (
+       let cmd =
+-        try Guest_packages.uninstall_command pkgs inspect.i_package_management
++        try
++          Guest_packages.uninstall_command ~clean_requirements_on_remove:false
++            pkgs inspect.i_package_management
+         with
+         | Guest_packages.Unknown_package_manager msg
+         | Guest_packages.Unimplemented_package_manager msg ->

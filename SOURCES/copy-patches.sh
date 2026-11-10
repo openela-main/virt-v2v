@@ -7,7 +7,7 @@ set -e
 #   ./copy-patches.sh
 
 project=virt-v2v
-rhel_version=10.2
+rhel_version=10.3
 
 # Check we're in the right directory.
 if [ ! -f $project.spec ]; then
@@ -18,6 +18,7 @@ fi
 case `id -un` in
     rjones) git_checkout=$HOME/d/$project-rhel-$rhel_version ;;
     lacos)  git_checkout=$HOME/src/v2v/$project ;;
+    sparimi)  git_checkout=$HOME/rhel10.3/upstream/$project ;;
     *)      git_checkout=$HOME/d/$project-rhel-$rhel_version ;;
 esac
 if [ ! -d $git_checkout ]; then

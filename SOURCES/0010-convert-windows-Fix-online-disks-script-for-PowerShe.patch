@@ -1,0 +1,34 @@
+From 298729653e48216a27bd648dffd784e6e133ecf2 Mon Sep 17 00:00:00 2001
+From: Nijin Ashok <nashok@redhat.com>
+Date: Tue, 14 Jul 2026 18:56:32 +0530
+Subject: [PATCH] convert: windows: Fix online-disks script for PowerShell
+ Constrained Language Mode
+
+The firstboot PowerShell script that brings VirtIO disks online fails
+when PowerShell runs in Constrained Language Mode.
+
+Fixes: https://redhat.atlassian.net/browse/RHEL-210639
+(cherry picked from commit 1f4bf6c0d719ad3b780fba80f4c485e1b07fce8c)
+---
+ convert/convert_windows.ml | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/convert/convert_windows.ml b/convert/convert_windows.ml
+index 0d5b6665..0abf5919 100644
+--- a/convert/convert_windows.ml
++++ b/convert/convert_windows.ml
+@@ -717,10 +717,10 @@ if errorlevel 3010 exit /b 0
+       add "";
+       add "Write-Host \"Online all virtio disks\"";
+       add "";
+-      add "Get-Disk | Where { $_.FriendlyName -like '*VirtIO*' } | % {";
+-      add "    Write-Host ('  - ' + $_.Number + ': ' + $_.FriendlyName + '(' + [math]::Round($_.Size/1GB,2) + 'GB)')";
+-      add "    $_ | Set-Disk -IsOffline $false";
+-      add "    $_ | Set-Disk -IsReadOnly $false";
++      add "foreach ($d in (Get-Disk | Where-Object -Property FriendlyName -Like '*VirtIO*')) {";
++      add "    Write-Host \"  - disk $($d.Number): $($d.FriendlyName) ($([int]($d.Size / 1GB))GB)\"";
++      add "    Set-Disk -Number $d.Number -IsOffline $false";
++      add "    Set-Disk -Number $d.Number -IsReadOnly $false";
+       add "}";
+ 
+       (* Install the Powershell script to run late at firstboot. *)

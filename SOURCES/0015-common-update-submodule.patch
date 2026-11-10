@@ -1,0 +1,26 @@
+From 44b31275d323c6b17e5fb888deaca4487160b0f5 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Fri, 14 Aug 2026 06:48:03 +0100
+Subject: [PATCH] common: update submodule
+
+  Richard W.M. Jones (1):
+        mlcustomize/Makefile.am: Include libguestfs pkgconf CFLAGS
+
+(cherry picked from commit f845937e1e9720ddc2656818fc23fd968fb4f35b)
+---
+ common | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Submodule common 8d3f79ee..6fb901a3:
+diff --git a/common/mlcustomize/Makefile.am b/common/mlcustomize/Makefile.am
+index 3bdff2a6..48ac0f01 100644
+--- a/common/mlcustomize/Makefile.am
++++ b/common/mlcustomize/Makefile.am
+@@ -106,6 +106,7 @@ libmlcustomize_a_CPPFLAGS = \
+ 	-I$(top_srcdir)/common/mlxml
+ libmlcustomize_a_CFLAGS = \
+ 	$(WARN_CFLAGS) $(WERROR_CFLAGS) \
++	$(LIBGUESTFS_CFLAGS) \
+ 	-fPIC
+ 
+ BOBJECTS = $(SOURCES_ML:.ml=.cmo)

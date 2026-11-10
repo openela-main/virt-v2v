@@ -1,0 +1,275 @@
+From 684c30d5e634e8914a82031f1979a1d73e709da9 Mon Sep 17 00:00:00 2001
+From: "Richard W.M. Jones" <rjones@redhat.com>
+Date: Tue, 11 Aug 2026 17:59:35 +0100
+Subject: [PATCH] common: update submodule
+
+  Surya Gupta (1):
+        inject_virtio_win: use lazy handle to avoid 3 appliance launches
+
+(cherry picked from commit c6ebad6a0d026b34483f295140edd9d98d71962a)
+---
+ common                  | 2 +-
+ m4/guestfs-libraries.m4 | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+Submodule common b3841fbc..8d3f79ee:
+diff --git a/common/mlcustomize/guest_packages.ml b/common/mlcustomize/guest_packages.ml
+index 933b8c20..fba59a64 100644
+--- a/common/mlcustomize/guest_packages.ml
++++ b/common/mlcustomize/guest_packages.ml
+@@ -122,8 +122,14 @@ let update_command package_management =
+   | pm ->
+     error_unimplemented_package_manager "--update" pm
+ 
+-let uninstall_command packages package_management =
++let uninstall_command ?clean_requirements_on_remove
++      packages package_management =
+   let quoted_args = String.concat " " (List.map quote packages) in
++  let dnf_yum_clean_requirements_on_remove =
++    match clean_requirements_on_remove with
++    | None -> ""
++    | Some true -> "--setopt=clean_requirements_on_remove=True"
++    | Some false -> "--setopt=clean_requirements_on_remove=False" in
+   match package_management with
+   | "apk" -> sprintf "apk del %s" quoted_args
+   | "apt" ->
+@@ -134,8 +140,10 @@ let uninstall_command packages package_management =
+       apt-get $apt_opts remove %s
+     " quoted_args
+   | "dnf" ->
+-     sprintf "dnf -y --setopt=skip_if_unavailable=True --disableplugin=subscription-manager remove %s"
+-             quoted_args
++     sprintf "dnf -y --setopt=skip_if_unavailable=True %s \
++              --disableplugin=subscription-manager \
++              remove %s"
++       dnf_yum_clean_requirements_on_remove quoted_args
+   | "pisi" ->
+      sprintf "pisi rm %s" quoted_args
+   | "pacman" ->
+@@ -145,7 +153,9 @@ let uninstall_command packages package_management =
+   | "xbps" ->
+      sprintf "xbps-remove -Sy %s" quoted_args
+   | "yum" ->
+-     sprintf "yum -y --setopt=skip_if_unavailable=True remove %s" quoted_args
++     sprintf "yum -y --setopt=skip_if_unavailable=True %s \
++              remove %s"
++       dnf_yum_clean_requirements_on_remove quoted_args
+   | "zypper" ->
+      sprintf "zypper -n rm %s" quoted_args
+ 
+diff --git a/common/mlcustomize/guest_packages.mli b/common/mlcustomize/guest_packages.mli
+index 5f0925a0..ee03ca88 100644
+--- a/common/mlcustomize/guest_packages.mli
++++ b/common/mlcustomize/guest_packages.mli
+@@ -38,7 +38,14 @@ val update_command : string -> string
+     script) for updating the OS packages that are currently installed in the
+     guest. *)
+ 
+-val uninstall_command : string list -> string -> string
++val uninstall_command : ?clean_requirements_on_remove:bool ->
++                        string list -> string -> string
+ (** [uninstall_command packages package_management] produces a properly quoted
+     shell command string suitable for execution in the guest (directly or via a
+-    Firstboot script) for uninstalling the OS packages listed in [packages]. *)
++    Firstboot script) for uninstalling the OS packages listed in [packages].
++
++    If used, [?clean_requirements_on_remove] will add
++    [--setopt=clean_requirements_on_remove=(True|False)] to the
++    command.  This is used by virt-v2v to avoid removing
++    dependencies (ie behaving like "noautoremove"). It currently
++    only works for yum/dmf. *)
+diff --git a/common/mlcustomize/inject_virtio_win.ml b/common/mlcustomize/inject_virtio_win.ml
+index 6d7cf1a1..3b52d4f0 100644
+--- a/common/mlcustomize/inject_virtio_win.ml
++++ b/common/mlcustomize/inject_virtio_win.ml
+@@ -40,12 +40,20 @@ type t = {
+   i_windows_systemroot : string;
+   (** Inspection data needed by this module. *)
+ 
+-  virtio_win : string;
+-  (** Path to the virtio-win ISO or directory. *)
++  virtio_win : virtio_win_t;
++  (** Source of virtio-win drivers: an ISO file or a directory. *)
+ 
+   mutable block_driver_priority : string list
+   (** List of block drivers *)
+ }
++and virtio_win_t = Virtio_win_iso of iso_t | Virtio_win_dir of dir_t
++and iso_t = {
++  iso_path : string;
++  g2_lazy : Guestfs.guestfs Lazy.t;
++}
++and dir_t = {
++  dir_path : string;
++}
+ 
+ type block_type = Virtio_blk | Virtio_SCSI | IDE
+ and net_type = Virtio_net | E1000 | RTL8139
+@@ -62,10 +70,30 @@ type virtio_win_installed = {
+   virtio_1_0 : bool;
+ }
+ 
++let virtio_win_path = function
++  | Virtio_win_iso iso -> iso.iso_path
++  | Virtio_win_dir dir -> dir.dir_path
++
++let make_virtio_win path =
++  if is_directory path then
++    Virtio_win_dir { dir_path = path }
++  else
++    let g2_lazy = lazy (
++      try
++        let g2 = open_guestfs ~identifier:"virtio_win" () in
++        g2#add_drive_opts path ~readonly:true;
++        g2#launch ();
++        g2#mount_ro "/dev/sda" "/";
++        g2
++      with Guestfs.Error msg ->
++        error (f_"%s: cannot open virtio-win ISO file: %s") path msg
++    ) in
++    Virtio_win_iso { iso_path = path; g2_lazy }
++
+ let rec from_environment g root datadir =
+   let t = get_inspection g root in
+ 
+-  let virtio_win =
++  let path =
+     try Sys.getenv "VIRTIO_WIN"
+     with Not_found ->
+       try Sys.getenv "VIRTIO_WIN_DIR" (* old name for VIRTIO_WIN *)
+@@ -74,11 +102,11 @@ let rec from_environment g root datadir =
+         (if Sys.file_exists iso then iso
+          else datadir // "virtio-win") in
+ 
+-  { t with virtio_win }
++  { t with virtio_win = make_virtio_win path }
+ 
+ and from_path g root path =
+   let t = get_inspection g root in
+-  { t with virtio_win = path }
++  { t with virtio_win = make_virtio_win path }
+ 
+ and get_inspection g root =
+   (* Fail hard if inspection hasn't been done or it's not a Windows
+@@ -99,7 +127,7 @@ and get_inspection g root =
+   { g; root;
+     i_arch; i_major_version; i_minor_version; i_osinfo;
+     i_product_variant; i_windows_current_control_set; i_windows_systemroot;
+-    virtio_win = "";
++    virtio_win = Virtio_win_dir { dir_path = "" };
+     block_driver_priority = ["virtio_blk"; "vrtioblk"; "viostor"] }
+ 
+ let get_block_driver_priority t   = t.block_driver_priority
+@@ -143,7 +171,7 @@ let rec inject_virtio_win_drivers ({ g } as t) reg =
+   if not (copy_drivers t driverdir) then (
+       warning (f_"there are no virtio drivers available for this version of Windows (%d.%d %s %s %s).  virt-v2v looks for drivers in %s\n\nThe guest will be configured to use slower emulated devices.")
+               t.i_major_version t.i_minor_version t.i_arch
+-              t.i_product_variant t.i_osinfo t.virtio_win;
++              t.i_product_variant t.i_osinfo (virtio_win_path t.virtio_win);
+       { block_driver = IDE; net_driver = RTL8139;
+         virtio_rng = false; virtio_balloon = false;
+         isa_pvpanic = false; virtio_socket = false;
+@@ -165,7 +193,7 @@ let rec inject_virtio_win_drivers ({ g } as t) reg =
+       | None ->
+         warning (f_"there is no virtio block device driver for this version of Windows (%d.%d %s).  virt-v2v looks for this driver in %s\n\nThe guest will be configured to use a slower emulated device.")
+                 t.i_major_version t.i_minor_version
+-                t.i_arch t.virtio_win;
++                t.i_arch (virtio_win_path t.virtio_win);
+         IDE
+ 
+       | Some driver_name ->
+@@ -196,7 +224,7 @@ let rec inject_virtio_win_drivers ({ g } as t) reg =
+       if not has_netkvm then (
+         warning (f_"there is no virtio network driver for this version of Windows (%d.%d %s).  virt-v2v looks for this driver in %s\n\nThe guest will be configured to use a slower emulated device.")
+                 t.i_major_version t.i_minor_version
+-                t.i_arch t.virtio_win;
++                t.i_arch (virtio_win_path t.virtio_win);
+         RTL8139
+       )
+       else
+@@ -364,19 +392,20 @@ and copy_blnsvr t tempdir =
+  *)
+ and copy_from_virtio_win ({ g } as t) srcdir destdir filter missing =
+   let ret = ref [] in
+-  if is_directory t.virtio_win then (
++  (match t.virtio_win with
++  | Virtio_win_dir { dir_path } ->
+     debug "windows: copy_from_virtio_win: guest tools source directory %s"
+-      t.virtio_win;
++      dir_path;
+ 
+-    let dir = t.virtio_win // srcdir in
+-    if not (is_directory dir) then missing ()
++    let srcpath = dir_path // srcdir in
++    if not (is_directory srcpath) then missing ()
+     else (
+-      let cmd = sprintf "cd %s && find -L -type f" (quote dir) in
++      let cmd = sprintf "cd %s && find -L -type f" (quote srcpath) in
+       let paths = external_command cmd in
+       List.iter (
+         fun path ->
+           if filter path then (
+-            let source = dir // path in
++            let source = srcpath // path in
+             let target_name = String.lowercase_ascii (Filename.basename path) in
+             let target = destdir // target_name in
+             debug "windows: copying guest tools bits: 'host:%s' -> '%s'"
+@@ -387,23 +416,12 @@ and copy_from_virtio_win ({ g } as t) srcdir destdir filter missing =
+           )
+       ) paths
+     )
+-  )
+-  else if is_regular_file t.virtio_win || is_block_device t.virtio_win then (
++
++  | Virtio_win_iso { iso_path; g2_lazy } ->
+     debug "windows: copy_from_virtio_win: guest tools source ISO %s"
+-      t.virtio_win;
++      iso_path;
+ 
+-    let g2 =
+-      try
+-        let g2 = open_guestfs ~identifier:"virtio_win" () in
+-        g2#add_drive_opts t.virtio_win ~readonly:true;
+-        g2#launch ();
+-        g2
+-      with Guestfs.Error msg ->
+-        error (f_"%s: cannot open virtio-win ISO file: %s") t.virtio_win msg in
+-    (* Note we are mounting this as root on the *second*
+-     * handle, not the main handle containing the guest.
+-     *)
+-    g2#mount_ro "/dev/sda" "/";
++    let g2 = Lazy.force g2_lazy in
+     let srcdir = "/" ^ srcdir in
+     if not (g2#is_dir srcdir) then missing ()
+     else (
+@@ -415,14 +433,13 @@ and copy_from_virtio_win ({ g } as t) srcdir destdir filter missing =
+             let target_name = String.lowercase_ascii (Filename.basename path) in
+             let target = destdir ^ "/" ^ target_name in
+             debug "windows: copying guest tools bits: '%s:%s' -> '%s'"
+-              t.virtio_win path target;
++              iso_path path target;
+ 
+             g#write target (g2#read_file source);
+             List.push_front target_name ret
+           )
+       ) paths;
+     );
+-    g2#close()
+   );
+   !ret
+ 
+diff --git a/m4/guestfs-libraries.m4 b/m4/guestfs-libraries.m4
+index 14154724..250970e4 100644
+--- a/m4/guestfs-libraries.m4
++++ b/m4/guestfs-libraries.m4
+@@ -21,8 +21,8 @@ dnl Of course we need libguestfs.
+ dnl
+ dnl We need libguestfs 1.59.2 for guestfs_xfs_info2.
+ dnl We need libguestfs 1.59.7 for text: and base64: prefix in LUKS funcs.
+-dnl We need libguestfs 1.61.1 for guestfs_setfiles excludes parameter.
+-PKG_CHECK_MODULES([LIBGUESTFS], [libguestfs >= 1.61.1])
++dnl We need libguestfs 1.60.1 for guestfs_setfiles excludes parameter.
++PKG_CHECK_MODULES([LIBGUESTFS], [libguestfs >= 1.60.1])
+ printf "libguestfs version is "; $PKG_CONFIG --modversion libguestfs
+ 
+ dnl And libnbd.
