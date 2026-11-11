@@ -45,7 +45,7 @@ ExclusiveArch: x86_64
 Name:          virt-v2v
 Epoch:         1
 Version:       2.12.0
-Release:       3%{?dist}
+Release:       5%{?dist}
 Summary:       Convert a virtual machine to run on KVM
 
 License:       GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -86,6 +86,8 @@ Patch0018:     0018-Add-it-nfc-mode.patch
 Patch0019:     0019-input-input_nfc.ml-Increase-wait-for-nbdkit-timeout-.patch
 Patch0020:     0020-lib-nbdkit.mli-Additional-documentation-caveats-for-.patch
 Patch0021:     0021-input-input_nfc.ml-Send-dump-plugin-output-to-stderr.patch
+Patch0022:     0022-RHEL-264744-Allow-nbd-connection-from-remote-hosts.patch
+Patch0023:     0023-i-libvirt-Add-io-nbd-tls-certificates-for-NBD-disks.patch
 
 BuildRequires: autoconf, automake, libtool
 BuildRequires: make
@@ -391,6 +393,14 @@ done
 
 
 %changelog
+* Mon Oct 05 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.12.0-5
+- -i libvirtxml: Add -io nbd-tls-certificates for NBD disks
+  resolves: RHEL-276239
+
+* Wed Sep 23 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.12.0-4
+- Allow NBD connections from remote hosts in -i libvirtxml input mode
+  resolves: RHEL-267141
+
 * Thu Sep 17 2026 Richard W.M. Jones <rjones@redhat.com> - 1:2.12.0-3
 - Add --selinux-relabel-at-boot
   resolves: RHEL-262352
